@@ -13,6 +13,21 @@ class Account extends Model
     protected $name = 'account';
 
     // 自动写入时间戳字段
-    protected $autoWriteTimestamp = false;
+    protected $autoWriteTimestamp = true;
 
+
+    public function getMoneyAttr($value): float
+    {
+        return (float)$value;
+    }
+
+    public function getCommentAttr($value): string
+    {
+        return !$value ? '' : htmlspecialchars_decode($value);
+    }
+
+    public function admin(): \think\model\relation\BelongsTo
+    {
+        return $this->belongsTo(\app\admin\model\Admin::class, 'admin_id', 'id');
+    }
 }

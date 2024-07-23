@@ -47,12 +47,23 @@ const baTable = new baTableClass(
         column: [
             { type: 'selection', align: 'center', operator: false },
             { label: t('account.id'), prop: 'id', align: 'center', width: 70, operator: 'RANGE', sortable: 'custom' },
+            { label: t('account.time'), prop: 'time', align: 'center', operator: 'eq', sortable: 'custom', width: 160 },
+            { label: t('account.name'), prop: 'name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('account.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('account.time_zone'), prop: 'time_zone', align: 'center', operator: 'RANGE', sortable: false },
+            { label: t('account.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('account.status'), prop: 'status', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('account.status 0'), '1': t('account.status 1'), '2': t('account.status 2') } },
+            { label: t('account.dispose_status'), prop: 'dispose_status', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('account.dispose_status 0'), '1': t('account.dispose_status 1') } },
+            { label: t('account.money'), prop: 'money', align: 'center', operator: 'RANGE', sortable: false },
+            { label: t('account.admin__username'), prop: 'admin.username', align: 'center', operatorPlaceholder: t('Fuzzy query'), render: 'tags', operator: 'LIKE' },
+            { label: t('account.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM:ss' },
+            { label: t('account.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM:ss' },
             { label: t('Operate'), align: 'center', width: 100, render: 'buttons', buttons: optButtons, operator: false },
         ],
         dblClickNotEditColumn: [undefined],
     },
     {
-        defaultItems: {},
+        defaultItems: { time: null, time_zone: 0, status: '0', dispose_status: '0', money: 0 },
     }
 )
 
