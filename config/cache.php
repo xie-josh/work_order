@@ -24,6 +24,18 @@ return [
             // 序列化机制 例如 ['serialize', 'unserialize']
             'serialize'  => [],
         ],
+        'redis' => [
+            'type'       => env('redis.type', 'Redis'),
+            'host'       => env('redis.host', ''),
+            'port'       => env('redis.port', 6379),
+            'password'   => env('redis.password', ''),
+            'select'     => env('redis.select', false),
+            'timeout'    => env('redis.timeout', 0),
+            'expire'     => env('redis.expire', 0),
+            'persistent' => env('redis.persistent', false),
+            'prefix' => '',
+            'tag_prefix' => 'tag:',
+        ]
         // 更多的缓存连接
     ],
 ];

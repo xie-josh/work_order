@@ -7,7 +7,7 @@ return [
     // 允许跨域访问的域名
     'cors_request_domain'   => 'localhost,127.0.0.1',
     // 是否开启管理员登录验证码
-    'admin_login_captcha'   => true,
+    'admin_login_captcha'   => false,
     // 会员登录失败可重试次数,false则无限
     'user_login_retry'      => 10,
     // 管理员登录失败可重试次数,false则无限
@@ -23,7 +23,7 @@ return [
     // 表格拖拽排序时,两个权重相等则自动重新整理;控制器类中也有此项（作为单控制器自定义配置）
     'auto_sort_eq_weight'   => false,
     // 开启前台会员中心
-    'open_member_center'    => true,
+    'open_member_center'    => false,
     // 模块纯净安装（安装时移动模块文件而不是复制）
     'module_pure_install'   => true,
     // 点选验证码配置
@@ -58,7 +58,7 @@ return [
                 'type'       => 'Redis',
                 'host'       => '127.0.0.1',
                 'port'       => 6379,
-                'password'   => '',
+                'password'   => '123456',
                 // Db索引，非 0 以避免数据被意外清理
                 'select'     => 1,
                 'timeout'    => 0,
