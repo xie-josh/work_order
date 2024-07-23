@@ -30,16 +30,15 @@
                     :label-width="baTable.form.labelWidth + 'px'"
                     :rules="rules"
                 >
-                    <FormItem :label="t('account.time')" type="datetime" v-model="baTable.form.items!.time" prop="time" :placeholder="t('Please select field', { field: t('account.time') })" />
+                    <FormItem :label="t('account.time')" type="date" v-model="baTable.form.items!.time" prop="time" :placeholder="t('Please select field', { field: t('account.time') })" />
                     <FormItem :label="t('account.name')" type="string" v-model="baTable.form.items!.name" prop="name" :placeholder="t('Please input field', { field: t('account.name') })" />
-                    <FormItem :label="t('account.account_id')" type="string" v-model="baTable.form.items!.account_id" prop="account_id" :placeholder="t('Please input field', { field: t('account.account_id') })" />
                     <FormItem :label="t('account.time_zone')" type="number" prop="time_zone" :input-attr="{ step: 1 }" v-model.number="baTable.form.items!.time_zone" :placeholder="t('Please input field', { field: t('account.time_zone') })" />
                     <FormItem :label="t('account.bm')" type="string" v-model="baTable.form.items!.bm" prop="bm" :placeholder="t('Please input field', { field: t('account.bm') })" />
+                    <FormItem :label="t('account.type')" type="radio" v-model="baTable.form.items!.type" prop="type" :input-attr="{ content: { '1': t('account.type 1'), '2': t('account.type 2'), '3': t('account.type 3'), '4': t('account.type 4'), '5': t('account.type 5') } }" :placeholder="t('Please select field', { field: t('account.type') })" />
                     <FormItem :label="t('account.status')" type="select" v-model="baTable.form.items!.status" prop="status" :input-attr="{ content: { '0': t('account.status 0'), '1': t('account.status 1'), '2': t('account.status 2') } }" :placeholder="t('Please select field', { field: t('account.status') })" />
                     <FormItem :label="t('account.dispose_status')" type="select" v-model="baTable.form.items!.dispose_status" prop="dispose_status" :input-attr="{ content: { '0': t('account.dispose_status 0'), '1': t('account.dispose_status 1') } }" :placeholder="t('Please select field', { field: t('account.dispose_status') })" />
                     <FormItem :label="t('account.money')" type="number" prop="money" :input-attr="{ step: 1 }" v-model.number="baTable.form.items!.money" :placeholder="t('Please input field', { field: t('account.money') })" />
-                    <FormItem :label="t('account.admin_id')" type="remoteSelect" v-model="baTable.form.items!.admin_id" prop="admin_id" :input-attr="{ pk: 'ba_admin.id', field: 'username', remoteUrl: '/admin/auth.Admin/index' }" :placeholder="t('Please select field', { field: t('account.admin_id') })" />
-                    <FormItem :label="t('account.comment')" type="editor" v-model="baTable.form.items!.comment" prop="comment" @keyup.enter.stop="" @keyup.ctrl.enter="baTable.onSubmit(formRef)" :placeholder="t('Please input field', { field: t('account.comment') })" />
+                    <FormItem :label="t('account.comment')" type="textarea" v-model="baTable.form.items!.comment" prop="comment" :input-attr="{ rows: 3 }" @keyup.enter.stop="" @keyup.ctrl.enter="baTable.onSubmit(formRef)" :placeholder="t('Please input field', { field: t('account.comment') })" />
                 </el-form>
             </div>
         </el-scrollbar>
@@ -73,7 +72,6 @@ const rules: Partial<Record<string, FormItemRule[]>> = reactive({
     time: [buildValidatorData({ name: 'date', title: t('account.time') })],
     time_zone: [buildValidatorData({ name: 'number', title: t('account.time_zone') })],
     money: [buildValidatorData({ name: 'float', title: t('account.money') })],
-    comment: [buildValidatorData({ name: 'editorRequired', title: t('account.comment') })],
     create_time: [buildValidatorData({ name: 'date', title: t('account.create_time') })],
     update_time: [buildValidatorData({ name: 'date', title: t('account.update_time') })],
 })

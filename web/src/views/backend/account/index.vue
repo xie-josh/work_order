@@ -47,11 +47,12 @@ const baTable = new baTableClass(
         column: [
             { type: 'selection', align: 'center', operator: false },
             { label: t('account.id'), prop: 'id', align: 'center', width: 70, operator: 'RANGE', sortable: 'custom' },
-            { label: t('account.time'), prop: 'time', align: 'center', operator: 'eq', sortable: 'custom', width: 160 },
+            { label: t('account.time'), prop: 'time', align: 'center', operator: 'eq', sortable: 'custom' },
             { label: t('account.name'), prop: 'name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
             { label: t('account.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
             { label: t('account.time_zone'), prop: 'time_zone', align: 'center', operator: 'RANGE', sortable: false },
             { label: t('account.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('account.type'), prop: 'type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '1': t('account.type 1'), '2': t('account.type 2'), '3': t('account.type 3'), '4': t('account.type 4'), '5': t('account.type 5') } },
             { label: t('account.status'), prop: 'status', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('account.status 0'), '1': t('account.status 1'), '2': t('account.status 2') } },
             { label: t('account.dispose_status'), prop: 'dispose_status', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('account.dispose_status 0'), '1': t('account.dispose_status 1') } },
             { label: t('account.money'), prop: 'money', align: 'center', operator: 'RANGE', sortable: false },
@@ -63,7 +64,7 @@ const baTable = new baTableClass(
         dblClickNotEditColumn: [undefined],
     },
     {
-        defaultItems: { time: null, time_zone: 0, status: '0', dispose_status: '0', money: 0 },
+        defaultItems: { time: null, time_zone: 0, type: '1', status: '0', dispose_status: '0', money: 0 },
     }
 )
 

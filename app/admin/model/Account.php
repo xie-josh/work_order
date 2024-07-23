@@ -21,11 +21,6 @@ class Account extends Model
         return (float)$value;
     }
 
-    public function getCommentAttr($value): string
-    {
-        return !$value ? '' : htmlspecialchars_decode($value);
-    }
-
     public function admin(): \think\model\relation\BelongsTo
     {
         return $this->belongsTo(\app\admin\model\Admin::class, 'admin_id', 'id');

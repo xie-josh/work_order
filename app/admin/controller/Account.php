@@ -17,7 +17,7 @@ class Account extends Backend
      */
     protected object $model;
 
-    protected array|string $preExcludeFields = ['id', 'create_time', 'update_time'];
+    protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
 
@@ -27,7 +27,6 @@ class Account extends Backend
     {
         parent::initialize();
         $this->model = new \app\admin\model\Account();
-        $this->request->filter('clean_xss');
     }
 
     /**
