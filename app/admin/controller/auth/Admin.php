@@ -45,6 +45,11 @@ class Admin extends Backend
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+        if($this->request->param('type') == 1){
+            $adminIds = Db::table('ba_admin_group_access')->where('group_id',5)->column('uid');
+            array_push($where,['id','in',$adminIds]);
+        }
+
         $res = $this->model
             ->withoutField('login_failure,password,salt')
             ->withJoin($this->withJoinTable, $this->withJoinType)
