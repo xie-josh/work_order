@@ -1,6 +1,6 @@
 <?php
 
-namespace app\admin\model\accountrequest;
+namespace app\admin\model\addaccountrequest\accountrequest;
 
 use think\Model;
 

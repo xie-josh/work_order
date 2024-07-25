@@ -1,6 +1,6 @@
 <?php
 
-namespace app\admin\controller\accountrequest;
+namespace app\admin\controller\addaccountrequest\accountrequest;
 
 use Throwable;
 use app\common\controller\Backend;
@@ -13,7 +13,7 @@ class Proposal extends Backend
     /**
      * Proposal模型对象
      * @var object
-     * @phpstan-var \app\admin\model\accountrequest\Proposal
+     * @phpstan-var \app\admin\model\addaccountrequest\accountrequest\Proposal
      */
     protected object $model;
 
@@ -26,7 +26,7 @@ class Proposal extends Backend
     public function initialize(): void
     {
         parent::initialize();
-        $this->model = new \app\admin\model\accountrequest\Proposal();
+        $this->model = new \app\admin\model\addaccountrequest\accountrequest\Proposal();
     }
 
     /**

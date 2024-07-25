@@ -1,6 +1,6 @@
 <?php
 
-namespace app\admin\validate\accountrequest;
+namespace app\admin\validate\addaccountrequest\accountrequest;
 
 use think\Validate;
 

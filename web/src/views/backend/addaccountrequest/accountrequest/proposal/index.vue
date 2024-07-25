@@ -6,7 +6,7 @@
         <!-- 自定义按钮请使用插槽，甚至公共搜索也可以使用具名插槽渲染，参见文档 -->
         <TableHeader
             :buttons="['refresh', 'add', 'edit', 'delete', 'comSearch', 'quickSearch', 'columnDisplay']"
-            :quick-search-placeholder="t('Quick search placeholder', { fields: t('accountrequest.proposal.quick Search Fields') })"
+            :quick-search-placeholder="t('Quick search placeholder', { fields: t('addaccountrequest.accountrequest.proposal.quick Search Fields') })"
         ></TableHeader>
 
         <!-- 表格 -->
@@ -30,7 +30,7 @@ import Table from '/@/components/table/index.vue'
 import baTableClass from '/@/utils/baTable'
 
 defineOptions({
-    name: 'accountrequest/proposal',
+    name: 'addaccountrequest/accountrequest/proposal',
 })
 
 const { t } = useI18n()
@@ -41,18 +41,18 @@ const optButtons: OptButton[] = defaultOptButtons(['edit', 'delete'])
  * baTable 内包含了表格的所有数据且数据具备响应性，然后通过 provide 注入给了后代组件
  */
 const baTable = new baTableClass(
-    new baTableApi('/admin/accountrequest.Proposal/'),
+    new baTableApi('/admin/addaccountrequest.accountrequest.Proposal/'),
     {
         pk: 'id',
         column: [
             { type: 'selection', align: 'center', operator: false },
-            { label: t('accountrequest.proposal.id'), prop: 'id', align: 'center', width: 70, operator: 'RANGE', sortable: 'custom' },
-            { label: t('accountrequest.proposal.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('accountrequest.proposal.admin__username'), prop: 'admin.username', align: 'center', operatorPlaceholder: t('Fuzzy query'), render: 'tags', operator: 'LIKE' },
-            { label: t('accountrequest.proposal.status'), prop: 'status', align: 'center', render: 'switch', operator: 'eq', sortable: false, replaceValue: { '0': t('accountrequest.proposal.status 0'), '1': t('accountrequest.proposal.status 1') } },
-            { label: t('accountrequest.proposal.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('accountrequest.proposal.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM:ss' },
-            { label: t('accountrequest.proposal.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM:ss' },
+            { label: t('addaccountrequest.accountrequest.proposal.id'), prop: 'id', align: 'center', width: 70, operator: 'RANGE', sortable: 'custom' },
+            { label: t('addaccountrequest.accountrequest.proposal.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('addaccountrequest.accountrequest.proposal.admin__username'), prop: 'admin.username', align: 'center', operatorPlaceholder: t('Fuzzy query'), render: 'tags', operator: 'LIKE' },
+            { label: t('addaccountrequest.accountrequest.proposal.status'), prop: 'status', align: 'center', render: 'switch', operator: 'eq', sortable: false, replaceValue: { '0': t('addaccountrequest.accountrequest.proposal.status 0'), '1': t('addaccountrequest.accountrequest.proposal.status 1') } },
+            { label: t('addaccountrequest.accountrequest.proposal.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('addaccountrequest.accountrequest.proposal.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM:ss' },
+            { label: t('addaccountrequest.accountrequest.proposal.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM:ss' },
             { label: t('Operate'), align: 'center', width: 100, render: 'buttons', buttons: optButtons, operator: false },
         ],
         dblClickNotEditColumn: [undefined],
