@@ -1,10 +1,10 @@
 <?php
 
-namespace app\admin\validate\addaccountrequest\accountrequest;
+namespace app\admin\validate\addaccountrequest;
 
 use think\Validate;
 
-class Proposal extends Validate
+class AccountrequestProposal extends Validate
 {
     protected $failException = true;
 

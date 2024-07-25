@@ -30,9 +30,9 @@
                     :label-width="baTable.form.labelWidth + 'px'"
                     :rules="rules"
                 >
-                    <FormItem :label="t('addaccountrequest.accountrequest.proposal.bm')" type="string" v-model="baTable.form.items!.bm" prop="bm" :placeholder="t('Please input field', { field: t('addaccountrequest.accountrequest.proposal.bm') })" />
-                    <FormItem :label="t('addaccountrequest.accountrequest.proposal.admin_id')" type="remoteSelect" v-model="baTable.form.items!.admin_id" prop="admin_id" :input-attr="{ pk: 'ba_admin.id', field: 'username', remoteUrl: '/admin/auth.Admin/index' }" :placeholder="t('Please select field', { field: t('addaccountrequest.accountrequest.proposal.admin_id') })" />
-                    <FormItem :label="t('addaccountrequest.accountrequest.proposal.account_id')" type="string" v-model="baTable.form.items!.account_id" prop="account_id" :placeholder="t('Please input field', { field: t('addaccountrequest.accountrequest.proposal.account_id') })" />
+                    <FormItem :label="t('addaccountrequest.accountrequestProposal.bm')" type="string" v-model="baTable.form.items!.bm" prop="bm" :placeholder="t('Please input field', { field: t('addaccountrequest.accountrequestProposal.bm') })" />
+                    <FormItem :label="t('addaccountrequest.accountrequestProposal.admin_id')" type="remoteSelect" v-model="baTable.form.items!.admin_id" prop="admin_id" :input-attr="{ pk: 'ba_admin.id', field: 'username', remoteUrl: '/admin/auth.Admin/index' }" :placeholder="t('Please select field', { field: t('addaccountrequest.accountrequestProposal.admin_id') })" />
+                    <FormItem :label="t('addaccountrequest.accountrequestProposal.account_id')" type="string" v-model="baTable.form.items!.account_id" prop="account_id" :placeholder="t('Please input field', { field: t('addaccountrequest.accountrequestProposal.account_id') })" />
                 </el-form>
             </div>
         </el-scrollbar>
@@ -63,11 +63,11 @@ const baTable = inject('baTable') as baTableClass
 const { t } = useI18n()
 
 const rules: Partial<Record<string, FormItemRule[]>> = reactive({
-    accountrequest_id: [buildValidatorData({ name: 'number', title: t('addaccountrequest.accountrequest.proposal.accountrequest_id') })],
-    bm: [buildValidatorData({ name: 'required', title: t('addaccountrequest.accountrequest.proposal.bm') })],
-    admin_id: [buildValidatorData({ name: 'required', title: t('addaccountrequest.accountrequest.proposal.admin_id') })],
-    create_time: [buildValidatorData({ name: 'date', title: t('addaccountrequest.accountrequest.proposal.create_time') })],
-    update_time: [buildValidatorData({ name: 'date', title: t('addaccountrequest.accountrequest.proposal.update_time') })],
+    accountrequest_id: [buildValidatorData({ name: 'number', title: t('addaccountrequest.accountrequestProposal.accountrequest_id') })],
+    bm: [buildValidatorData({ name: 'required', title: t('addaccountrequest.accountrequestProposal.bm') })],
+    admin_id: [buildValidatorData({ name: 'required', title: t('addaccountrequest.accountrequestProposal.admin_id') })],
+    create_time: [buildValidatorData({ name: 'date', title: t('addaccountrequest.accountrequestProposal.create_time') })],
+    update_time: [buildValidatorData({ name: 'date', title: t('addaccountrequest.accountrequestProposal.update_time') })],
 })
 </script>
 

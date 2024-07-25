@@ -1,13 +1,13 @@
 <?php
 
-namespace app\admin\model\addaccountrequest\accountrequest;
+namespace app\admin\model\addaccountrequest;
 
 use think\Model;
 
 /**
- * Proposal
+ * AccountrequestProposal
  */
-class Proposal extends Model
+class AccountrequestProposal extends Model
 {
     // 表名
     protected $name = 'accountrequest_proposal';
