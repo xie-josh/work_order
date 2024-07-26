@@ -4,6 +4,7 @@ namespace app\admin\controller;
 
 use Throwable;
 use app\common\controller\Backend;
+use think\facade\Db;
 
 /**
  * 账户管理
@@ -195,10 +196,26 @@ class Account extends Backend
             $this->model->startTrans();
             try {
                 $ids = $data['ids'];
-                $adminId = $data['admin_id'];
+                $adminId = $data['admin_id']??0;
                 $status = $data['status'];
 
-                $result = $this->model->whereIn('id',$ids)->update(['account_admin_id'=>$adminId,'status'=>$status]);
+                $ids = $this->model->whereIn('id',$ids)->where('status',0)->column('id');
+
+                if($status == 1){
+                    foreach($ids as $v){
+                        $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('admin_id',$adminId)->where('status',0)->find();
+                        if(empty($accountrequestProposal))  continue;//throw new \Exception("该渠道暂时没有账号可以分配");
+                        $accountId = $accountrequestProposal['account_id'];
+    
+    
+                        $result = $this->model->where('id',$v)->update(['account_admin_id'=>$adminId,'status'=>$status,'account_id'=>$accountId]);
+    
+                        DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'update_time'=>time()]);
+                    }
+                }else{
+                    $result = $this->model->whereIn('id',$ids)->update(['status'=>$status]);
+                }
+                $result = true;
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -210,11 +227,38 @@ class Account extends Backend
                 $this->error(__('No rows updated'));
             }
         }
-
-        $this->success('', [
-            'row' => $row
-        ]);
     }
+
+    public function disposeStatus(): void
+    {
+       
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            $this->model->startTrans();
+            try {
+                $ids = $data['ids'];
+                $status = $data['status'];
+
+                $ids = $this->model->whereIn('id',$ids)->where('status',1)->column('id'); 
+
+                $result = $this->model->whereIn('id',$ids)->update(['dispose_status'=>$status]);
+
+                $result = true;
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
+
 
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写

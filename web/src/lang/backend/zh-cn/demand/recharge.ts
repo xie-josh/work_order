@@ -1,0 +1,16 @@
+export default {
+    id: 'ID',
+    account_name: '账户名称',
+    account_id: '账户ID',
+    type: '下拉框',
+    'type 1': '充值',
+    'type 2': '扣款',
+    'type 3': '余额清零',
+    number: '金额',
+    status: '下拉框',
+    'status 0': '待处理',
+    'status 1': '审核成功',
+    create_time: '创建时间',
+    update_time: '修改时间',
+    'quick Search Fields': 'ID',
+}

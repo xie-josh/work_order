@@ -4,6 +4,7 @@ namespace app\admin\controller\addaccountrequest;
 
 use Throwable;
 use app\common\controller\Backend;
+use think\facade\Db;
 
 /**
  * 账户请求
@@ -59,6 +60,51 @@ class Accountrequest extends Backend
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
+    }
+
+
+    public function audit(): void
+    {
+       
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            $this->model->startTrans();
+            try {
+                $ids = explode(',',$data['ids']);
+                $id = $data['id'];
+                $row = $this->model->where('id',$id)->find();
+
+                if(empty($row)) throw new \Exception("Error Processing Request");
+                
+                $this->model->where('id',$id)->update(['status'=>1]);
+
+                $dataList  = [];
+                foreach($ids as $v){
+                    $dataList[] = [
+                        'accountrequest_id'=>$id,
+                        'bm'=>$row['bm'],
+                        'admin_id'=>$row['admin_id'],
+                        'status'=>0,
+                        'account_id'=>$v,
+                        'create_time'=>time()
+                    ];
+                }
+
+                Db::table('ba_accountrequest_proposal')->insertAll($dataList);
+
+                $result = true;
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
     }
 
     /**
