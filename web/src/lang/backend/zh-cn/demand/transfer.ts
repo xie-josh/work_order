@@ -1,0 +1,16 @@
+export default {
+    id: 'ID',
+    start_account_id: '转出账户',
+    start_account_name: '转出账户名称',
+    end_account_id: '转入账户',
+    end_account_name: '转入名称',
+    money: '转出金额',
+    admin_id: '用户ID',
+    audit: '审核状态',
+    'audit 0': '待处理',
+    'audit 1': '审核成功',
+    'audit 2': '审核失败',
+    create_time: '创建时间',
+    update_time: '修改时间',
+    'quick Search Fields': 'ID',
+}

@@ -65,6 +65,47 @@ class Admin extends Backend
         ]);
     }
 
+
+    public function channel(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $adminIds = Db::table('ba_admin_group_access')->where('group_id',5)->column('uid');
+        array_push($where,['id','in',$adminIds]);
+
+        $res = $this->model
+            ->withoutField('login_failure,password,salt')
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+        $result = $res->toArray();
+        $dataList = [];
+        if(!empty($result['data'])) {
+            $dataList = $result['data'];
+
+            $proposal = Db::table('ba_accountrequest_proposal')->where('status',0)->field('count(*) countNumber,admin_id')->group('admin_id')->select()->toArray();
+            $proposalList = array_combine(array_column($proposal,'admin_id'),array_column($proposal,'countNumber'));
+
+            foreach($dataList as &$v){
+                $v['username'] = $v['username'].'('.($proposalList[$v['id']]??0).')';
+            }
+        }
+
+        $this->success('', [
+            'list'   => $dataList,
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
+
+
+
     /**
      * 添加
      * @throws Throwable

@@ -1,0 +1,16 @@
+export default {
+    id: 'id',
+    start_account_id: 'start_account_id',
+    start_account_name: 'start_account_name',
+    end_account_id: 'end_account_id',
+    end_account_name: 'end_account_name',
+    money: 'money',
+    admin_id: 'admin_id',
+    audit: 'audit',
+    'audit 0': 'audit 0',
+    'audit 1': 'audit 1',
+    'audit 2': 'audit 2',
+    create_time: 'create_time',
+    update_time: 'update_time',
+    'quick Search Fields': 'id',
+}

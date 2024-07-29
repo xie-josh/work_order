@@ -22,10 +22,35 @@ class Recharge extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
+    protected bool|string|int $dataLimit = 'parent';
+
     public function initialize(): void
     {
         parent::initialize();
         $this->model = new \app\admin\model\demand\Recharge();
+    }
+
+
+    public function index(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+        $this->success('', [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
     }
 
 
@@ -58,6 +83,7 @@ class Recharge extends Backend
                 if(empty($account)) throw new \Exception("未找到该账户ID");
                 
                 $data['account_name'] = $account['name'];
+                $data['admin_id'] = $this->auth->id;
 
                 $result = $this->model->save($data);
                 $this->model->commit();

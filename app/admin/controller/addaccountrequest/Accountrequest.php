@@ -24,6 +24,8 @@ class Accountrequest extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
+    protected bool|string|int $dataLimit = 'parent';
+
     public function initialize(): void
     {
         parent::initialize();
