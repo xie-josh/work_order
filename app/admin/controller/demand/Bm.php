@@ -22,6 +22,8 @@ class Bm extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
+    protected array $noNeedPermission = ['disposeStatus','index'];
+
     protected bool|string|int $dataLimit = 'parent';
 
     public function initialize(): void
@@ -29,6 +31,52 @@ class Bm extends Backend
         parent::initialize();
         $this->model = new \app\admin\model\demand\Bm();
     }
+
+
+    public function index(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        $disposeType = $this->request->get('dispose_type');
+
+        $getGroups = $this->auth->getGroups()[0];
+        if($getGroups['group_id'] == 5){
+            foreach($where as $k => $v){
+                if($v[0] == 'bm.admin_id'){
+                    unset($where[$k]);
+                }
+            }
+            array_push($this->withJoinTable,'accountrequestProposal');
+            array_push($where,['accountrequestProposal.admin_id','=',$this->auth->id]);
+            
+            if($disposeType == 1){
+                array_push($where,['bm.dispose_type','=',1]);   
+            }else{
+                array_push($where,['bm.status','=',1]);
+                array_push($where,['bm.dispose_type','=',0]);
+            }
+            
+        }
+
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+        $this->success('', [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
+
 
 
     public function add(): void

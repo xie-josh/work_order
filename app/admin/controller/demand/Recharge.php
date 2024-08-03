@@ -169,9 +169,23 @@ class Recharge extends Backend
                 $ids = $data['ids'];
                 $status = $data['status'];
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',0)->column('id');
+                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
 
-                $result = $this->model->whereIn('id',$ids)->update(['status'=>$status,'update_time'=>time()]);
+                $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
+
+                if($status == 1){
+                    foreach($ids as $v){
+                        if($v['type'] == 1){
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
+                        }elseif($v['type'] == 2){
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
+                        }elseif($v['type'] == 3){
+                            $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
+                            $this->model->where('id',$v['id'])->update(['number'=>$money]);
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
+                        }
+                    }
+                }
                 
                 $result = true;
                 $this->model->commit();

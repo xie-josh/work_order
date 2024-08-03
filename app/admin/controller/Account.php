@@ -21,7 +21,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-
+    protected array $noNeedPermission = ['accountCountMoney','editIs_'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -38,10 +38,14 @@ class Account extends Backend
      */
     public function index(): void
     {
+
+        $this->quickSearchField = 'account_id';
         // 如果是 select 则转发到 select 方法，若未重写该方法，其实还是继续执行 index
         if ($this->request->param('select')) {
             $this->select();
         }
+
+        $status = $this->request->get('status');
 
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
@@ -49,16 +53,38 @@ class Account extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        if($status == 1){
+            array_push($where,['account.status','=',1]);
+        }
+
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
             ->order($order)
             ->paginate($limit);
+
+        $dataList = $res->toArray()['data'];
+        if($dataList){
+            
+            $bmList = [];
+            if($status == 1){
+                $accountIds = array_column($dataList,'account_id');
+                $resultBm = DB::table('ba_bm')->where('status',1)->whereIn('account_id',$accountIds)->select()->toArray();
+                foreach($resultBm as $v){
+                    $bmList[$v['account_id']][] = $v['bm'];
+                }
+            }
+            
+            foreach($dataList as &$v){
+                $v['bm_list'] = $bmList[$v['account_id']]??[];
+            }
+        }
         $res->visible(['admin' => ['username']]);
 
         $this->success('', [
-            'list'   => $res->items(),
+            'list'   => $dataList,
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
@@ -201,22 +227,26 @@ class Account extends Backend
                 $adminId = $data['admin_id']??0;
                 $status = $data['status'];
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',0)->column('id');
+                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
 
                 if($status == 1){
                     foreach($ids as $v){
                         $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('admin_id',$adminId)->where('status',0)->find();
                         if(empty($accountrequestProposal))  continue;//throw new \Exception("该渠道暂时没有账号可以分配");
                         $accountId = $accountrequestProposal['account_id'];
+                        
+                        $result = $this->model->where('id',$v['id'])->update(['account_admin_id'=>$adminId,'status'=>$status,'account_id'=>$accountId]);
     
-    
-                        $result = $this->model->where('id',$v)->update(['account_admin_id'=>$adminId,'status'=>$status,'account_id'=>$accountId]);
-    
-                        DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'update_time'=>time()]);
+                        DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
+
+                        if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                        if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>1,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
                     }
                 }else{
-                    $result = $this->model->whereIn('id',$ids)->update(['status'=>$status]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status]);
                 }
+
+                $this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -258,6 +288,46 @@ class Account extends Backend
                 $this->error(__('No rows updated'));
             }
         }
+    }
+
+    public function editIs_(): void
+    {
+       
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            $this->model->startTrans();
+            try {
+                $ids = $data['ids'];
+                $status = $data['status'];
+
+                $ids = $this->model->whereIn('id',$ids)->where('status',1)->column('id'); 
+
+                $result = $this->model->whereIn('id',$ids)->update(['is_'=>$status]);
+
+                $result = true;
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
+
+    function accountCountMoney()
+    {
+        if($this->auth->isSuperAdmin()){
+            $money = $this->model->where('is_',1)->sum('money');
+        }else{
+            $money = $this->model->where('is_',1)->where('admin_id',$this->auth->id)->sum('money');
+        }
+        $this->success('',['money'=>$money]);
     }
 
 

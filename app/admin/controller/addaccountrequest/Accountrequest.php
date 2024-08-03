@@ -20,6 +20,8 @@ class Accountrequest extends Backend
 
     protected array|string $preExcludeFields = ['id', 'status', 'create_time', 'update_time'];
 
+    protected array $noNeedPermission = ['audit'];
+
     protected array $withJoinTable = ['admin'];
 
     protected string|array $quickSearchField = ['id'];
@@ -65,6 +67,37 @@ class Accountrequest extends Backend
     }
 
 
+    public function add(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+
+
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+                $result = $this->model->save($data);
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+        }
+
+        $this->error(__('Parameter error'));
+    }
+
+
     public function audit(): void
     {
        
@@ -75,11 +108,12 @@ class Accountrequest extends Backend
             try {
                 $ids = explode(',',$data['ids']);
                 $id = $data['id'];
+                $affiliationBm = $data['affiliationBm'];
                 $row = $this->model->where('id',$id)->find();
 
                 if(empty($row)) throw new \Exception("Error Processing Request");
                 
-                $this->model->where('id',$id)->update(['status'=>1]);
+                $this->model->where('id',$id)->update(['affiliation_bm'=>$affiliationBm,'status'=>1]);
 
                 $dataList  = [];
                 foreach($ids as $v){
@@ -87,6 +121,7 @@ class Accountrequest extends Backend
                         'accountrequest_id'=>$id,
                         'bm'=>$row['bm'],
                         'admin_id'=>$row['admin_id'],
+                        'affiliation_bm'=>$affiliationBm,
                         'status'=>0,
                         'account_id'=>$v,
                         'create_time'=>time()

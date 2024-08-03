@@ -1,23 +1,23 @@
 <?php
 
-namespace app\admin\controller\addaccountrequest;
+namespace app\admin\controller\auth;
 
 use Throwable;
 use app\common\controller\Backend;
 
 /**
- * 账户列管理
+ * 账号充值记录
  */
-class AccountrequestProposal extends Backend
+class AdminMoneyLog extends Backend
 {
     /**
-     * AccountrequestProposal模型对象
+     * AdminMoneyLog模型对象
      * @var object
-     * @phpstan-var \app\admin\model\addaccountrequest\AccountrequestProposal
+     * @phpstan-var \app\admin\model\auth\AdminMoneyLog
      */
     protected object $model;
 
-    protected array|string $preExcludeFields = ['id', 'accountrequest_id', 'status', 'create_time', 'update_time'];
+    protected array|string $preExcludeFields = ['id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
 
@@ -26,7 +26,7 @@ class AccountrequestProposal extends Backend
     public function initialize(): void
     {
         parent::initialize();
-        $this->model = new \app\admin\model\addaccountrequest\AccountrequestProposal();
+        $this->model = new \app\admin\model\auth\AdminMoneyLog();
     }
 
     /**
@@ -39,9 +39,6 @@ class AccountrequestProposal extends Backend
         if ($this->request->param('select')) {
             $this->select();
         }
-
-
-        array_push($this->withJoinTable,'affiliationAdmin');
 
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
