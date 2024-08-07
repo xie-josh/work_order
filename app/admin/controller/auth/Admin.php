@@ -51,6 +51,7 @@ class Admin extends Backend
         }
 
         $res = $this->model
+            ->field('*,(money - used_money) usableMoney')
             ->withoutField('login_failure,password,salt')
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)

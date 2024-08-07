@@ -4,6 +4,7 @@ namespace app\admin\controller\auth;
 
 use Throwable;
 use app\common\controller\Backend;
+use think\facade\Db;
 
 /**
  * 账号充值记录
@@ -59,6 +60,54 @@ class AdminMoneyLog extends Backend
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
+    }
+
+
+    public function add(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $data = $this->excludeFields($data);
+            if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
+                $data[$this->dataLimitField] = $this->auth->id;
+            }
+
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+                if ($this->modelValidate) {
+                    $validate = str_replace("\\model\\", "\\validate\\", get_class($this->model));
+                    if (class_exists($validate)) {
+                        $validate = new $validate();
+                        if ($this->modelSceneValidate) $validate->scene('add');
+                        $validate->check($data);
+                    }
+                }
+
+                
+                $money = Db::table('ba_admin')->where('id',$data['admin_id'])->value('money');
+                $money = $money + $data['money'];
+                $money = Db::table('ba_admin')->where('id',$data['admin_id'])->update(['money'=>$money]);
+
+                $result = $this->model->save($data);
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+        }
+
+        $this->error(__('Parameter error'));
     }
 
     /**

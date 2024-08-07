@@ -21,6 +21,7 @@ class Recharge extends Backend
     protected array|string $preExcludeFields = ['id', 'account_name', 'status', 'create_time', 'update_time'];
 
     protected string|array $quickSearchField = ['id'];
+    protected array $withJoinTable = ['accountrequestProposal'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -38,6 +39,18 @@ class Recharge extends Backend
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        foreach($where as $k => &$v){
+            if($v[0] == 'recharge.id'){
+                if (preg_match('/\d+/', $v[2], $matches)) {
+                    $number = ltrim($matches[0], '0'); // 移除开头的零
+                    $v[2] = '%'.$number.'%';
+                } else {
+                    //$v[2] = $number;
+                }
+            }
+        }
+
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
@@ -79,8 +92,18 @@ class Recharge extends Backend
                         $validate->check($data);
                     }
                 }
-                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->find();
+                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
+                
+                if($data['type'] == 1){
+
+                    $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
+                    $usableMoney = ($admin['money'] - $admin['used_money']);
+                    if($usableMoney <= 0 || $usableMoney < $data['number']) throw new \Exception("余额不足,请联系管理员！");
+
+                    DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
+                    DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
+                }
                 
                 $data['account_name'] = $account['name'];
                 $data['admin_id'] = $this->auth->id;
@@ -168,6 +191,7 @@ class Recharge extends Backend
             try {
                 $ids = $data['ids'];
                 $status = $data['status'];
+                $money = $data['money']??0;
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
 
@@ -176,13 +200,27 @@ class Recharge extends Backend
                 if($status == 1){
                     foreach($ids as $v){
                         if($v['type'] == 1){
-                            DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
+                            // $admin = Db::table('ba_admin')->where('id',$v['admin_id'])->find();
+                            // $usableMoney = ($admin['money'] - $admin['used_money']);
+                            // if($usableMoney <= 0 || $usableMoney < $v['number']) throw new \Exception("余额不足,请联系管理员！");
+
+                            // DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
+                            // DB::table('ba_admin')->where('id',$v['admin_id'])->inc('used_money',$v['number'])->update();
                         }elseif($v['type'] == 2){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
+                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
                         }elseif($v['type'] == 3){
-                            $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
+                            // $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
                             $this->model->where('id',$v['id'])->update(['number'=>$money]);
                             DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
+                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$money)->update();
+                        }
+                    }
+                }else{
+                    foreach($ids as $v){
+                        if($v['type'] == 1){
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
+                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
                         }
                     }
                 }

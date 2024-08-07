@@ -21,7 +21,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_'];
+    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -39,7 +39,7 @@ class Account extends Backend
     public function index(): void
     {
 
-        $this->quickSearchField = 'account_id';
+        //$this->quickSearchField = 'account_id';
         // 如果是 select 则转发到 select 方法，若未重写该方法，其实还是继续执行 index
         if ($this->request->param('select')) {
             $this->select();
@@ -54,8 +54,24 @@ class Account extends Backend
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
+
+        array_push($this->withJoinTable,'accountrequestProposal');
+        
+        foreach($where as $k => &$v){
+            if($v[0] == 'account.id'){
+                if (preg_match('/\d+/', $v[2], $matches)) {
+                    $number = ltrim($matches[0], '0'); // 移除开头的零
+                    $v[2] = '%'.$number.'%';
+                } else {
+                    //$v[2] = $number;
+                }
+            }
+        }
+
         if($status == 1){
-            array_push($where,['account.status','=',1]);
+            array_push($where,['account.status','in',[1,3,4,5]]);
+        }elseif($status == 3){
+            array_push($where,['account.status','in',[3,4]]);
         }
 
         $res = $this->model
@@ -66,10 +82,11 @@ class Account extends Backend
             ->paginate($limit);
 
         $dataList = $res->toArray()['data'];
+        // dd($dataList);
         if($dataList){
             
             $bmList = [];
-            if($status == 1){
+            if($status == 3){
                 $accountIds = array_column($dataList,'account_id');
                 $resultBm = DB::table('ba_bm')->where('status',1)->whereIn('account_id',$accountIds)->select()->toArray();
                 foreach($resultBm as $v){
@@ -116,6 +133,14 @@ class Account extends Backend
                         $validate->check($data);
                     }
                 }
+
+                $admin = Db::table('ba_admin')->where('id',$this->auth->id)->find();
+                $usableMoney = ($admin['money'] - $admin['used_money']);
+                if($usableMoney <= 0 || $usableMoney < $data['money']) throw new \Exception("余额不足,请联系管理员！");
+
+                // DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
+                DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
+
                 $data['admin_id'] = $this->auth->id;
                 // $data['account_id'] = $this->generateUniqueNumber();
                 $result = $this->model->save($data);
@@ -224,29 +249,63 @@ class Account extends Backend
             $this->model->startTrans();
             try {
                 $ids = $data['ids'];
-                $adminId = $data['admin_id']??0;
+                $accountId = $data['account_id']??0;
                 $status = $data['status'];
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
+                
 
                 if($status == 1){
+
+                    $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
+                    
+                }elseif($status == 2){
+                    $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     foreach($ids as $v){
-                        $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('admin_id',$adminId)->where('status',0)->find();
-                        if(empty($accountrequestProposal))  continue;//throw new \Exception("该渠道暂时没有账号可以分配");
-                        $accountId = $accountrequestProposal['account_id'];
-                        
-                        $result = $this->model->where('id',$v['id'])->update(['account_admin_id'=>$adminId,'status'=>$status,'account_id'=>$accountId]);
-    
-                        DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
-
-                        if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
-                        if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>1,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                        DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
                     }
-                }else{
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status]);
-                }
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
+                }elseif($status == 3){
 
-                $this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
+                    $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray();
+
+                    foreach($ids as $v){
+                        $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->where('status',0)->find();
+                        $this->model->where('id',$v['id'])->update(['account_admin_id'=>$accountrequestProposal['admin_id'],'status'=>3,'account_id'=>$accountId,'is_'=>1,'update_time'=>time()]);
+                        DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
+                        
+                    //     $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('admin_id',$adminId)->where('status',0)->find();
+                    //     if(empty($accountrequestProposal))  continue;//throw new \Exception("该渠道暂时没有账号可以分配");
+                    //     $accountId = $accountrequestProposal['account_id'];
+                        
+                    //     $result = $this->model->where('id',$v['id'])->update(['account_admin_id'=>$adminId,'status'=>$status,'account_id'=>$accountId]);
+    
+                    //     DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
+
+                    //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                    //     // if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>1,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                    }
+                }elseif($status == 4){
+                    $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
+                    foreach($ids as $v){
+                        //$this->model->where('id',$v['id'])->update(['status'=>4,'update_time'=>time()]);
+                        if(!empty($v['bm'])){
+                            DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$v['account_id'],'bm'=>$v['bm'],'demand_type'=>1,'status'=>1,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                        }else{
+                            $this->model->whereIn('id',$v['id'])->update(['dispose_status'=>1]);
+                        }
+                    }
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time()]);
+                }elseif($status == 5){
+                    $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
+                    foreach($ids as $v){
+                        DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
+                    }
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>5,'money'=>0,'update_time'=>time()]);
+                }
+                //dd($status);
+
+                //$this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -322,12 +381,45 @@ class Account extends Backend
 
     function accountCountMoney()
     {
-        if($this->auth->isSuperAdmin()){
-            $money = $this->model->where('is_',1)->sum('money');
-        }else{
-            $money = $this->model->where('is_',1)->where('admin_id',$this->auth->id)->sum('money');
-        }
-        $this->success('',['money'=>$money]);
+        $data = [
+            'totalMoney'=>0,
+            'usedMoney'=>0,
+            'usableMoney'=>0
+        ];
+        $admin = DB::table('ba_admin')->where('id',$this->auth->id)->find();
+        $data['totalMoney'] = $admin['money'];
+        $data['usedMoney'] = $admin['used_money'];
+        $data['usableMoney'] = ($admin['money'] - $admin['used_money']);
+
+        // if($this->auth->isSuperAdmin()){
+        //     $money = $this->model->where('is_',1)->sum('money');
+        // }else{
+        //     $money = $this->model->where('is_',1)->where('admin_id',$this->auth->id)->sum('money');
+        // }
+        $this->success('',$data);
+    }
+
+
+    public function excel()
+    {
+        $config = [
+            'path' => '/www/wwwroot/workOrder/public/storage/excel' // xlsx文件保存路径
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+        
+        // fileName 会自动创建一个工作表，你可以自定义该工作表名称，工作表名称为可选参数
+        $filePath = $excel->fileName('tutorial01.xlsx', 'sheet1')
+            ->header(['Item', 'Cost'])
+            ->data([
+                ['Rent', 1000],
+                ['Gas',  100],
+                ['Food', 300],
+                ['Gym',  50],
+            ])
+            ->output();
+
+        dd($filePath);
+
     }
 
 

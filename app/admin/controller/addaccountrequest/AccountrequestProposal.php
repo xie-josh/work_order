@@ -4,6 +4,7 @@ namespace app\admin\controller\addaccountrequest;
 
 use Throwable;
 use app\common\controller\Backend;
+use think\facade\Db;
 
 /**
  * 账户列管理
@@ -49,6 +50,8 @@ class AccountrequestProposal extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -64,6 +67,51 @@ class AccountrequestProposal extends Backend
         ]);
     }
 
+
+    public function audit(): void
+    {
+       
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            $this->model->startTrans();
+            try {
+                $ids = $data['ids'];
+                $bm = $data['bm'];
+                $affiliationBm = $data['affiliationBm'];
+                $timeZone = $data['timeZone'];
+                $adminId = $data['adminId'];
+                $dataList = [];
+
+                if(empty($ids)) throw new \Exception("账户为空！");
+
+                foreach($ids as $v){
+                    $dataList[] = [
+                        'bm'=>$bm,
+                        'affiliation_bm'=>$affiliationBm,
+                        'admin_id'=>$adminId,
+                        'status'=>0,
+                        'time_zone'=>$timeZone,
+                        'account_id'=>$v,
+                        'create_time'=>time()
+                    ];
+                }
+
+                Db::table('ba_accountrequest_proposal')->insertAll($dataList);
+
+                $result = true;
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */

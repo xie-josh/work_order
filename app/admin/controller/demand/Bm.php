@@ -41,6 +41,19 @@ class Bm extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
+        array_push($this->withJoinTable,'accountrequestProposal');
+
+        foreach($where as $k => &$v){
+            if($v[0] == 'bm.id'){
+                if (preg_match('/\d+/', $v[2], $matches)) {
+                    $number = ltrim($matches[0], '0'); // 移除开头的零
+                    $v[2] = '%'.$number.'%';
+                } else {
+                    //$v[2] = $number;
+                }
+            }
+        }
+
         $disposeType = $this->request->get('dispose_type');
 
         $getGroups = $this->auth->getGroups()[0];
@@ -50,11 +63,11 @@ class Bm extends Backend
                     unset($where[$k]);
                 }
             }
-            array_push($this->withJoinTable,'accountrequestProposal');
+            //array_push($this->withJoinTable,'accountrequestProposal');
             array_push($where,['accountrequestProposal.admin_id','=',$this->auth->id]);
             
             if($disposeType == 1){
-                array_push($where,['bm.dispose_type','=',1]);   
+                array_push($where,['bm.dispose_type','in',[1,2]]);
             }else{
                 array_push($where,['bm.status','=',1]);
                 array_push($where,['bm.dispose_type','=',0]);
@@ -104,7 +117,7 @@ class Bm extends Backend
                         $validate->check($data);
                     }
                 }
-                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->find();
+                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
                 
                 $data['account_name'] = $account['name'];
@@ -187,7 +200,6 @@ class Bm extends Backend
 
     public function audit(): void
     {
-       
         if ($this->request->isPost()) {
             $data = $this->request->post();
             $result = false;
@@ -216,7 +228,6 @@ class Bm extends Backend
 
     public function disposeStatus(): void
     {
-       
         if ($this->request->isPost()) {
             $data = $this->request->post();
             $result = false;
@@ -225,9 +236,13 @@ class Bm extends Backend
                 $ids = $data['ids'];
                 $status = $data['status'];
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',1)->column('id'); 
+                $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray(); 
 
-                $result = $this->model->whereIn('id',$ids)->update(['dispose_type'=>$status,'update_time'=>time()]);
+                foreach($ids as $v){
+                    DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>1]);
+                }
+
+                $this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'update_time'=>time()]);
 
                 $result = true;
                 $this->model->commit();
