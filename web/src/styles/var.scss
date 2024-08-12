@@ -30,3 +30,10 @@ $border-color: map.merge(
     @include set-component-css-var('bg-color', $bg-color);
     @include set-component-css-var('border-color', $border-color);
 }
+
+.el-table--border .el-table__cell{
+    border-right: none !important;
+    padding: 4px 0 !important;
+}
+
+

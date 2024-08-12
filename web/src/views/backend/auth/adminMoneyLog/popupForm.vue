@@ -32,6 +32,7 @@
                 >
                     <FormItem :label="t('auth.adminMoneyLog.admin_id')" type="remoteSelect" v-model="baTable.form.items!.admin_id" prop="admin_id" :input-attr="{ pk: 'ba_admin.id', field: 'username', remoteUrl: '/admin/auth.Admin/index' }" :placeholder="t('Please select field', { field: t('auth.adminMoneyLog.admin_id') })" />
                     <FormItem :label="t('auth.adminMoneyLog.money')" type="string" v-model="baTable.form.items!.money" prop="money" :placeholder="t('Please input field', { field: t('auth.adminMoneyLog.money') })" />
+                    <FormItem :label="t('auth.adminMoneyLog.recharge_channel_id')" type="remoteSelect" v-model="baTable.form.items!.recharge_channel_id" prop="admin_id" :input-attr="{ pk: 'ba_recharge_channel.id', field: 'name', remoteUrl: '/admin/auth.RechargeChannel/index' }" :placeholder="t('Please select field', { field: t('auth.adminMoneyLog.recharge_channel_id') })" />
                     <FormItem :label="t('auth.adminMoneyLog.comment')" type="string" v-model="baTable.form.items!.comment" prop="comment" :placeholder="t('Please input field', { field: t('auth.adminMoneyLog.comment') })" />
                 </el-form>
             </div>

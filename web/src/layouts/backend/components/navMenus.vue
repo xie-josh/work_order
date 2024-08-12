@@ -1,10 +1,10 @@
 <template>
-    <div class="nav-menus" :class="configStore.layout.layoutMode">
-        <router-link class="h100" target="_blank" :title="t('Home')" to="/">
+    <div class="nav-menus" :class="configStore.layout.layoutMode" style="padding-bottom: 50px;margin-left: 5px;">
+        <!-- <router-link class="h100" target="_blank" :title="t('Home')" to="/">
             <div class="nav-menu-item">
                 <Icon :color="configStore.getColorVal('headerBarTabColor')" class="nav-menu-icon" name="el-icon-Monitor" size="18" />
             </div>
-        </router-link>
+        </router-link> -->
         <el-dropdown
             @visible-change="onCurrentNavMenu($event, 'lang')"
             class="h100"
@@ -25,7 +25,7 @@
                 </el-dropdown-menu>
             </template>
         </el-dropdown>
-        <div @click="onFullScreen" class="nav-menu-item" :class="state.isFullScreen ? 'hover' : ''">
+        <!-- <div @click="onFullScreen" class="nav-menu-item" :class="state.isFullScreen ? 'hover' : ''">
             <Icon
                 :color="configStore.getColorVal('headerBarTabColor')"
                 class="nav-menu-icon"
@@ -39,8 +39,8 @@
             <el-badge :is-dot="terminal.state.showDot">
                 <Icon :color="configStore.getColorVal('headerBarTabColor')" class="nav-menu-icon" name="local-terminal" size="26" />
             </el-badge>
-        </div>
-        <el-dropdown
+        </div> -->
+        <!-- <el-dropdown
             v-if="adminInfo.super"
             @visible-change="onCurrentNavMenu($event, 'clear')"
             class="h100"
@@ -60,7 +60,7 @@
                     <el-dropdown-item @click="onClearCache('all')" divided>{{ t('utils.Clean up all cache') }}</el-dropdown-item>
                 </el-dropdown-menu>
             </template>
-        </el-dropdown>
+        </el-dropdown> -->
         <el-popover
             v-if="siteConfig.userInitialize"
             @show="onCurrentNavMenu(true, 'adminInfo')"
@@ -91,14 +91,14 @@
                     </div>
                 </div>
                 <div class="admin-info-footer">
-                    <el-button @click="onAdminInfo" type="primary" plain>{{ t('layouts.personal data') }}</el-button>
+                    <!-- <el-button @click="onAdminInfo" type="primary" plain>{{ t('layouts.personal data') }}</el-button> -->
                     <el-button @click="onLogout" type="danger" plain>{{ t('layouts.cancellation') }}</el-button>
                 </div>
             </div>
         </el-popover>
-        <div @click="configStore.setLayout('showDrawer', true)" class="nav-menu-item">
+        <!-- <div @click="configStore.setLayout('showDrawer', true)" class="nav-menu-item">
             <Icon :color="configStore.getColorVal('headerBarTabColor')" class="nav-menu-icon" name="fa fa-cogs" size="18" />
-        </div>
+        </div> -->
         <Config />
         <TerminalVue />
     </div>
@@ -182,17 +182,16 @@ const onClearCache = (type: string) => {
 <style scoped lang="scss">
 .nav-menus.Default {
     border-radius: var(--el-border-radius-base);
-    box-shadow: var(--el-box-shadow-light);
+    //box-shadow: var(--el-box-shadow-light);
 }
 .nav-menus {
     display: flex;
     align-items: center;
-    height: 100%;
     margin-left: auto;
     background-color: v-bind('configStore.getColorVal("headerBarBackground")');
     .nav-menu-item {
         height: 100%;
-        width: 40px;
+        //width: 40px;
         display: flex;
         align-items: center;
         justify-content: center;

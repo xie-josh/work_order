@@ -7,4 +7,9 @@ export default {
     create_time: 'create_time',
     update_time: 'update_time',
     'quick Search Fields': 'id',
+    recharge_channel_id:'recharge channel',
+    raw_money:'raw money',
+    recharge_channel_name:'recharge channel name',
+    rate:'rate',
+    credit_money:'credit money',
 }

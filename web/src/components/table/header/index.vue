@@ -12,7 +12,7 @@
     <div v-bind="$attrs" class="table-header ba-scroll-style">
         <slot name="refreshPrepend"></slot>
         <el-tooltip v-if="props.buttons.includes('refresh')" :content="t('Refresh')" placement="top">
-            <el-button v-blur @click="onAction('refresh', { loading: true })" color="#40485b" class="table-header-operate" type="info">
+            <el-button v-blur @click="onAction('refresh', { loading: true })" color="#40485b" class="table-header-operate" type="info" style="background-color: black;">
                 <Icon name="fa fa-refresh" />
             </el-button>
         </el-tooltip>

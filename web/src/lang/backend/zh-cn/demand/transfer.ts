@@ -6,7 +6,7 @@ export default {
     end_account_name: '转入名称',
     money: '转出金额',
     admin_id: '用户ID',
-    audit: '审核状态',
+    audit: '审核',
     'audit 0': '待处理',
     'audit 1': '审核成功',
     'audit 2': '审核失败',

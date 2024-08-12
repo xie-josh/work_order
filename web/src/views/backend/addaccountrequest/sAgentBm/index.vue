@@ -6,19 +6,10 @@
         <!-- 自定义按钮请使用插槽，甚至公共搜索也可以使用具名插槽渲染，参见文档 -->
         <TableHeader
             :buttons="['refresh', 'add', 'edit', 'delete', 'comSearch', 'quickSearch', 'columnDisplay']"
-            :quick-search-placeholder="t('Quick search placeholder', { fields: t('demand.bm.quick Search Fields') })"
+            :quick-search-placeholder="t('Quick search placeholder', { fields: t('addaccountrequest.sAgentBm.quick Search Fields') })"
         >
 
-        <template #default  >
-            <el-button v-auth="'audit'" style="margin-left: 12px;" v-blur :disabled="baTable.table.selection!.length > 0 ? false:true" class="table-header-operate" type="success" @click="accountAuditFn(1)">
-                <Icon color="#ffffff" name="el-icon-RefreshRight" />
-                <span class="table-header-operate-text">{{t('demand.bm.status')}}</span>
-            </el-button>
-            <el-button v-auth="'dispose'" v-blur :disabled="baTable.table.selection!.length > 0 ? false:true" class="table-header-operate" type="success" @click="accountAuditFn(2)">
-                <Icon color="#ffffff" name="el-icon-RefreshRight" />
-                <span class="table-header-operate-text">{{t('demand.bm.dispose_type')}}</span>
-            </el-button>
-        </template>
+
     
     
         </TableHeader>
@@ -90,7 +81,7 @@ import TableHeader from '/@/components/table/header/index.vue'
 import Table from '/@/components/table/index.vue'
 import baTableClass from '/@/utils/baTable'
 import { requestThenFn, tips } from '/@/utils/common';
-import { bmAudit ,bmDisposeStatus} from '/@/api/backend/index.ts';
+import { bmAudit ,bmDisposeStatus,getAdminList} from '/@/api/backend/index.ts';
 
 defineOptions({
     name: 'demand/bm',
@@ -109,45 +100,51 @@ const baTable = new baTableClass(
         pk: 'id',
         column: [
             { type: 'selection', align: 'center', operator: false },
-            { label: t('demand.bm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'RANGE', sortable: 'custom' },
-            { label: t('demand.bm.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
-            { label: t('demand.bm.account_name'), prop: 'account_name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,width:170},
-            { label: t('demand.bm.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('demand.bm.demand_type'), prop: 'demand_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '1': t('demand.bm.demand_type 1'), '2': t('demand.bm.demand_type 2') } },
-            { label: t('demand.bm.status'), prop: 'status', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false, comSearchRender:'select',
-            replaceValue: { '0': t('demand.bm.status 0'), '1': t('demand.bm.status 1'), '2': t('demand.bm.status 2') } ,
-                customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {                    
-                    if(value == 0){
-                        return '<span style="background-color:#469ff7;padding:4px 9px;color:#FFF;border-radius:4px">'+t('demand.bm.status 0')+'</span>';
-                    }else if(value == 1){
-                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('demand.bm.status 1')+'</span>';
+            { label: t('addaccountrequest.sAgentBm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'RANGE', sortable: 'custom' },
+            { label: t('addaccountrequest.sAgentBm.affiliation_bm'), prop: 'accountrequestProposal.affiliation_bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('addaccountrequest.sAgentBm.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
+            { label: t('addaccountrequest.sAgentBm.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('addaccountrequest.sAgentBm.demand_type'), prop: 'demand_type', align: 'center', comSearchRender:'select', render: 'customTemplate', operator: 'eq', sortable: false,
+             replaceValue: { '1': t('addaccountrequest.sAgentBm.demand_type 1'), '2': t('addaccountrequest.sAgentBm.demand_type 2') } ,
+                customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {
+                    if(value == 1){
+                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.sAgentBm.demand_type 1')+'</span>';
                     }else if(value == 2){
-                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('demand.bm.status 2')+'</span>';
+                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.sAgentBm.demand_type 2')+'</span>';
                     }
                     return '<span>' + value + '</span>';
                 }
             },
-            { label: t('demand.bm.dispose_type'), prop: 'dispose_type', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false, comSearchRender:'select',
-            replaceValue: { '0': t('demand.bm.dispose_type 0'), '1': t('demand.bm.dispose_type 1'), '2': t('demand.bm.dispose_type 2') } ,
-                customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {                    
-                    if(value == 0){
-                        return '<span style="background-color:#469ff7;padding:4px 9px;color:#FFF;border-radius:4px">'+t('demand.bm.dispose_type 0')+'</span>';
-                    }else if(value == 1){
-                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('demand.bm.dispose_type 1')+'</span>';
-                    }else if(value == 2){
-                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('demand.bm.dispose_type 2')+'</span>';
-                    }
-                    return '<span>' + value + '</span>';
-                }
-        
-            },
-            { label: t('demand.bm.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
-            { label: t('demand.bm.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
-            { label: t('Operate'), align: 'center', width: 100, render: 'buttons', buttons: optButtons, operator: false },
+            { label: t('addaccountrequest.sAgentBm.bm_permissions'), prop: 'bm_permissions', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '1': t('addaccountrequest.sAgentBm.bm_permissions 1')} },
+            { label: t('addaccountrequest.sAgentBm.dispose_type'), prop: 'dispose_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('addaccountrequest.sAgentBm.dispose_type 0'), '1': t('addaccountrequest.sAgentBm.dispose_type 1'), '2': t('addaccountrequest.sAgentBm.dispose_type 2') } },
+
+
+
+            // { label: '会员', prop: 'user_id', comSearchRender: 'remoteSelect', remote: {
+            //     // 主键，下拉 value
+            //     pk: 'id',
+            //     // 字段，下拉 label
+            //     field: 'username',
+            //     // 远程接口URL
+            //     // 比如想要获取 user(会员) 表的数据，后台`会员管理`控制器URL为`/index.php/admin/user.user/index`
+            //     // 因为已经通过 CRUD 生成过`会员管理`功能，所以该URL地址可以从`/@/api/controllerUrls`导入使用，如下面的 userUser
+            //     // 该URL地址通常等于对应后台管理功能的`查看`操作请求的URL
+            //     remoteUrl: '/admin/auth.Admin/index',
+            //     // 额外的请求参数
+            //     params: {},
+            // }},
+
+
+
+
+
+            { label: t('addaccountrequest.sAgentBm.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
+            { label: t('addaccountrequest.sAgentBm.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
         ],
         dblClickNotEditColumn: ['all'],
         filter: {
-            limit:20
+            limit:20,
+            dispose_type:1
         }
     },
     {

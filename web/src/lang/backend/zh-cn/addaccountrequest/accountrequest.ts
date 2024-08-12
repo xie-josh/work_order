@@ -10,4 +10,5 @@ export default {
     create_time: '创建时间',
     update_time: '修改时间',
     'quick Search Fields': 'ID',
+    affiliation_bm: '归属 Bm',
 }

@@ -4,7 +4,7 @@ export default {
     name: '账户名称',
     account_id: '账户ID',
     time_zone: '时区',
-    bm: '绑定BM',
+    bm: '管理BM',
     type: '产品类型',
     'type 1': '电商',
     'type 2': '其他',

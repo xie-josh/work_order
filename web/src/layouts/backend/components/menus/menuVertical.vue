@@ -35,7 +35,7 @@ const verticalMenusScrollbarHeight = computed(() => {
         menuTopBarHeight = 50
     }
     if (config.layout.layoutMode == 'Default') {
-        return 'calc(100vh - ' + (32 + menuTopBarHeight) + 'px)'
+        return 'calc(100vh - ' + (100) + 'px)'
     } else {
         return 'calc(100vh - ' + menuTopBarHeight + 'px)'
     }
@@ -68,6 +68,8 @@ onBeforeRouteUpdate((to) => {
 .vertical-menus-scrollbar {
     height: v-bind(verticalMenusScrollbarHeight);
     background-color: v-bind('config.getColorVal("menuBackground")');
+    color: black;
+    width: 214px;
 }
 .layouts-menu-vertical {
     border: 0;
@@ -75,5 +77,11 @@ onBeforeRouteUpdate((to) => {
     --el-menu-bg-color: v-bind('config.getColorVal("menuBackground")');
     --el-menu-text-color: v-bind('config.getColorVal("menuColor")');
     --el-menu-active-color: v-bind('config.getColorVal("menuActiveColor")');
+}
+.el-sub-menu__title{
+    font-weight: bold;
+}
+.el-menu-item{
+    font-weight: bold;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
     <el-header v-if="!navTabs.state.tabFullScreen" class="layout-header">
-        <component :is="config.layout.layoutMode + 'NavBar'"></component>
+        <!-- <component :is="config.layout.layoutMode + 'NavBar'"></component> -->
     </el-header>
 </template>
 <script setup lang="ts">

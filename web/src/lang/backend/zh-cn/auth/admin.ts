@@ -10,4 +10,7 @@ export default {
     'Please leave blank if not modified': '不修改请留空',
     'Personal signature': '个性签名',
     'Administrator login': '管理员登录名',
+    'money':'总金额',
+    'used_money':'已使用金额',
+    'usable_money':'剩余金额'
 }

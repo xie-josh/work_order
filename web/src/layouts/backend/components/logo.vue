@@ -1,10 +1,14 @@
 <template>
+    <!-- <div class="logo-tubiao" @click="onMenuCollapse">
+        <Icon @click="onMenuCollapse" name="el-icon-ArrowLeft" color="#8595F4" size="20" style="font-size: 14px;color:rgb(204, 204, 204);"/>
+    </div> -->
     <div class="layout-logo">
-        <img v-if="!config.layout.menuCollapse" class="logo-img" src="~assets/logo.png" alt="logo" />
-        <div v-if="!config.layout.menuCollapse" :style="{ color: config.getColorVal('menuActiveColor') }" class="website-name">
+        <img v-if="!config.layout.menuCollapse" style="width: 74%;margin-top: 13px;" src="~assets/WEWALL.png" alt="logo" />
+        <!-- <img v-if="!config.layout.menuCollapse" class="logo-img" src="~assets/logo.png" alt="logo" /> -->
+        <!-- <div v-if="!config.layout.menuCollapse" :style="{ color: config.getColorVal('menuActiveColor') }" class="website-name">
             {{ siteConfig.siteName }}
-        </div>
-        <Icon
+        </div> -->
+        <!-- <Icon
             v-if="config.layout.layoutMode != 'Streamline'"
             @click="onMenuCollapse"
             :name="config.layout.menuCollapse ? 'fa fa-indent' : 'fa fa-dedent'"
@@ -12,8 +16,12 @@
             :color="config.getColorVal('menuActiveColor')"
             size="18"
             class="fold"
-        />
+        /> -->
+
+        
+        
     </div>
+    
 </template>
 
 <script setup lang="ts">
@@ -75,5 +83,19 @@ const onMenuCollapse = function () {
 }
 .unfold {
     margin: 0 auto;
+}
+.logo-tubiao{
+    position: absolute;
+    border: 1px solid rgb(204, 204, 204);
+    border-radius: 40px;
+    height: 24px;
+    width: 24px;
+    text-align: center;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    background-color: #fff;
+    left: 225px;
+    top: 20px;
 }
 </style>

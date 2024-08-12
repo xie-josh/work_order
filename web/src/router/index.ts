@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import staticRoutes from '/@/router/static'
@@ -11,7 +11,7 @@ import { isAdminApp } from '/@/utils/common'
 import { uniq } from 'lodash-es'
 
 const router = createRouter({
-    history: createWebHashHistory(),
+    history: createWebHistory(),
     routes: staticRoutes,
 })
 

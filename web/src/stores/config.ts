@@ -22,17 +22,17 @@ export const useConfig = defineStore(
             // 侧边菜单背景色
             menuBackground: ['#ffffff', '#1d1e1f'],
             // 侧边菜单文字颜色
-            menuColor: ['#303133', '#CFD3DC'],
+            menuColor: ['#000000', '#000000'],
             // 侧边菜单激活项背景色
-            menuActiveBackground: ['#ffffff', '#1d1e1f'],
+            menuActiveBackground: ['#ebebeb', '#1d1e1f'],
             // 侧边菜单激活项文字色
-            menuActiveColor: ['#409eff', '#3375b9'],
+            menuActiveColor: [],
             // 侧边菜单顶栏背景色
             menuTopBarBackground: ['#fcfcfc', '#1d1e1f'],
             // 侧边菜单宽度(展开时)，单位px
-            menuWidth: 260,
+            menuWidth: 225,
             // 侧边菜单项默认图标
-            menuDefaultIcon: 'fa fa-circle-o',
+            menuDefaultIcon: '',
             // 是否水平折叠收起菜单
             menuCollapse: false,
             // 是否只保持一个子菜单的展开(手风琴)

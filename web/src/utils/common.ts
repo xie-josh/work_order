@@ -1,11 +1,11 @@
 import { nextTick } from 'vue'
 import type { App } from 'vue'
 import * as elIcons from '@element-plus/icons-vue'
+import { ElForm, ElMessage, ElMessageBox,FormInstance } from 'element-plus'
 import router from '/@/router/index'
 import Icon from '/@/components/icon/index.vue'
 import { useNavTabs } from '/@/stores/navTabs'
 import { useMemberCenter } from '/@/stores/memberCenter'
-import type { FormInstance } from 'element-plus'
 import { useSiteConfig } from '../stores/siteConfig'
 import { useTitle } from '@vueuse/core'
 import { i18n } from '../lang'
@@ -352,6 +352,25 @@ const padStart = (str: string, maxLength: number, fillString = ' ') => {
         }
     }
     return fillString.slice(0, fillLength) + str
+}
+
+export const requestThenFn = (res:anyObj,fn:Function,fn1:Function = ()=>{})=>{
+    if(res.code && res.code==1){
+        fn()
+    }else{
+        tips(res.msg)
+        fn1()
+    }
+}
+
+export const tips = (msg:string,style='error',offset=50)=>{
+    (ElMessage as any)({
+        message: msg,
+        type: style,
+        offset: offset,
+        duration: 2000,
+        grouping: true
+    })
 }
 
 /**

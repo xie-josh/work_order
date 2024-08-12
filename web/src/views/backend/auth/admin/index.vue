@@ -70,6 +70,9 @@ const baTable = new baTableClass(
                 custom: { '0': 'danger', '1': 'success' },
                 replaceValue: { '0': t('Disable'), '1': t('Enable') },
             },
+            { label: t('auth.admin.money'), prop: 'money', align: 'center' },
+            { label: t('auth.admin.used_money'), prop: 'used_money', align: 'center' },
+            { label: t('auth.admin.usable_money'), prop: 'usableMoney', align: 'center' },
             {
                 label: t('Operate'),
                 align: 'center',

@@ -271,11 +271,12 @@ const getTagType = (value: string, custom: any): TagProps['type'] => {
     width: 36px;
 }
 .table-operate-text {
-    padding-left: 5px;
+    //padding-left: 5px;
 }
 .table-operate {
     padding: 4px 5px;
     height: auto;
+    font-weight: bold;
 }
 .table-operate .icon {
     font-size: 14px !important;

@@ -216,6 +216,9 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
+.ba-data-table{
+    color: black;
+}
 .ba-data-table :deep(.el-button + .el-button) {
     margin-left: 6px;
 }
@@ -224,6 +227,7 @@ defineExpose({
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    border-right: none !important;
 }
 .table-pagination {
     box-sizing: border-box;

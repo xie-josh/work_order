@@ -4,7 +4,7 @@
             <el-sub-menu @click="onClickSubMenu(menu)" :index="menu.path" :key="menu.path">
                 <template #title>
                     <Icon :color="config.getColorVal('menuColor')" :name="menu.meta?.icon ? menu.meta?.icon : config.layout.menuDefaultIcon" />
-                    <span>{{ menu.meta?.title ? menu.meta?.title : $t('noTitle') }}</span>
+                    <span >{{ menu.meta?.title ? menu.meta?.title : $t('noTitle') }}</span>
                 </template>
                 <menu-tree :extends="{ ...props.extends, level: props.extends.level + 1 }" :menus="menu.children"></menu-tree>
             </el-sub-menu>
@@ -80,4 +80,5 @@ const onClickSubMenu = (menu: RouteRecordRaw) => {
 .el-menu-item.is-active {
     background-color: v-bind('config.getColorVal("menuActiveBackground")');
 }
+
 </style>

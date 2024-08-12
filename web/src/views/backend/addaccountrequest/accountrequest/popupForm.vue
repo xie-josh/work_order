@@ -32,7 +32,11 @@
                 >
                     <FormItem :label="t('addaccountrequest.accountrequest.bm')" type="string" v-model="baTable.form.items!.bm" prop="bm" :placeholder="t('Please input field', { field: t('addaccountrequest.accountrequest.bm') })" />
                     <FormItem :label="t('addaccountrequest.accountrequest.number')" type="number" prop="number" :input-attr="{ step: 1 }" v-model.number="baTable.form.items!.number" :placeholder="t('Please input field', { field: t('addaccountrequest.accountrequest.number') })" />
-                    <FormItem :label="t('addaccountrequest.accountrequest.admin_id')" type="remoteSelect" v-model="baTable.form.items!.admin_id" prop="admin_id" :input-attr="{ pk: 'ba_admin.id', field: 'username', remoteUrl: '/admin/auth.Admin/index' }" :placeholder="t('Please select field', { field: t('addaccountrequest.accountrequest.admin_id') })" />
+                    <FormItem :label="t('addaccountrequest.accountrequest.admin_id')" type="remoteSelect" v-model="baTable.form.items!.admin_id" prop="admin_id" :input-attr="{ pk: 'ba_admin.id', field: 'username', remoteUrl: '/admin/auth.Admin/index?type=1' }" :placeholder="t('Please select field', { field: t('addaccountrequest.accountrequest.admin_id') })" />
+
+
+                    <!-- <FormItem label="Account ids" type="textarea" v-model="baTable.form.items!.comment" prop="comment" :input-attr="{ rows: 15 }" @keyup.enter.stop="" @keyup.ctrl.enter="baTable.onSubmit(formRef)" :placeholder="t('Please input field', { field: 'Account ids'})" /> -->
+
                 </el-form>
             </div>
         </el-scrollbar>

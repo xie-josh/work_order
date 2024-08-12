@@ -32,7 +32,7 @@
                 >
                     <FormItem :label="t('demand.recharge.account_id')" type="string" v-model="baTable.form.items!.account_id" prop="account_id" :placeholder="t('Please input field', { field: t('demand.recharge.account_id') })" />
                     <FormItem :label="t('demand.recharge.type')" type="select" v-model="baTable.form.items!.type" prop="type" :input-attr="{ content: { '1': t('demand.recharge.type 1'), '2': t('demand.recharge.type 2'), '3': t('demand.recharge.type 3') } }" :placeholder="t('Please select field', { field: t('demand.recharge.type') })" />
-                    <FormItem :label="t('demand.recharge.number')" type="number" prop="number" :input-attr="{ step: 1 }" v-model.number="baTable.form.items!.number" :placeholder="t('Please input field', { field: t('demand.recharge.number') })" />
+                    <FormItem v-if="baTable.form.items!.type != 3" :label="t('demand.recharge.number')" type="number" prop="number" :input-attr="{ step: 1 }" v-model.number="baTable.form.items!.number" :placeholder="t('Please input field', { field: t('demand.recharge.number') })" />
                 </el-form>
             </div>
         </el-scrollbar>
@@ -65,7 +65,7 @@ const { t } = useI18n()
 const rules: Partial<Record<string, FormItemRule[]>> = reactive({
     account_id: [buildValidatorData({ name: 'required', title: t('demand.recharge.account_id') })],
     type: [buildValidatorData({ name: 'required', title: t('demand.recharge.type') })],
-    number: [buildValidatorData({ name: 'float', title: t('demand.recharge.number') })],
+    number: [buildValidatorData({ name: 'required', title: t('demand.recharge.number') })],
     create_time: [buildValidatorData({ name: 'date', title: t('demand.recharge.create_time') })],
     update_time: [buildValidatorData({ name: 'date', title: t('demand.recharge.update_time') })],
 })

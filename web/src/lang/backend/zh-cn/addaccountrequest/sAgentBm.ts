@@ -17,4 +17,7 @@ export default {
     create_time: '创建时间',
     update_time: '修改时间',
     'quick Search Fields': 'ID',
+    affiliation_bm: '归属 BM',
+    bm_permissions: '用户权限',
+    'bm_permissions 1': '部分权限',
 }

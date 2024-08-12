@@ -10,4 +10,7 @@ export default {
     'Please leave blank if not modified': 'Please leave blank if you do not modify.',
     'Personal signature': 'Personal Signature',
     'Administrator login': 'Administrator Login Name',
+    'money':'money',
+    'used_money':'used_money',
+    'usable_money':'usable Money'
 }
