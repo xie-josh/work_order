@@ -3,6 +3,7 @@
 namespace app\admin\model\demand;
 
 use app\admin\model\addaccountrequest\AccountrequestProposal;
+use app\admin\model\Admin;
 use think\Model;
 
 
@@ -24,6 +25,12 @@ class Bm extends Model
     {
         return $this->hasOne(AccountrequestProposal::class,'account_id','account_id');
     }
+
+
+    // public function accountrequestProposalAdmin()
+    // {
+    //     return $this->hasOneThrough(Admin::class, AccountrequestProposal::class, 'id', 'account_id', 'admin_id', 'account_id');
+    // }
 
     public function getUuidAttr($value,$data)
     {

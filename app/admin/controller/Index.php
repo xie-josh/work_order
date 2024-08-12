@@ -10,11 +10,29 @@ use think\facade\Validate;
 use app\common\facade\Token;
 use app\admin\model\AdminLog;
 use app\common\controller\Backend;
+use think\facade\Db;
 
 class Index extends Backend
 {
     protected array $noNeedLogin      = ['logout', 'login'];
     protected array $noNeedPermission = ['index'];
+
+
+
+    public function test()
+    {
+
+
+        $result = Db::table('ba_test')->select()->toArray();
+
+        foreach($result as $v){
+            Db::table('ba_accountrequest_proposal')->where('account_id',$v['acc_id'])->update(['affiliation_bm'=>$v['text']]);
+        }
+
+        dd(1);
+
+
+    }
 
     /**
      * 后台初始化请求

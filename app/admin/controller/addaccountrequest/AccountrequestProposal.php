@@ -24,6 +24,8 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
+    protected bool|string|int $dataLimit = 'parent';
+
     public function initialize(): void
     {
         parent::initialize();
@@ -41,7 +43,7 @@ class AccountrequestProposal extends Backend
             $this->select();
         }
 
-
+        //dd($this->request->get());
         array_push($this->withJoinTable,'affiliationAdmin');
 
         /**
@@ -51,14 +53,13 @@ class AccountrequestProposal extends Backend
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
-
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
             ->order($order)
             ->paginate($limit);
-        $res->visible(['admin' => ['username']]);
+        $res->visible(['admin' => ['username','nickname']]);
 
         $this->success('', [
             'list'   => $res->items(),

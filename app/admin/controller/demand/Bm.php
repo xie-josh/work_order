@@ -42,6 +42,7 @@ class Bm extends Backend
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
         array_push($this->withJoinTable,'accountrequestProposal');
+        // array_push($this->withJoinTable,'accountrequestProposalAdmin');
 
         foreach($where as $k => &$v){
             if($v[0] == 'bm.id'){
@@ -64,17 +65,18 @@ class Bm extends Backend
                 }
             }
             //array_push($this->withJoinTable,'accountrequestProposal');
-            array_push($where,['accountrequestProposal.admin_id','=',$this->auth->id]);
-            
-            if($disposeType == 1){
-                array_push($where,['bm.dispose_type','in',[1,2]]);
-            }else{
-                array_push($where,['bm.status','=',1]);
-                array_push($where,['bm.dispose_type','=',0]);
-            }
-            
+            array_push($where,['accountrequestProposal.admin_id','=',$this->auth->id]);            
         }
-
+        if($disposeType == 1){
+            array_push($where,['bm.dispose_type','in',[1,2]]);
+        }elseif($disposeType == 2){
+            array_push($where,['bm.status','=',1]);
+            array_push($where,['bm.dispose_type','=',0]);
+        }else{
+            // array_push($where,['bm.status','=',1]);
+            // array_push($where,['bm.dispose_type','=',0]);
+        }
+        
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
@@ -85,6 +87,89 @@ class Bm extends Backend
 
         $this->success('', [
             'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
+
+    public function index2(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        array_push($this->withJoinTable,'accountrequestProposal');
+        //array_push($this->withJoinTable,'accountrequestProposalAdmin');
+
+        foreach($where as $k => &$v){
+            if($v[0] == 'bm.id'){
+                if (preg_match('/\d+/', $v[2], $matches)) {
+                    $number = ltrim($matches[0], '0'); // 移除开头的零
+                    $v[2] = '%'.$number.'%';
+                } else {
+                    //$v[2] = $number;
+                }
+            }
+        }
+
+        $disposeType = $this->request->get('dispose_type');
+
+        $getGroups = $this->auth->getGroups()[0];
+        if($getGroups['group_id'] == 5){
+            foreach($where as $k => $v){
+                if($v[0] == 'bm.admin_id'){
+                    unset($where[$k]);
+                }
+            }
+            //array_push($this->withJoinTable,'accountrequestProposal');
+            array_push($where,['accountrequestProposal.admin_id','=',$this->auth->id]);            
+        }
+        if($disposeType == 1){
+            array_push($where,['bm.dispose_type','in',[1,2]]);
+        }elseif($disposeType == 2){
+            array_push($where,['bm.status','=',1]);
+            array_push($where,['bm.dispose_type','=',0]);
+        }else{
+            // array_push($where,['bm.status','=',1]);
+            // array_push($where,['bm.dispose_type','=',0]);
+        }
+        
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+
+
+        $dataList = $res->toArray()['data'];
+        //dd($dataList);
+        if($dataList){
+            
+            $adminIds = [];
+            foreach($dataList as $v){
+                $adminIds[] = $v['accountrequestProposal']['admin_id'];
+            }        
+            $admin = DB::table('ba_admin')->whereIn('id',$adminIds)->select()->toArray();
+            
+            $adminList = [];
+            foreach($admin as $v){
+                $adminList[$v['id']] = $v['nickname'];
+            }
+           
+            
+            foreach($dataList as &$v){
+                $v['account_requestProposal_admin'] = $adminList[$v['accountrequestProposal']['admin_id']??0]??'';
+            }
+        }
+            
+
+        $this->success('', [
+            'list'   => $dataList,
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);

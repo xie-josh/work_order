@@ -101,7 +101,7 @@ class Recharge extends Backend
                     $usableMoney = ($admin['money'] - $admin['used_money']);
                     if($usableMoney <= 0 || $usableMoney < $data['number']) throw new \Exception("余额不足,请联系管理员！");
 
-                    DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
+                    //DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
                     DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
                 }
                 
@@ -204,7 +204,7 @@ class Recharge extends Backend
                             // $usableMoney = ($admin['money'] - $admin['used_money']);
                             // if($usableMoney <= 0 || $usableMoney < $v['number']) throw new \Exception("余额不足,请联系管理员！");
 
-                            // DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
                             // DB::table('ba_admin')->where('id',$v['admin_id'])->inc('used_money',$v['number'])->update();
                         }elseif($v['type'] == 2){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
@@ -219,7 +219,7 @@ class Recharge extends Backend
                 }else{
                     foreach($ids as $v){
                         if($v['type'] == 1){
-                            DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
+                            //DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
                         }
                     }
