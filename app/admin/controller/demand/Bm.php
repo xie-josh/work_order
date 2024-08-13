@@ -222,7 +222,8 @@ class Bm extends Backend
                         'account_id'=>$accountId,
                         'bm'=>$v,
                         'account_name'=>$account['name'],
-                        'admin_id'=>$this->auth->id
+                        'admin_id'=>$this->auth->id,
+                        'create_time'=>time()
                     ];
                 }
                 //$data['account_name'] = $account['name'];
