@@ -202,13 +202,35 @@ class Bm extends Backend
                         $validate->check($data);
                     }
                 }
-                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->find();
-                if(empty($account)) throw new \Exception("未找到该账户ID");
-                
-                $data['account_name'] = $account['name'];
-                $data['admin_id'] = $this->auth->id;
 
-                $result = $this->model->save($data);
+                $demandType = $data['demand_type']??'';
+                $accountId = $data['account_id']??'';
+                $bm = $data['bm']??'';
+                $checkList = $data['checkList']??[];
+
+                if($bm) array_push($checkList,$bm);
+
+                $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
+                if(empty($account)) throw new \Exception("未找到该账户ID");
+
+
+                //dd($checkList);
+                $dataList = [];
+                foreach($checkList as $v){
+                    $dataList[] = [
+                        'demand_type'=>$demandType,
+                        'account_id'=>$accountId,
+                        'bm'=>$v,
+                        'account_name'=>$account['name'],
+                        'admin_id'=>$this->auth->id
+                    ];
+                }
+                //$data['account_name'] = $account['name'];
+                //$data['admin_id'] = $this->auth->id;
+
+                $result = $this->model->insertAll($dataList);
+
+                //$result = $this->model->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -309,6 +331,31 @@ class Bm extends Backend
                 $this->error(__('No rows updated'));
             }
         }
+    }
+
+    public function getBmList()
+    {
+        $bmList = [];
+        try {
+            $accountId = $this->request->get('account_id');
+            $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
+            if(empty($account)) throw new \Exception("未找到该账户ID");
+
+            //$bmList =  DB::table('ba_bm')->where('account_id',$accountId)->order('demand_type')->group('account_id,bm')->select()->toArray();
+
+            $result = Db::table('ba_bm')
+            ->alias('t1')
+            ->where('t1.account_id',$accountId)
+            ->join('(SELECT account_id, bm, MAX(id) AS max_id FROM ba_bm GROUP BY account_id, bm) t2', 't1.id = t2.max_id')
+            ->order('t1.id', 'desc')
+            ->having('demand_type = 1')
+            ->select()->toArray();
+
+            $bmList = array_column($result,'bm');
+        } catch (\Throwable $th) {
+            $this->error($th->getMessage());
+        }
+        $this->success('',['bmList'=>$bmList]);
     }
 
     public function disposeStatus(): void

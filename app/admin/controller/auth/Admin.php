@@ -94,7 +94,7 @@ class Admin extends Backend
             $proposalList = array_combine(array_column($proposal,'admin_id'),array_column($proposal,'countNumber'));
 
             foreach($dataList as &$v){
-                $v['username'] = $v['username'].'('.($proposalList[$v['id']]??0).')';
+                $v['username'] = $v['nickname'].'('.($proposalList[$v['id']]??0).')';
             }
         }
 
