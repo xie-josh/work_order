@@ -95,7 +95,10 @@ class Recharge extends Backend
                 $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
                 
+                
                 if($data['type'] == 1){
+
+                    if($data['number'] <= 0) throw new \Exception("充值金额不能小于零");
 
                     $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
                     $usableMoney = ($admin['money'] - $admin['used_money']);
@@ -103,6 +106,9 @@ class Recharge extends Backend
 
                     //DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
                     DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
+                }elseif($data['type'] == 3){
+                    $recharge = $this->model->where('account_id',$data['account_id'])->order('id','desc')->find();
+                    if($recharge['type'] == 3) throw new \Exception("待清零中，不需要重复提交");
                 }
                 
                 $data['account_name'] = $account['name'];

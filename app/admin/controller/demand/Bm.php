@@ -33,7 +33,7 @@ class Bm extends Backend
     }
 
 
-    public function index(): void
+    public function index2(): void
     {
         if ($this->request->param('select')) {
             $this->select();
@@ -92,7 +92,7 @@ class Bm extends Backend
         ]);
     }
 
-    public function index2(): void
+    public function index(): void
     {
         if ($this->request->param('select')) {
             $this->select();
@@ -111,9 +111,14 @@ class Bm extends Backend
                 } else {
                     //$v[2] = $number;
                 }
+                continue;
             }
-        }
+            if($v[0] == 'bm.account_requestProposal_admin'){
+                $v[0] = 'accountrequestProposal.admin_id';
+                continue;
+            }
 
+        }
         $disposeType = $this->request->get('dispose_type');
 
         $getGroups = $this->auth->getGroups()[0];
