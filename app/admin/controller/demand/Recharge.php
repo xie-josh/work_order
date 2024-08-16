@@ -108,7 +108,7 @@ class Recharge extends Backend
                     DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
                 }elseif($data['type'] == 3){
                     $recharge = $this->model->where('account_id',$data['account_id'])->order('id','desc')->find();
-                    if($recharge['type'] == 3) throw new \Exception("待清零中，不需要重复提交");
+                    if(!empty($recharge) && $recharge['type'] == 3) throw new \Exception("待清零中，不需要重复提交");
                 }
                 
                 $data['account_name'] = $account['name'];
