@@ -215,7 +215,7 @@ class Recharge extends Backend
                         }elseif($v['type'] == 2){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
-                        }elseif($v['type'] == 3){
+                        }elseif($v['type'] == 3 || $v['type'] == 4){
                             // $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
                             $this->model->where('id',$v['id'])->update(['number'=>$money]);
                             DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
