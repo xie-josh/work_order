@@ -157,7 +157,7 @@ class Bm extends Backend
             
             $adminIds = [];
             foreach($dataList as $v){
-                $adminIds[] = $v['accountrequestProposal']['admin_id'];
+                if(!empty($v['accountrequestProposal']['admin_id'])) $adminIds[] = $v['accountrequestProposal']['admin_id'];
             }        
             $admin = DB::table('ba_admin')->whereIn('id',$adminIds)->select()->toArray();
             

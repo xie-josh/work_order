@@ -38,7 +38,6 @@ class Account extends Backend
      */
     public function index(): void
     {
-
         //$this->quickSearchField = 'account_id';
         // 如果是 select 则转发到 select 方法，若未重写该方法，其实还是继续执行 index
         if ($this->request->param('select')) {
@@ -266,7 +265,6 @@ class Account extends Backend
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
                 }elseif($status == 3){
-
                     $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray();
 
                     foreach($ids as $v){
@@ -283,14 +281,14 @@ class Account extends Backend
                     //     DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
 
                     //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
-                    //     // if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>1,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                         if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>1,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
                     }
                 }elseif($status == 4){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
                     foreach($ids as $v){
                         //$this->model->where('id',$v['id'])->update(['status'=>4,'update_time'=>time()]);
                         if(!empty($v['bm'])){
-                            DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$v['account_id'],'bm'=>$v['bm'],'demand_type'=>1,'status'=>1,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                            //DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$v['account_id'],'bm'=>$v['bm'],'demand_type'=>1,'status'=>1,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
                         }else{
                             $this->model->whereIn('id',$v['id'])->update(['dispose_status'=>1]);
                         }
@@ -298,13 +296,13 @@ class Account extends Backend
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time()]);
                 }elseif($status == 5){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
+                    $accountIds = array_column($ids,'account_id');
                     foreach($ids as $v){
                         DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>5,'money'=>0,'update_time'=>time()]);
+                    DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['dispose_type'=>2]);
                 }
-                //dd($status);
-
                 //$this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
                 $this->model->commit();
