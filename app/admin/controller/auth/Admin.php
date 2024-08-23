@@ -83,7 +83,7 @@ class Admin extends Backend
             ->alias($alias)
             ->where($where)
             ->order($order)
-            ->paginate($limit);
+            ->paginate(999);
 
         $result = $res->toArray();
         $dataList = [];

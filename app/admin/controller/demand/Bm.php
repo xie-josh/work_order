@@ -136,9 +136,8 @@ class Bm extends Backend
         }elseif($disposeType == 2){
             array_push($where,['bm.status','=',1]);
             array_push($where,['bm.dispose_type','=',0]);
-        }else{
-            // array_push($where,['bm.status','=',1]);
-            // array_push($where,['bm.dispose_type','=',0]);
+        }elseif($disposeType == 3){
+            array_push($where,['bm.status','=',0]);
         }
         
         $res = $this->model

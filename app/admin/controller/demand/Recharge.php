@@ -198,6 +198,7 @@ class Recharge extends Backend
                 $ids = $data['ids'];
                 $status = $data['status'];
                 $money = $data['money']??0;
+                $type = $data['type']??0;
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
 
@@ -217,7 +218,11 @@ class Recharge extends Backend
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
                         }elseif($v['type'] == 3 || $v['type'] == 4){
                             // $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
-                            $this->model->where('id',$v['id'])->update(['number'=>$money]);
+                            $data = [
+                                'number'=>$money,
+                                'type'=>$type
+                            ];
+                            $this->model->where('id',$v['id'])->update($data);
                             DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$money)->update();
                         }

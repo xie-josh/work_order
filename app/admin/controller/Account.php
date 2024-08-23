@@ -251,8 +251,6 @@ class Account extends Backend
                 $accountId = $data['account_id']??0;
                 $status = $data['status'];
 
-                
-
                 if($status == 1){
 
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
@@ -269,7 +267,16 @@ class Account extends Backend
 
                     foreach($ids as $v){
                         $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->where('status',0)->find();
-                        $this->model->where('id',$v['id'])->update(['account_admin_id'=>$accountrequestProposal['admin_id'],'status'=>3,'account_id'=>$accountId,'is_'=>1,'update_time'=>time()]);
+
+                        $data = [
+                            'account_admin_id'=>$accountrequestProposal['admin_id'],
+                            'status'=>3,
+                            'account_id'=>$accountId,
+                            'is_'=>1,
+                            'update_time'=>time()
+                        ];
+                        if(!empty($accountrequestProposal['time_zone'])) $data['time_zone'] = $accountrequestProposal['time_zone'];
+                        $this->model->where('id',$v['id'])->update($data);
                         DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
                         
                     //     $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('admin_id',$adminId)->where('status',0)->find();
@@ -281,7 +288,7 @@ class Account extends Backend
                     //     DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
 
                     //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
-                         if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>1,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                         if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
                     }
                 }elseif($status == 4){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
@@ -302,6 +309,14 @@ class Account extends Backend
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>5,'money'=>0,'update_time'=>time()]);
                     DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['dispose_type'=>2]);
+                }elseif($status == 6){
+                    $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
+                    $accountIds = array_column($ids,'account_id');
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>1,'account_id'=>'','update_time'=>time()]);
+                    DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['status'=>2,'affiliation_admin_id'=>null]);
+
+                    DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['status'=>2]);
+
                 }
                 //$this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
