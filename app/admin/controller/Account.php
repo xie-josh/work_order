@@ -134,8 +134,15 @@ class Account extends Backend
                 }
 
                 $admin = Db::table('ba_admin')->where('id',$this->auth->id)->find();
+                $accountNumber = $admin['account_number'];
+                $isAccount = $admin['is_account'];
                 $usableMoney = ($admin['money'] - $admin['used_money']);
+                if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
                 if($usableMoney <= 0 || $usableMoney < $data['money']) throw new \Exception("余额不足,请联系管理员！");
+
+                $time = date('Y-m-d',time());
+                $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
+                if($openAccountNumber >= $accountNumber) throw new \Exception("今.开户数量已经不足，不能再提交开户需求,请联系管理员！");
 
                 // DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
                 DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
@@ -410,6 +417,16 @@ class Account extends Backend
         //     $money = $this->model->where('is_',1)->where('admin_id',$this->auth->id)->sum('money');
         // }
         $this->success('',$data);
+    }
+
+
+    function getAccountNumber()
+    {
+        $accountNumber = DB::table('ba_admin')->field('account_number,is_account')->where('id',$this->auth->id)->find();
+        $time = date('Y-m-d',time());
+        $number = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
+        $accountNumber['residue_account_number'] =  $accountNumber['account_number'] - $number;
+        return $this->success('',[$accountNumber]);
     }
 
 
