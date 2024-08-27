@@ -21,7 +21,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber'];
+    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -417,6 +417,88 @@ class Account extends Backend
         //     $money = $this->model->where('is_',1)->where('admin_id',$this->auth->id)->sum('money');
         // }
         $this->success('',$data);
+    }
+
+
+
+    function allAudit()
+    {
+
+        /**
+         * 1.选择开户需求【多选】
+         * 2.选择渠道
+         *      1.没有选择账户（随机分配该渠道下的账户到对应开户需求）    
+         *      2.选择了账户（把选择的账户分配给选择的开户需求下）【多选】
+         *      3.如果账户不够自动跳过
+         * 
+         * 
+         */
+
+
+         if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            Db::startTrans();
+            try {                                
+                $ids = $data['ids'];
+                $accountrequestProposalId = $data['admin_id'];
+                $accountIds = $data['account_ids'];
+                
+                if(empty($accountIds)){
+                    $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->where('status',0)->select()->toArray();
+                }else{
+                    $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('account_id',$accountIds)->where('status',0)->select()->toArray();
+                }
+
+                $resultAccountList = DB::table('ba_account')->whereIn('id',$ids)->where('status',1)->select()->toArray();
+
+                $bmDataList = [];
+                foreach($accountIds as $k => $v)
+                {
+                    $resultAccount = $resultAccountList[$k]??[];
+                    if(empty($resultAccount)) continue;
+
+                    $data = [
+                        'account_admin_id'=>$v['admin_id'],
+                        'status'=>3,
+                        'account_id'=>$v['account_id'],
+                        'is_'=>1,
+                        'update_time'=>time()
+                    ];
+
+                    if(!empty($v['bm'])){
+                        $bmDataList[] = [
+                            'account_name'=>$resultAccount['name'],
+                            'account_id'=>$v['account_id'],
+                            'bm'=>$resultAccount['bm'],
+                            'demand_type'=>4,
+                            'status'=>0,
+                            'dispose_type'=>0,
+                            'admin_id'=>$resultAccount['admin_id'],
+                            'create_time'=>time(),
+                        ];
+                    }
+                    
+                    if(!empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
+                    DB::table('ba_account')->where('id',$resultAccount['id'])->update($data);
+                    DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->update(['status'=>1,'affiliation_admin_id'=>$resultAccount['admin_id'],'update_time'=>time()]);
+                }
+
+                if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
+
+                $result = true;
+                Db::commit();
+            } catch (Throwable $e) {
+                Db::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+
     }
 
 

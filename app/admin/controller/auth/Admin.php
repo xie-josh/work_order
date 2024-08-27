@@ -205,6 +205,13 @@ class Admin extends Backend
                 }
             }
 
+
+            $openAccountNumber = $this->openAccountNumber();
+
+
+            if($data['account_number'] < $openAccountNumber) $this->error('调整后的数量不能小于已经使用的数量！');
+
+
             if ($this->auth->id == $data['id'] && $data['status'] == '0') {
                 $this->error(__('Please use another administrator account to disable the current account!'));
             }
@@ -255,6 +262,14 @@ class Admin extends Backend
         $this->success('', [
             'row' => $row
         ]);
+    }
+
+
+    public function openAccountNumber()
+    {
+        $time = date('Y-m-d',time());
+        $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
+        return $openAccountNumber;
     }
 
     /**
