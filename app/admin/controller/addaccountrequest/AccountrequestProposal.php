@@ -18,7 +18,7 @@ class AccountrequestProposal extends Backend
      */
     protected object $model;
 
-    protected array|string $preExcludeFields = ['id', 'accountrequest_id', 'status', 'create_time', 'update_time'];
+    protected array|string $preExcludeFields = ['id', 'accountrequest_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
 
@@ -148,6 +148,7 @@ class AccountrequestProposal extends Backend
                         $validate->check($data);
                     }
                 }
+
                 $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {

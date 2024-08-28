@@ -20,7 +20,7 @@ class Admin extends Backend
     protected array|string $preExcludeFields = ['create_time', 'update_time', 'password', 'salt', 'login_failure', 'last_login_time', 'last_login_ip'];
 
     protected array|string $quickSearchField = ['username', 'nickname'];
-    protected array $noNeedPermission = ['index'];
+    protected array $noNeedPermission = ['index','channel'];
 
     /**
      * 开启数据限制
