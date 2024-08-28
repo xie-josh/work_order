@@ -43,6 +43,11 @@ class AccountrequestProposal extends Backend
             $this->select();
         }
 
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId == 2) {
+            $this->dataLimit = false;
+        }
+
         //dd($this->request->get());
         array_push($this->withJoinTable,'affiliationAdmin');
 
@@ -112,6 +117,53 @@ class AccountrequestProposal extends Backend
                 $this->error(__('No rows updated'));
             }
         }
+    }
+
+    public function edit(): void
+    {
+        $pk  = $this->model->getPk();
+        $id  = $this->request->param($pk);
+        $row = $this->model->find($id);
+        if (!$row) {
+            $this->error(__('Record not found'));
+        }
+
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $data   = $this->excludeFields($data);
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+                if ($this->modelValidate) {
+                    $validate = str_replace("\\model\\", "\\validate\\", get_class($this->model));
+                    if (class_exists($validate)) {
+                        $validate = new $validate();
+                        if ($this->modelSceneValidate) $validate->scene('edit');
+                        $data[$pk] = $row[$pk];
+                        $validate->check($data);
+                    }
+                }
+                $result = $row->save($data);
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+
+        $this->success('', [
+            'row' => $row
+        ]);
     }
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
