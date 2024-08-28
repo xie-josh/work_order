@@ -47,3 +47,4 @@ pnpm-debug.log*
 .svn
 public
 .env
+config/queue.php
