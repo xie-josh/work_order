@@ -30,6 +30,7 @@ class Admin extends Model
     protected $append = [
         'group_arr',
         'group_name_arr',
+        'open_account_number',
     ];
 
     public function getGroupArrAttr($value, $row): array
@@ -60,6 +61,13 @@ class Admin extends Model
     public function getLastLoginTimeAttr($value): string
     {
         return $value ? date('Y-m-d H:i:s', $value) : '';
+    }
+
+    public function getOpenAccountNumberAttr($value,$row)
+    {
+        $time = date('Y-m-d',time());
+        $number = Db::table('ba_account')->where('admin_id',$row['id'])->whereDay('create_time',$time)->count();
+        return $number;
     }
 
     /**

@@ -20,6 +20,7 @@ class Admin extends Backend
     protected array|string $preExcludeFields = ['create_time', 'update_time', 'password', 'salt', 'login_failure', 'last_login_time', 'last_login_ip'];
 
     protected array|string $quickSearchField = ['username', 'nickname'];
+    protected array $noNeedPermission = ['index','channel'];
 
     /**
      * 开启数据限制
@@ -83,7 +84,7 @@ class Admin extends Backend
             ->alias($alias)
             ->where($where)
             ->order($order)
-            ->paginate($limit);
+            ->paginate(999);
 
         $result = $res->toArray();
         $dataList = [];
@@ -94,7 +95,7 @@ class Admin extends Backend
             $proposalList = array_combine(array_column($proposal,'admin_id'),array_column($proposal,'countNumber'));
 
             foreach($dataList as &$v){
-                $v['username'] = $v['username'].'('.($proposalList[$v['id']]??0).')';
+                $v['username'] = $v['nickname'].'('.($proposalList[$v['id']]??0).')';
             }
         }
 
@@ -205,6 +206,13 @@ class Admin extends Backend
                 }
             }
 
+
+            $openAccountNumber = $this->openAccountNumber();
+
+
+            if($data['account_number'] < $openAccountNumber) $this->error('调整后的数量不能小于已经使用的数量！');
+
+
             if ($this->auth->id == $data['id'] && $data['status'] == '0') {
                 $this->error(__('Please use another administrator account to disable the current account!'));
             }
@@ -255,6 +263,14 @@ class Admin extends Backend
         $this->success('', [
             'row' => $row
         ]);
+    }
+
+
+    public function openAccountNumber()
+    {
+        $time = date('Y-m-d',time());
+        $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
+        return $openAccountNumber;
     }
 
     /**

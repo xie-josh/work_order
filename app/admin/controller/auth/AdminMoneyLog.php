@@ -89,10 +89,29 @@ class AdminMoneyLog extends Backend
                     }
                 }
 
+                $comment = $data['comment']??'';
+
+                $rate = DB::table('ba_recharge_channel')->where('id',$data['recharge_channel_id'])->find();
+                if(!$rate) throw new \Exception("请选择汇率！");
                 
+                $rechargeMoney = $data['money'] / (1 + $rate['rate']);
+
+                $creditMoney =  $data['money'] - $rechargeMoney;
+
                 $money = Db::table('ba_admin')->where('id',$data['admin_id'])->value('money');
-                $money = $money + $data['money'];
+                $money = $money + $rechargeMoney;
                 $money = Db::table('ba_admin')->where('id',$data['admin_id'])->update(['money'=>$money]);
+                
+                $data = [
+                    'admin_id'=>$data['admin_id'],
+                    'money'=>$rechargeMoney,
+                    'raw_money'=>$data['money'],
+                    'comment'=>$comment,
+                    'rate'=>$rate['rate'],
+                    'credit_money'=>$creditMoney,
+                    'recharge_channel_name'=>$rate['name'],
+                ];
+
 
                 $result = $this->model->save($data);
                 $this->model->commit();
