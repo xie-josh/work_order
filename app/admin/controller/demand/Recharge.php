@@ -92,8 +92,8 @@ class Recharge extends Backend
                         $validate->check($data);
                     }
                 }
-                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->find();
-                if(empty($account)) throw new \Exception("未找到该账户ID");
+                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->where('status',4)->find();
+                if(empty($account)) throw new \Exception("未找到该账户ID或账户不可用");
                 
                 
                 if($data['type'] == 1){
