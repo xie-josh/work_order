@@ -6,6 +6,8 @@ export default {
     demand_type: 'demand_type',
     'demand_type 1': 'demand_type 1',
     'demand_type 2': 'demand_type 2',
+    'demand_type 3': 'delete all BM only bm1',
+    'demand_type 4': 'Open Add Share BM',
     status: 'status',
     'status 0': 'status 0',
     'status 1': 'status 1',
@@ -17,4 +19,5 @@ export default {
     create_time: 'create_time',
     update_time: 'update_time',
     'quick Search Fields': 'id',
+    affiliation_bm: 'Owner BM',
 }

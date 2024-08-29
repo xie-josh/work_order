@@ -61,6 +61,21 @@ export function editIs_(data: anyObj) {
     })
 }
 
+export function getAccountNumber(data: anyObj) {
+    return createAxios({
+        url: `/admin/Account/getAccountNumber`,
+        method: 'get',
+    })
+}
+
+export function allAccountAudit(data: anyObj) {
+    return createAxios({
+        url: `/admin/Account/allAudit`,
+        method: 'post',
+        data: data,
+    })
+}
+
 
 export function accountrequestAudit(data: anyObj) {
     return createAxios({
@@ -117,6 +132,14 @@ export function bmDisposeStatus(data: anyObj) {
         url: `/admin/demand.Bm/disposeStatus`,
         method: 'post',
         data: data,
+    })
+}
+
+export function getBmList(data: anyObj) {
+    return createAxios({
+        url: `/admin/demand.Bm/getBmList`,
+        method: 'get',
+        params: data,
     })
 }
 

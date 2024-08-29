@@ -186,6 +186,10 @@ export default class baTable {
      * @param formEl 表单组件ref
      */
     onSubmit = (formEl: FormInstance | undefined = undefined) => {
+
+        // console.log(this.form.items)
+        // return
+
         // 当前操作的首字母小写
         const operate = this.form.operate!.replace(this.form.operate![0], this.form.operate![0].toLowerCase())
 

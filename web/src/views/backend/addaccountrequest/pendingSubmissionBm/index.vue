@@ -6,10 +6,15 @@
         <!-- 自定义按钮请使用插槽，甚至公共搜索也可以使用具名插槽渲染，参见文档 -->
         <TableHeader
             :buttons="['refresh', 'add', 'edit', 'delete', 'comSearch', 'quickSearch', 'columnDisplay']"
-            :quick-search-placeholder="t('Quick search placeholder', { fields: t('addaccountrequest.sAgentBm.quick Search Fields') })"
+            :quick-search-placeholder="t('Quick search placeholder', { fields: t('addaccountrequest.pendingSubmissionBm.quick Search Fields') })"
         >
 
-
+        <template #default  >
+            <el-button v-auth="'dispose'" v-blur :disabled="baTable.table.selection!.length > 0 ? false:true" class="table-header-operate" type="success" @click="accountAuditFn()">
+                <Icon color="#ffffff" name="el-icon-RefreshRight" />
+                <span class="table-header-operate-text">{{t('addaccountrequest.pendingSubmissionBm.dispose_type')}}</span>
+            </el-button>
+        </template>
     
     
         </TableHeader>
@@ -81,7 +86,7 @@ import TableHeader from '/@/components/table/header/index.vue'
 import Table from '/@/components/table/index.vue'
 import baTableClass from '/@/utils/baTable'
 import { requestThenFn, tips } from '/@/utils/common';
-import { bmAudit ,bmDisposeStatus,getAdminList} from '/@/api/backend/index.ts';
+import { bmAudit ,bmDisposeStatus} from '/@/api/backend/index.ts';
 
 defineOptions({
     name: 'demand/bm',
@@ -100,7 +105,7 @@ const baTable = new baTableClass(
         pk: 'id',
         column: [
             { type: 'selection', align: 'center', operator: false },
-            { label: t('addaccountrequest.sAgentBm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'eq', sortable: 'custom' },
+            { label: t('addaccountrequest.pendingSubmissionBm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'eq', sortable: 'custom' },
             { label: '渠道昵称', prop: 'account_requestProposal_admin', comSearchRender: 'remoteSelect',align: 'center', remote: {
                 // 主键，下拉 value
                 pk: 'id',
@@ -116,34 +121,34 @@ const baTable = new baTableClass(
                     adminId:1
                 },
             }},
-            { label: t('addaccountrequest.sAgentBm.affiliation_bm'), prop: 'accountrequestProposal.affiliation_bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('addaccountrequest.sAgentBm.account_name'), prop: 'account_name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,width:170},
-            { label: t('addaccountrequest.sAgentBm.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
-            { label: t('addaccountrequest.sAgentBm.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('addaccountrequest.sAgentBm.demand_type'), prop: 'demand_type', align: 'center', comSearchRender:'select', render: 'customTemplate', operator: 'eq', sortable: false,
-             replaceValue: { '1': t('addaccountrequest.sAgentBm.demand_type 1'), '2': t('addaccountrequest.sAgentBm.demand_type 2'), '4': t('addaccountrequest.sAgentBm.demand_type 4') } ,
+            { label: t('addaccountrequest.pendingSubmissionBm.affiliation_bm'), prop: 'accountrequestProposal.affiliation_bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('addaccountrequest.pendingSubmissionBm.account_name'), prop: 'account_name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,width:170},
+            { label: t('addaccountrequest.pendingSubmissionBm.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
+            { label: t('addaccountrequest.pendingSubmissionBm.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('addaccountrequest.pendingSubmissionBm.demand_type'), prop: 'demand_type', comSearchRender:'select', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false,
+            replaceValue: { '1': t('addaccountrequest.pendingSubmissionBm.demand_type 1'), '2': t('addaccountrequest.pendingSubmissionBm.demand_type 2') , '4': t('addaccountrequest.pendingSubmissionBm.demand_type 4')} ,
                 customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {
                     if(value == 1){
-                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.sAgentBm.demand_type 1')+'</span>';
+                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.pendingSubmissionBm.demand_type 1')+'</span>';
                     }else if(value == 2){
-                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.sAgentBm.demand_type 2')+'</span>';
+                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.pendingSubmissionBm.demand_type 2')+'</span>';
                     }else if(value == 3){
-                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.sAgentBm.demand_type 3')+'</span>';
+                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.pendingSubmissionBm.demand_type 3')+'</span>';
                     }else if(value == 4){
-                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.sAgentBm.demand_type 4')+'</span>';
+                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.pendingSubmissionBm.demand_type 4')+'</span>';
                     }
                     return '<span>' + value + '</span>';
                 }
             },
-            { label: t('addaccountrequest.sAgentBm.bm_permissions'), prop: 'bm_permissions', align: 'center', render: 'tag', operator: false, sortable: false, replaceValue: { '1': t('addaccountrequest.sAgentBm.bm_permissions 1')} },
-            { label: t('addaccountrequest.sAgentBm.dispose_type'), prop: 'dispose_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('addaccountrequest.sAgentBm.dispose_type 0'), '1': t('addaccountrequest.sAgentBm.dispose_type 1'), '2': t('addaccountrequest.sAgentBm.dispose_type 2') } },            
-            { label: t('addaccountrequest.sAgentBm.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
-            { label: t('addaccountrequest.sAgentBm.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
+            { label: t('addaccountrequest.pendingSubmissionBm.bm_permissions'), prop: 'bm_permissions', align: 'center', render: 'tag', operator: false, sortable: false, replaceValue: { '1': t('addaccountrequest.pendingSubmissionBm.bm_permissions 1') } },
+            { label: t('addaccountrequest.pendingSubmissionBm.dispose_type'), prop: 'dispose_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('addaccountrequest.pendingSubmissionBm.dispose_type 0'), '1': t('addaccountrequest.pendingSubmissionBm.dispose_type 1'), '2': t('addaccountrequest.pendingSubmissionBm.dispose_type 2') } },            
+            { label: t('addaccountrequest.pendingSubmissionBm.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
+            { label: t('addaccountrequest.pendingSubmissionBm.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
         ],
         dblClickNotEditColumn: ['all'],
         filter: {
             limit:20,
-            dispose_type:1
+            dispose_type:3
         }
     },
     {
@@ -194,10 +199,10 @@ const accountAuditFn = (type:number = 1) => {
         addPurchasingManagementDialog.show = true
         addPurchasingManagementDialog.statusList = [
             {
-                id: 1, name: '审核通过'
+                id: 1, name: '提交'
             },
             {
-                id: 2, name: '审核拒绝'
+                id: 2, name: '提交异常'
             }
         ]
     }

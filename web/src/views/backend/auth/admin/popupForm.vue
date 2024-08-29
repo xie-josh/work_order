@@ -28,6 +28,23 @@
                     v-if="!baTable.form.loading"
                 >
                     <FormItem
+                        :label="t('auth.admin.account_number')"
+                        v-model="baTable.form.items!.account_number"
+                        type="string"
+                        prop="account_number"
+                        :placeholder="t('auth.admin.account_number')"
+                    />
+                    <FormItem
+                        :label="t('auth.admin.is_account')"
+                        v-model="baTable.form.items!.is_account"
+                        type="radio"
+                        prop="id_account"
+                        :input-attr="{
+                            border: true,
+                            content: { '2': t('Disable'), '1': t('Enable') },
+                        }"
+                    />
+                    <FormItem
                         :label="t('auth.admin.username')"
                         v-model="baTable.form.items!.username"
                         type="string"

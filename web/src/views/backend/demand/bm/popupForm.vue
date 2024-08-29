@@ -31,8 +31,37 @@
                     :rules="rules"
                 >
                     <FormItem :label="t('demand.bm.account_id')" type="string" v-model="baTable.form.items!.account_id" prop="account_id" :placeholder="t('Please input field', { field: t('demand.bm.account_id') })" />
-                    <FormItem :label="t('demand.bm.demand_type')" type="select" v-model="baTable.form.items!.demand_type" prop="demand_type" :input-attr="{ content: { '1': t('demand.bm.demand_type 1'), '2': t('demand.bm.demand_type 2') } }" :placeholder="t('Please select field', { field: t('demand.bm.demand_type') })" />
-                    <FormItem v-if="baTable.form.items!.demand_type == 1" :label="t('demand.bm.bm')" type="string" v-model="baTable.form.items!.bm" prop="bm" :placeholder="t('Please input field', { field: t('demand.bm.bm') })" />
+                    <FormItem v-if="baTable.form.items!.account_id" :label="t('demand.bm.demand_type')" type="select" v-model="baTable.form.items!.demand_type" prop="demand_type" :input-attr="{ content: { '1': t('demand.bm.demand_type 1'), '2': t('demand.bm.demand_type 2') }, onChange:citiesFn }" :placeholder="t('Please select field', { field: t('demand.bm.demand_type') })" />
+                    <FormItem :label="t('demand.bm.bm')" type="string" v-model="baTable.form.items!.bm" prop="bm" :placeholder="t('Please input field', { field: t('demand.bm.bm') })" />
+
+
+                    <el-checkbox
+                        v-model="checkAll"
+                        :indeterminate="isIndeterminate"
+                        @change="handleCheckAllChange"
+                        v-if="baTable.form.items!.demand_type == 2"
+                    >
+                        Check all(选择,如果没有请手动输入需要操作的BM)
+                    </el-checkbox>
+
+                    <el-checkbox-group
+                    v-model="checkedCities"
+                    @change="handleCheckedCitiesChange"
+                    v-if="baTable.form.items!.demand_type == 2"
+                    >
+                    <el-checkbox v-for="city in cities" :key="city" :label="city" :value="city">
+                    {{ city }}
+                    </el-checkbox>
+                    </el-checkbox-group>
+
+
+
+
+                    <!-- <br/>
+                    <br/>
+                    <br/>
+                    <span style="color: red;">选择如果没有请手动输入需要操作的BM</span> -->
+
                 </el-form>
             </div>
         </el-scrollbar>
@@ -55,6 +84,7 @@ import FormItem from '/@/components/formItem/index.vue'
 import { useConfig } from '/@/stores/config'
 import type baTableClass from '/@/utils/baTable'
 import { buildValidatorData } from '/@/utils/validate'
+import {getBmList} from '/@/api/backend/index.ts';
 
 const config = useConfig()
 const formRef = ref<FormInstance>()
@@ -62,11 +92,64 @@ const baTable = inject('baTable') as baTableClass
 
 const { t } = useI18n()
 
+
+const checkAll = ref(false)
+const isIndeterminate = ref(true)
+const checkedCities = ref()
+const cities = ref()
+
+
+
+const handleCheckAllChange = (val: boolean) => {
+  //console.log('1cities',cities.value)
+  checkedCities.value = val ? cities.value : []
+  isIndeterminate.value = false
+  baTable.form.items!.checkList = checkedCities.value
+}
+const handleCheckedCitiesChange = (value: string[]) => {
+    console.log('2cities',cities.value)
+  const checkedCount = value.length
+  checkAll.value = checkedCount === cities.value.length
+  isIndeterminate.value = checkedCount > 0 && checkedCount < cities.value.length
+  baTable.form.items!.checkList = checkedCities.value
+}
+
+const citiesFn = () => {
+    if(baTable.form.items!.account_id && baTable.form.items!.demand_type == 2){
+        let confirmFn = async () => {
+            let postData = {
+                account_id:baTable.form.items!.account_id,
+            }
+            console.log(postData)
+            let res: anyObj = await getBmList(postData)
+            
+            cities.value = res.data.bmList
+            //baTable.onTableHeaderAction('refresh',[])
+        }
+        confirmFn()
+    }
+
+    //console.log(cities.value);
+}
+
 const rules: Partial<Record<string, FormItemRule[]>> = reactive({
     demand_type: [buildValidatorData({ name: 'required', title: t('demand.bm.demand_type') })],
     account_id: [buildValidatorData({ name: 'required', title: t('demand.bm.create_time') })],
     update_time: [buildValidatorData({ name: 'date', title: t('demand.bm.update_time') })],
 })
+
+interface AddPurchasingManagementDialog {
+    checkList: Array<any>
+}
+const addPurchasingManagementDialog: AddPurchasingManagementDialog = reactive({
+    checkList:[]
+})
+
+
+
+
+
+
 </script>
 
 <style scoped lang="scss"></style>

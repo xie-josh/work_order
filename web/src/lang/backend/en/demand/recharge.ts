@@ -6,6 +6,7 @@ export default {
     'type 1': 'type 1',
     'type 2': 'type 2',
     'type 3': 'type 3',
+    'type 4': 'type 4',
     number: 'number',
     status: 'status',
     'status 0': 'status 0',

@@ -105,23 +105,43 @@ const baTable = new baTableClass(
         pk: 'id',
         column: [
             { type: 'selection', align: 'center', operator: false },
-            { label: t('addaccountrequest.agentBm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'RANGE', sortable: 'custom' },
+            { label: t('addaccountrequest.agentBm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'eq', sortable: 'custom' },
+            { label: '渠道昵称', prop: 'account_requestProposal_admin', comSearchRender: 'remoteSelect',align: 'center', remote: {
+                // 主键，下拉 value
+                pk: 'id',
+                // 字段，下拉 label
+                field: 'nickname',
+                // 远程接口URL
+                // 比如想要获取 user(会员) 表的数据，后台`会员管理`控制器URL为`/index.php/admin/user.user/index`
+                // 因为已经通过 CRUD 生成过`会员管理`功能，所以该URL地址可以从`/@/api/controllerUrls`导入使用，如下面的 userUser
+                // 该URL地址通常等于对应后台管理功能的`查看`操作请求的URL
+                remoteUrl: '/admin/auth.Admin/index',
+                // 额外的请求参数
+                params: {
+                    adminId:1
+                },
+            }},
             { label: t('addaccountrequest.agentBm.affiliation_bm'), prop: 'accountrequestProposal.affiliation_bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            { label: t('addaccountrequest.agentBm.account_name'), prop: 'account_name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,width:170},
             { label: t('addaccountrequest.agentBm.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
             { label: t('addaccountrequest.agentBm.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('addaccountrequest.agentBm.demand_type'), prop: 'demand_type', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false,
-            // replaceValue: { '1': t('addaccountrequest.agentBm.demand_type 1'), '2': t('addaccountrequest.agentBm.demand_type 2') } 
+            { label: t('addaccountrequest.agentBm.demand_type'), prop: 'demand_type', comSearchRender:'select', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false,
+            replaceValue: { '1': t('addaccountrequest.agentBm.demand_type 1'), '2': t('addaccountrequest.agentBm.demand_type 2') , '4': t('addaccountrequest.agentBm.demand_type 4')} ,
                 customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {
                     if(value == 1){
                         return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.agentBm.demand_type 1')+'</span>';
                     }else if(value == 2){
                         return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.agentBm.demand_type 2')+'</span>';
+                    }else if(value == 3){
+                        return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.agentBm.demand_type 3')+'</span>';
+                    }else if(value == 4){
+                        return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.agentBm.demand_type 4')+'</span>';
                     }
                     return '<span>' + value + '</span>';
                 }
             },
-            { label: t('addaccountrequest.agentBm.bm_permissions'), prop: 'bm_permissions', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '1': t('addaccountrequest.agentBm.bm_permissions 1') } },
-            { label: t('addaccountrequest.agentBm.dispose_type'), prop: 'dispose_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('addaccountrequest.agentBm.dispose_type 0'), '1': t('addaccountrequest.agentBm.dispose_type 1'), '2': t('addaccountrequest.agentBm.dispose_type 2') } },
+            { label: t('addaccountrequest.agentBm.bm_permissions'), prop: 'bm_permissions', align: 'center', render: 'tag', operator: false, sortable: false, replaceValue: { '1': t('addaccountrequest.agentBm.bm_permissions 1') } },
+            { label: t('addaccountrequest.agentBm.dispose_type'), prop: 'dispose_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '0': t('addaccountrequest.agentBm.dispose_type 0'), '1': t('addaccountrequest.agentBm.dispose_type 1'), '2': t('addaccountrequest.agentBm.dispose_type 2') } },            
             { label: t('addaccountrequest.agentBm.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
             { label: t('addaccountrequest.agentBm.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
         ],
@@ -232,6 +252,7 @@ provide('baTable', baTable)
 
 onMounted(() => {
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()

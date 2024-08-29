@@ -22,7 +22,20 @@
         <!-- 表格 -->
         <!-- 表格列有多种自定义渲染方式，比如自定义组件、具名插槽等，参见文档 -->
         <!-- 要使用 el-table 组件原有的属性，直接加在 Table 标签上即可 -->
-        <Table ref="tableRef"></Table>
+        <Table ref="tableRef">
+
+            <template #account_id>
+
+                <el-table-column :label="t('demand.recharge.account_id')" width="180" align="center">
+                    <template #default="scope">
+                        <div><span :style="getColumnStyle(scope.$index)" @click="copyText(scope.row.account_id,scope.$index)" > {{ scope.row.account_id }}</span></div>
+                        <!-- color:#409eff;background-color:#ecf5ff;border-radius:2px;padding: 5px 8px; -->
+                    </template>
+                </el-table-column>
+                <!-- 在插槽内，您可以随意发挥，通常使用 el-table-column 组件 -->
+            </template>
+
+        </Table>
 
         <!-- 表单 -->
         <PopupForm />
@@ -38,11 +51,16 @@
 
                     <!-- table列表 -->
                     <div class="tableList">
+                        <div style="padding: 7px 0;width:200px">
+                            <el-select v-if="addPurchasingManagementDialog.type == 3 || addPurchasingManagementDialog.type == 4" v-model="addPurchasingManagementDialog.type"  style="width: 200px" placeholder="清零方式">
+                                <el-option v-for="item in addPurchasingManagementDialog.typeList" :key="item.id" :label="item.name" :value="item.id" />
+                            </el-select>
+                        </div>
                         <el-select v-model="addPurchasingManagementDialog.status"  style="width: 200px" placeholder="状态">
                             <el-option v-for="item in addPurchasingManagementDialog.statusList" :key="item.id" :label="item.name" :value="item.id" />
                         </el-select>
                         <div style="padding: 7px 0;width:200px">
-                            <el-input style="" v-if="addPurchasingManagementDialog.type == 3" v-model="addPurchasingManagementDialog.money" placeholder="金额"></el-input>
+                            <el-input style="" v-if="addPurchasingManagementDialog.type == 3 || addPurchasingManagementDialog.type == 4" v-model="addPurchasingManagementDialog.money" placeholder="金额"></el-input>
                         </div>
                         
                     </div>
@@ -62,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, provide, ref,reactive } from 'vue'
+import { onMounted, provide, ref,reactive,nextTick  } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PopupForm from './popupForm.vue'
 import { baTableApi } from '/@/api/common'
@@ -127,14 +145,28 @@ const baTable = new baTableClass(
         pk: 'id',
         column: [
             { type: 'selection', align: 'center', operator: false },
-            { label: t('demand.recharge.id'), prop: 'uuid', align: 'center', width: 100, operator: 'RANGE', sortable: 'custom' },
+            { label: t('demand.recharge.id'), prop: 'uuid', align: 'center', width: 100, operator: false, sortable: 'custom' },
             { label: t('demand.recharge.accountrequestProposal__bm'), prop: 'accountrequestProposal.bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
             { label: t('demand.recharge.account_name'), prop: 'account_name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('demand.recharge.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
-            { label: t('demand.recharge.type'), prop: 'type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '1': t('demand.recharge.type 1'), '2': t('demand.recharge.type 2'), '3': t('demand.recharge.type 3') } },
-            { label: t('demand.recharge.number'), prop: 'number', align: 'center', operator: 'RANGE', sortable: false },
-            { label: t('demand.recharge.status'), prop: 'status', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false,
-            // replaceValue: { '0': t('demand.recharge.status 0'), '1': t('demand.recharge.status 1'), '2': t('demand.recharge.status 2') } 
+            { label: t('demand.recharge.account_id'), prop: 'account_id', render: 'slot', slotName: 'account_id', operator: 'LIKE'},
+            { label: t('demand.recharge.type'), prop: 'type', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false,comSearchRender:'select',
+                replaceValue: { '1': t('demand.recharge.type 1'), '2': t('demand.recharge.type 2'), '3': t('demand.recharge.type 3'), '4': t('demand.recharge.type 4') }, 
+                customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {                    
+                    if(value == 1 ){
+                        return '<span style="background-color:#ecf5ff;padding:4px 9px;color:#409eff;border-radius:4px;font-size:12px">'+t('demand.recharge.type 1')+'</span>';
+                    }else if(value == 2){
+                        return '<span style="background-color:#ffebdf;padding:4px 9px;color:#d17c30;border-radius:4px;font-size:12px">'+t('demand.recharge.type 2')+'</span>';
+                    }else if(value == 3){
+                        return '<span style="background-color:#ecf5ff;padding:4px 9px;color:#409eff;border-radius:4px;font-size:12px">'+t('demand.recharge.type 3')+'</span>';
+                    }else if(value == 4){
+                        return '<span style="background-color:#ecf5ff;padding:4px 9px;color:#409eff;border-radius:4px;font-size:12px">'+t('demand.recharge.type 4')+'</span>';
+                    }
+                    return '<span>' + value + '</span>';
+                }
+            },
+            { label: t('demand.recharge.number'), prop: 'number', align: 'center', operator: false, sortable: false },
+            { label: t('demand.recharge.status'), prop: 'status', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false,comSearchRender:'select',
+             replaceValue: { '0': t('demand.recharge.status 0'), '1': t('demand.recharge.status 1'), '2': t('demand.recharge.status 2') } ,
                 customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {                    
                     if(value == 0){
                         return '<span style="background-color:#469ff7;padding:4px 9px;color:#FFF;border-radius:4px">'+t('demand.recharge.status 0')+'</span>';
@@ -147,7 +179,7 @@ const baTable = new baTableClass(
                 }
             },
             { label: t('demand.recharge.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
-            { label: t('demand.recharge.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
+            { label: t('demand.recharge.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: false, sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
             { label: t('Operate'), align: 'center', width: 150, render: 'buttons', buttons: optButtons, operator: false },
         ],
         dblClickNotEditColumn: ['all'],
@@ -170,9 +202,11 @@ interface AddPurchasingManagementDialog {
     statusList:Array<any>
     money:string
     type:number
+    typeList:Array<any>
 }
 const addPurchasingManagementDialog: AddPurchasingManagementDialog = reactive({
     show: false,
+    type:0
 })
 
 
@@ -184,9 +218,9 @@ const accountAuditFn = (row: TableRow, field: TableColumn) => {
         tips('finished!')
         return
     }
+    
     addPurchasingManagementDialog.id = row.id
     addPurchasingManagementDialog.show = true
-    addPurchasingManagementDialog.type = row.type
     addPurchasingManagementDialog.statusList = [
         {
             id: 1, name: '处理完成'
@@ -195,6 +229,18 @@ const accountAuditFn = (row: TableRow, field: TableColumn) => {
             id: 2, name: '异常'
         }
     ]
+
+    addPurchasingManagementDialog.typeList = [
+            {
+                id: '3', name: '封户清零'
+            },
+            {
+                id: '4', name: '活跃清零'
+            }
+        ]
+
+    addPurchasingManagementDialog.type = row.type
+   
 }
 
 const DialogCloseFn = (type:number = 1) => {
@@ -207,7 +253,8 @@ const confirmAddCommodityFn = (type:number = 1) => {
         let postData = {
             ids:[addPurchasingManagementDialog.id],
             status:addPurchasingManagementDialog.status,       
-            money:addPurchasingManagementDialog.money
+            money:addPurchasingManagementDialog.money,
+            type:addPurchasingManagementDialog.type
         }
         console.log(postData)
         let res: anyObj = await rechargeAudit(postData)
@@ -220,10 +267,34 @@ const confirmAddCommodityFn = (type:number = 1) => {
     //confirmElMessageBox('确定要添加为采购单吗？', confirmFn)
 }
 
+const activeColumn = ref(-1);
+const copyText = async (text:string,index:number) => {
+    activeColumn.value = index;
+
+    console.log(activeColumn);
+  try {
+    await navigator.clipboard.writeText(text);
+    tips('复制成功', 'success')
+  } catch (err) {
+    tips('复制异常', 'error')
+  }
+};
+
+const getColumnStyle = (index:number) => {
+    return {
+        //backgroundColor: activeColumn.value === index ? '#e26fff' : '#ffffff', // 根据条件动态设置背景色
+        borderRadius:'2px',
+        padding: '0px 8px',
+        border:'3px solid '+(activeColumn.value === index ? '#e26fff' : '#ffffff')
+    };
+};
+
+
 provide('baTable', baTable)
 
 onMounted(() => {
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()
