@@ -49,9 +49,9 @@ const baTable = new baTableClass(
             { label: t('auth.admin.username'), prop: 'username', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
             { label: t('auth.admin.nickname'), prop: 'nickname', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
             { label: t('auth.admin.grouping'), prop: 'group_name_arr', align: 'center', operator: false, render: 'tags' },
-            { label: t('auth.admin.head portrait'), prop: 'avatar', align: 'center', render: 'image', operator: false },
-            { label: t('auth.admin.mailbox'), prop: 'email', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
-            { label: t('auth.admin.mobile'), prop: 'mobile', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
+            // { label: t('auth.admin.head portrait'), prop: 'avatar', align: 'center', render: 'image', operator: false },
+            // { label: t('auth.admin.mailbox'), prop: 'email', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
+            // { label: t('auth.admin.mobile'), prop: 'mobile', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
             {
                 label: t('auth.admin.Last login'),
                 prop: 'last_login_time',
@@ -70,6 +70,8 @@ const baTable = new baTableClass(
                 custom: { '0': 'danger', '1': 'success' },
                 replaceValue: { '0': t('Disable'), '1': t('Enable') },
             },
+            { label: t('auth.admin.account_number'), prop: 'account_number', align: 'center' },
+            { label: t('auth.admin.open_account_number'), prop: 'open_account_number', align: 'center' },
             { label: t('auth.admin.money'), prop: 'money', align: 'center' },
             { label: t('auth.admin.used_money'), prop: 'used_money', align: 'center' },
             { label: t('auth.admin.usable_money'), prop: 'usableMoney', align: 'center' },
@@ -82,6 +84,9 @@ const baTable = new baTableClass(
                 operator: false,
             },
         ],
+        filter: {
+            limit:100
+        },
         dblClickNotEditColumn: [undefined, 'status'],
     },
     {

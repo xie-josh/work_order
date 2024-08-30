@@ -9,7 +9,7 @@
             :quick-search-placeholder="t('Quick search placeholder', { fields: t('demand.bm.quick Search Fields') })"
         >
 
-        <template #default  >
+        <!-- <template #default  >
             <el-button v-auth="'audit'" style="margin-left: 12px;" v-blur :disabled="baTable.table.selection!.length > 0 ? false:true" class="table-header-operate" type="success" @click="accountAuditFn(1)">
                 <Icon color="#ffffff" name="el-icon-RefreshRight" />
                 <span class="table-header-operate-text">{{t('demand.bm.status')}}</span>
@@ -18,7 +18,7 @@
                 <Icon color="#ffffff" name="el-icon-RefreshRight" />
                 <span class="table-header-operate-text">{{t('demand.bm.dispose_type')}}</span>
             </el-button>
-        </template>
+        </template> -->
     
     
         </TableHeader>
@@ -109,11 +109,12 @@ const baTable = new baTableClass(
         pk: 'id',
         column: [
             { type: 'selection', align: 'center', operator: false },
-            { label: t('demand.bm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'RANGE', sortable: 'custom' },
-            { label: t('demand.bm.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
+            { label: t('demand.bm.id'), prop: 'uuid', align: 'center', width: 100, operator: 'eq', sortable: 'custom' },
+            { label: t('demand.bm.affiliation_bm'), prop: 'accountrequestProposal.affiliation_bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
             { label: t('demand.bm.account_name'), prop: 'account_name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,width:170},
-            { label: t('demand.bm.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('demand.bm.demand_type'), prop: 'demand_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '1': t('demand.bm.demand_type 1'), '2': t('demand.bm.demand_type 2') } },
+            { label: t('demand.bm.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
+            { label: t('demand.bm.bm'), prop: 'bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,width:150},
+            { label: t('demand.bm.demand_type'), prop: 'demand_type', align: 'center', render: 'tag', operator: 'eq', sortable: false, replaceValue: { '1': t('demand.bm.demand_type 1'), '2': t('demand.bm.demand_type 2'), '3': t('demand.bm.demand_type 3'), '4': t('demand.bm.demand_type 4') } },
             { label: t('demand.bm.status'), prop: 'status', align: 'center', render: 'customTemplate', operator: 'eq', sortable: false, comSearchRender:'select',
             replaceValue: { '0': t('demand.bm.status 0'), '1': t('demand.bm.status 1'), '2': t('demand.bm.status 2') } ,
                 customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {                    
@@ -251,6 +252,7 @@ provide('baTable', baTable)
 
 onMounted(() => {
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()

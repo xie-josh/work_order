@@ -21,7 +21,19 @@
         <!-- 表格 -->
         <!-- 表格列有多种自定义渲染方式，比如自定义组件、具名插槽等，参见文档 -->
         <!-- 要使用 el-table 组件原有的属性，直接加在 Table 标签上即可 -->
-        <Table ref="tableRef"></Table>
+        <Table ref="tableRef">
+            <template #account_id>
+
+                <el-table-column :label="t('addaccountrequest.accountrequestProposal.account_id')" width="180" align="center">
+                    <template #default="scope">
+                        <div><span :style="getColumnStyle(scope.$index)" @click="copyText(scope.row.account_id,scope.$index)" > {{ scope.row.account_id }}</span></div>
+                        <!-- color:#409eff;background-color:#ecf5ff;border-radius:2px;padding: 5px 8px; -->
+                    </template>
+                </el-table-column>
+                <!-- 在插槽内，您可以随意发挥，通常使用 el-table-column 组件 -->
+            </template>
+
+        </Table>
 
         <!-- 表单 -->
         <PopupForm />
@@ -104,25 +116,40 @@ const baTable = new baTableClass(
             { label: t('addaccountrequest.accountrequestProposal.affiliation_bm'), prop: 'affiliation_bm', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
             // { label: t('addaccountrequest.accountrequestProposal.admin__username'), prop: 'admin.username', align: 'center', operatorPlaceholder: t('Fuzzy query'), render: 'tags', operator: 'LIKE' },
             
-            { label: t('addaccountrequest.accountrequestProposal.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
+            { label: t('addaccountrequest.accountrequestProposal.account_id'), prop: 'account_id', render: 'slot', slotName: 'account_id', operator: 'LIKE'},
             { label: t('addaccountrequest.accountrequestProposal.status'), prop: 'status', align: 'center',comSearchRender:'select', render: 'customTemplate', operator: 'eq', sortable: false, 
-            replaceValue: { '0': t('addaccountrequest.accountrequestProposal.status 0'), '1': t('addaccountrequest.accountrequestProposal.status 1') } ,
+            replaceValue: { '0': t('addaccountrequest.accountrequestProposal.status 0'), '1': t('addaccountrequest.accountrequestProposal.status 1'), '2': t('addaccountrequest.accountrequestProposal.status 2') },
                 customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {                    
                     if(value == 0){
                         return '<span style="background-color:#67c23a;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.accountrequestProposal.status 0')+'</span>';
                     }else if(value == 1){
                         return '<span style="background-color:#ff5151;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.accountrequestProposal.status 1')+'</span>';
+                    }else if(value == 2){
+                        return '<span style="background-color:#d9bf07;padding:4px 9px;color:#FFF;border-radius:4px">'+t('addaccountrequest.accountrequestProposal.status 2')+'</span>';
                     }
                     return '<span>' + value + '</span>';
                 }
             },
-            
-            { label: t('addaccountrequest.accountrequestProposal.admin_username'), prop: 'admin.nickname', align: 'center', operator: false, sortable: false },
+            { label: t('addaccountrequest.accountrequestProposal.admin_username'), prop: 'admin.nickname', comSearchRender: 'remoteSelect',align: 'center', remote: {
+                // 主键，下拉 value
+                pk: 'nickname',
+                // 字段，下拉 label
+                field: 'nickname',
+                // 远程接口URL
+                // 比如想要获取 user(会员) 表的数据，后台`会员管理`控制器URL为`/index.php/admin/user.user/index`
+                // 因为已经通过 CRUD 生成过`会员管理`功能，所以该URL地址可以从`/@/api/controllerUrls`导入使用，如下面的 userUser
+                // 该URL地址通常等于对应后台管理功能的`查看`操作请求的URL
+                remoteUrl: '/admin/auth.Admin/channel',
+                // 额外的请求参数
+                params: {
+                   
+                },
+            }},
             { label: t('addaccountrequest.accountrequestProposal.time_zone'), prop: 'time_zone', align: 'center', operator: false, sortable: false },
             { label: t('addaccountrequest.accountrequestProposal.affiliationAdmin_username'), prop: 'affiliationAdmin.nickname', align: 'center', operator: false, sortable: false },
 
             { label: t('addaccountrequest.accountrequestProposal.create_time'), prop: 'create_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
-            { label: t('addaccountrequest.accountrequestProposal.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: 'RANGE', sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
+            { label: t('addaccountrequest.accountrequestProposal.update_time'), prop: 'update_time', align: 'center', render: 'datetime', operator: false, sortable: 'custom', width: 160, timeFormat: 'yyyy-mm-dd hh:MM' },
             { label: t('Operate'), align: 'center', width: 100, render: 'buttons', buttons: optButtons, operator: false },
         ],
         dblClickNotEditColumn: ['all'],
@@ -232,10 +259,33 @@ const confirmAddCommodityFn = () => {
 }
 
 
+const activeColumn = ref(-1);
+const copyText = async (text:string,index:number) => {
+    activeColumn.value = index;
+
+    console.log(activeColumn);
+  try {
+    await navigator.clipboard.writeText(text);
+    tips('复制成功', 'success')
+  } catch (err) {
+    tips('复制异常', 'error')
+  }
+};
+
+const getColumnStyle = (index:number) => {
+    return {
+        //backgroundColor: activeColumn.value === index ? '#e26fff' : '#ffffff', // 根据条件动态设置背景色
+        borderRadius:'2px',
+        padding: '0px 8px',
+        border:'3px solid '+(activeColumn.value === index ? '#e26fff' : '#ffffff')
+    };
+};
+
 provide('baTable', baTable)
 
 onMounted(() => {
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()

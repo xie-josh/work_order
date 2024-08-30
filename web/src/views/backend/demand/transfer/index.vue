@@ -173,6 +173,7 @@ provide('baTable', baTable)
 
 onMounted(() => {
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()

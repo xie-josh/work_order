@@ -12,16 +12,11 @@
             <!-- 刷新按钮前插槽内容 -->
         </template>
 
-        <!-- <template #default  >
-            <el-button v-auth="'audit'" style="margin-left: 12px;" v-blur :disabled="baTable.table.selection!.length > 0 ? false:true" class="table-header-operate" type="success" @click="accountAuditFn(1)">
-                <Icon color="#f" name="el-icon-RefreshRight" />
-                <span class="table-header-operate-text">审核</span>
+        <template #default  >            
+            <el-button v-blur :disabled="baTable.table.selection!.length > 0 ? false:true" class="table-header-operate" type="success" @click="accountAuditFn(5,[])">
+                <span class="table-header-operate-text">批量分配</span>
             </el-button>
-            <el-button v-auth="'dispose'" v-blur :disabled="baTable.table.selection!.length > 0 ? false:true" class="table-header-operate" type="success" @click="accountAuditFn(2)">
-                <Icon color="#f" name="el-icon-RefreshRight" />
-                <span class="table-header-operate-text">处理</span>
-            </el-button>
-        </template> -->
+        </template>
 
     
         </TableHeader>
@@ -31,7 +26,6 @@
         <!-- 要使用 el-table 组件原有的属性，直接加在 Table 标签上即可 -->
         <Table ref="tableRef">
             <template #name>
-
                 <el-table-column :label="t('bindingCard.name')" width="180" align="center">
                     <template #default="scope">
                         <div><span :style="getColumnStyle(scope.$index)" @click="copyText(scope.row.name,scope.$index)" > {{ scope.row.name }}</span></div>
@@ -58,11 +52,6 @@
 
         <!-- 表单 -->
         <PopupForm />
-
-
-
-
-
 
         <div class="addPurchasingManagement-dialog">
             <el-dialog title="审核" :z-index="1000" v-model="addPurchasingManagementDialog.show" @close="DialogCloseFn(1)" center destroy-on-close draggable>
@@ -104,9 +93,32 @@
                 </div>
 
                 <template #footer>
-                    <div class="dialog-footer">
+                    <div>
+                        <el-button type="primary" icon="el-icon-Delete" @click="confirmAddCommodityFn(6)" >重新分配</el-button>
                         <el-button type="danger" @click="confirmAddCommodityFn(5)" >失败</el-button>
                         <el-button type="success" @click="confirmAddCommodityFn(4)" >确认</el-button>
+                        <el-button @click="DialogCloseFn" style="right: 20px;position: absolute;">取消</el-button>
+                    </div>
+                </template>
+            </el-dialog>
+        </div>
+
+        <div class="addPurchasingManagement-dialog">
+            <el-dialog title="批量分配" style="width: 600px;" :z-index="1000" v-model="addPurchasingManagementDialog.show5" @close="DialogCloseFn(2)" center destroy-on-close draggable>
+                <div class="dialog-body">
+                    <div class="tableList">
+                        <el-select v-model="addPurchasingManagementDialog.admin_id" style="width: 200px" placeholder="渠道" @change="getAccountrequestProposalFn">
+                            <el-option v-for="item in addPurchasingManagementDialog.adminList" :key="item.id" :label="item.name" :value="item.id" />
+                        </el-select>
+                        <el-select multiple collapse-tags v-model="addPurchasingManagementDialog.account_ids" :disabled="!addPurchasingManagementDialog.admin_id" style="width: 200px" placeholder="账户">
+                            <el-option v-for="item in addPurchasingManagementDialog.accountList" :key="item.id" :label="item.name" :value="item.id" />
+                        </el-select>
+                    </div>
+                </div>
+
+                <template #footer>
+                    <div>
+                        <el-button type="success" @click="confirmAddCommodityFn(7)" >确认</el-button>
                         <el-button @click="DialogCloseFn" style="right: 20px;position: absolute;">取消</el-button>
                     </div>
                 </template>
@@ -127,7 +139,7 @@ import { requestThenFn, tips } from '/@/utils/common';
 import TableHeader from '/@/components/table/header/index.vue'
 import Table from '/@/components/table/index.vue'
 import baTableClass from '/@/utils/baTable'
-import { getAdminList ,getAccountAudit,getAccountDisposeStatus,AccountrequestProposalIndex} from '/@/api/backend/index.ts';
+import { getAdminList ,getAccountAudit,getAccountDisposeStatus,AccountrequestProposalIndex,allAccountAudit} from '/@/api/backend/index.ts';
 import { number } from 'echarts'
 
 defineOptions({
@@ -137,7 +149,6 @@ defineOptions({
 const { t } = useI18n()
 const tableRef = ref()
 const optButtons: OptButton[] = defaultOptButtons(['edit', 'delete'])
-
 
 let newButton: OptButton[] = [
     {
@@ -311,16 +322,19 @@ interface AddPurchasingManagementDialog {
     disposeStatusList:Array<any>
     disposeStatus:number
     account_id:number
-    accountList:Array<any>
+    accountList:Array<any>,
+    show5:boolean,
+    account_ids:Array<any>,
 }
 const addPurchasingManagementDialog: AddPurchasingManagementDialog = reactive({
     show: false,
+    show5:false,
     purchasingId: '',
     tableData: [],
     adminList: [],
     //admin_id:0,
     // status:0,
-    statusList:[]
+    statusList:[],
 })
 
 const activeColumn = ref(-1);
@@ -340,9 +354,10 @@ const copyText = async (text:string,index:number) => {
 
 const getColumnStyle = (index:number) => {
     return {
-        backgroundColor: activeColumn.value === index ? '#e26fff' : '#ffffff', // 根据条件动态设置背景色
+        //backgroundColor: activeColumn.value === index ? '#e26fff' : '#ffffff', // 根据条件动态设置背景色
         borderRadius:'2px',
-        padding: '5px 8px'
+        padding: '0px 8px',
+        border:'3px solid '+(activeColumn.value === index ? '#e26fff' : '#ffffff')
     };
 };
 
@@ -388,12 +403,16 @@ const accountAuditFn = (type:number = 1,row: TableRow) => {
         getWarehouseZoneIndexFn()
     }else if(type == 4){
         addPurchasingManagementDialog.show2 = true
+    }else if(type == 5){
+        getWarehouseZoneIndexFn()
+        addPurchasingManagementDialog.show5 = true
     }
 }
 
 const DialogCloseFn = (type:number = 1) => {
     addPurchasingManagementDialog.show = false
     addPurchasingManagementDialog.show2 = false
+    addPurchasingManagementDialog.show5 = false
 }
 
 const getWarehouseZoneIndexFn = async ()=>{
@@ -425,13 +444,18 @@ const getAccountrequestProposalFn = async ()=>{
     
     let postData = {
         'search':[
+            // {
+            //     'field':'affiliation_admin_id',
+            //     'val':'=',
+            //     'operator':'NULL',
+            // },
             {
-                'field':'affiliation_admin_id',
-                'val':'=',
-                'operator':'NULL',
-            },{
                 'field':'accountrequest_proposal.admin_id',
                 'val':addPurchasingManagementDialog.admin_id,
+                'operator':'=',
+            },{
+                'field':'accountrequest_proposal.status',
+                'val':0,
                 'operator':'=',
             }
         ],
@@ -443,7 +467,12 @@ const getAccountrequestProposalFn = async ()=>{
         return { id: item.account_id, name: item.account_id+'('+item.time_zone+')'}
     })
 
-    console.log(addPurchasingManagementDialog.accountList);
+
+    addPurchasingManagementDialog.accountList.reverse();
+
+
+
+    //console.log(addPurchasingManagementDialog.accountList);
 }
 
 
@@ -451,6 +480,10 @@ const getAccountrequestProposalFn = async ()=>{
 const confirmAddCommodityFn = (type:number = 1) => {
 
     if(type == 3){
+        if(!addPurchasingManagementDialog.admin_id){
+            tips('请选择渠道')
+            return
+        }
         let confirmFn = async () => {
             let postData = {
                 ids:[addPurchasingManagementDialog.id],
@@ -492,6 +525,41 @@ const confirmAddCommodityFn = (type:number = 1) => {
             baTable.onTableHeaderAction('refresh',[])
         }
         confirmFn()
+    }else if(type==6){
+        let confirmFn = async () => {
+            let postData = {
+                ids:[addPurchasingManagementDialog.id],
+                status:6,
+            }
+            console.log(postData)
+            let res: anyObj = await getAccountAudit(postData)
+            
+            tips('分配重置', 'success')
+            baTable.onTableHeaderAction('refresh',[])
+        }
+        confirmFn()
+    }else if(type==7){
+        if(!addPurchasingManagementDialog.admin_id){
+            tips('请选择渠道')
+            return
+        }
+        let confirmFn = async () => {
+            let postData = {
+                ids:baTable.getSelectionIds(),
+                admin_id:addPurchasingManagementDialog.admin_id,
+                account_ids:addPurchasingManagementDialog.account_ids,
+            }
+            console.log(postData)
+            let res: anyObj = await allAccountAudit(postData)
+
+            addPurchasingManagementDialog.show5 = false
+            addPurchasingManagementDialog.admin_id = ''
+            addPurchasingManagementDialog.account_ids = []
+
+            tips('分配重置', 'success')
+            baTable.onTableHeaderAction('refresh',[])
+        }
+        confirmFn()
     }
     DialogCloseFn()
     //confirmElMessageBox('确定要添加为采购单吗？', confirmFn)
@@ -502,13 +570,13 @@ provide('baTable', baTable)
 
 onMounted(() => {
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()
         baTable.dragSort()
     })
 })
-
 
 
 

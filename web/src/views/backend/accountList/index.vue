@@ -246,6 +246,7 @@ provide('baTable', baTable)
 // baTable.table.filter!.limit = 100
 onMounted(() => {
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()

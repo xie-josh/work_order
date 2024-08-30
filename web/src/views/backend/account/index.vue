@@ -5,7 +5,7 @@
         <!-- 表格顶部菜单 -->
         <!-- 自定义按钮请使用插槽，甚至公共搜索也可以使用具名插槽渲染，参见文档 -->
         <TableHeader
-            :buttons="['refresh', 'add', 'edit', 'delete', 'comSearch', 'quickSearch', 'columnDisplay']"
+            :buttons="['add', 'edit', 'delete', 'comSearch', 'quickSearch', 'columnDisplay']"
             :quick-search-placeholder="t('Quick search placeholder', { fields: t('account.quick Search Fields') })"
         >
         <template #refreshPrepend>
@@ -21,6 +21,8 @@
                 <Icon color="#ffffff" name="el-icon-RefreshRight" />
                 <span class="table-header-operate-text">处理</span>
             </el-button>
+
+            <span style="font-weight:bold;margin-left: 10px;"> 当日可提交新户需求数：</span><span>{{addPurchasingManagementDialog.isAccount != 1?'不能提交开户需求,请找管理员申请开户数量!':addPurchasingManagementDialog.residueAccountNumber}}</span>
         </template>
 
     
@@ -89,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, provide, ref, reactive } from 'vue'
+import { onMounted, provide, ref, reactive,watchEffect  } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PopupForm from './popupForm.vue'
 import { baTableApi } from '/@/api/common'
@@ -98,7 +100,7 @@ import { requestThenFn, tips } from '/@/utils/common';
 import TableHeader from '/@/components/table/header/index.vue'
 import Table from '/@/components/table/index.vue'
 import baTableClass from '/@/utils/baTable'
-import { getAdminList ,getAccountAudit,getAccountDisposeStatus} from '/@/api/backend/index.ts';
+import { getAdminList ,getAccountAudit,getAccountDisposeStatus,getAccountNumber} from '/@/api/backend/index.ts';
 import { number } from 'echarts'
 
 defineOptions({
@@ -118,10 +120,11 @@ const baTable = new baTableClass(
         pk: 'id',
         column: [
             { type: 'selection', align: 'center', operator: false },
-            { label: t('account.id'), prop: 'uuid', align: 'center', width: 100, operator: 'RANGE', sortable: 'custom' },
+            { label: t('account.id'), prop: 'uuid', align: 'center', width: 100, operator: 'eq', sortable: 'custom' },
+            { label: t('account.admin__username'), prop: 'admin.nickname', align: 'center', operatorPlaceholder: t('Fuzzy query'), render: 'tags', operator: 'LIKE' ,width:100},
             { label: t('account.name'), prop: 'name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
             { label: t('account.account_id'), prop: 'account_id', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false ,render: 'tags'},
-            { label: t('account.time_zone'), prop: 'time_zone', align: 'center', operator: 'RANGE', sortable: false ,render: 'customTemplate',width:90,
+            { label: t('account.time_zone'), prop: 'time_zone', align: 'center', operator: false, sortable: false ,render: 'customTemplate',width:90,
                 customTemplate: (row: TableRow, field: TableColumn, value: any, column, index: number) => {
                     value = ref(value.replace('GMT ', '')).value;
                     let color = getTimeZoneColor(value)
@@ -195,6 +198,8 @@ interface AddPurchasingManagementDialog {
     show2:boolean
     disposeStatusList:Array<any>
     disposeStatus:number
+    residueAccountNumber:number,
+    isAccount:number
 }
 const addPurchasingManagementDialog: AddPurchasingManagementDialog = reactive({
     show: false,
@@ -203,7 +208,8 @@ const addPurchasingManagementDialog: AddPurchasingManagementDialog = reactive({
     adminList: [],
     // admin_id:1,
     // status:0,
-    statusList:[]
+    statusList:[],
+    residueAccountNumber:0
 })
 
 const accountAuditFn = (type:number = 1) => {
@@ -261,16 +267,13 @@ const getTimeZoneColor = (timeZone: string): string | undefined => {
   return colorList[timeZone] || '#ffffff';
 }
 
+watchEffect(() => {
+    console.log(1)
+});
+
+
+
 const getWarehouseZoneIndexFn = async ()=>{
-    // 仓库地区
-    // let postData = {
-    // }
-    // let res: anyObj = await getAdminList(postData)
-
-    // addPurchasingManagementDialog.adminList = res.data.list.map((item: anyObj) => {
-    //     return { id: item.id, name: item.username }
-    // })
-
     //审核状态:0=待审核,1=审核通过,2=审核拒绝
     addPurchasingManagementDialog.statusList = [
         {
@@ -280,7 +283,6 @@ const getWarehouseZoneIndexFn = async ()=>{
             id: 2, name: '审核拒绝'
         }
     ]
-
 
     console.log(addPurchasingManagementDialog.adminList)
 }
@@ -322,11 +324,23 @@ const confirmAddCommodityFn = (type:number = 1) => {
     //confirmElMessageBox('确定要添加为采购单吗？', confirmFn)
 }
 
+const getAccountNumberFn = () =>{
+    let confirmFn = async () => {
+        let postData = {}
+        let res: anyObj = await getAccountNumber(postData)
+        console.log(res)
+        addPurchasingManagementDialog.residueAccountNumber = res.data[0].residue_account_number
+        addPurchasingManagementDialog.isAccount = res.data[0].is_account
+    }
+    confirmFn()
+}
 
 provide('baTable', baTable)
 
 onMounted(() => {
+    getAccountNumberFn()
     baTable.table.ref = tableRef.value
+    baTable.table.showComSearch = true
     baTable.mount()
     baTable.getIndex()?.then(() => {
         baTable.initSort()

@@ -46,7 +46,7 @@
         <template #footer>
             <div :style="'width: calc(100% - ' + baTable.form.labelWidth! / 1.8 + 'px)'">
                 <el-button @click="baTable.toggleForm()">{{ t('Cancel') }}</el-button>
-                <el-button v-blur :loading="baTable.form.submitLoading" @click="baTable.onSubmit(formRef)" type="primary">
+                <el-button v-blur :loading="baTable.form.submitLoading" @click="baTable.onSubmit(formRef)"  type="primary">
                     {{ baTable.form.operateIds && baTable.form.operateIds.length > 1 ? t('Save and edit next item') : t('Save') }}
                 </el-button>
             </div>
@@ -56,7 +56,7 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormItemRule } from 'element-plus'
-import { inject, reactive, ref } from 'vue'
+import { inject, reactive, ref,onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import FormItem from '/@/components/formItem/index.vue'
 import { useConfig } from '/@/stores/config'
@@ -67,6 +67,8 @@ const config = useConfig()
 const formRef = ref<FormInstance>()
 const baTable = inject('baTable') as baTableClass
 
+const newMethod = () =>{
+}
 
 const { t } = useI18n()
 
@@ -75,6 +77,8 @@ const rules: Partial<Record<string, FormItemRule[]>> = reactive({
     create_time: [buildValidatorData({ name: 'date', title: t('account.create_time') })],
     update_time: [buildValidatorData({ name: 'date', title: t('account.update_time') })],
 })
+
+
 </script>
 
 <style scoped lang="scss"></style>

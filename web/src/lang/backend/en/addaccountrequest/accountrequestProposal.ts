@@ -7,6 +7,7 @@ export default {
     status: 'status',
     'status 0': 'Unassigned',
     'status 1': 'To allocate',
+    'status 2': 'Not assignable',
     account_id: 'account id',
     create_time: 'create_time',
     update_time: 'update_time',
