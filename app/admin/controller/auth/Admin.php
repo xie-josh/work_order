@@ -70,6 +70,12 @@ class Admin extends Backend
 
     public function channel(): void
     {
+
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId == 2) {
+            $this->dataLimit = false;
+        }
+
         if ($this->request->param('select')) {
             $this->select();
         }
