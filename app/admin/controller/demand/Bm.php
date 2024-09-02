@@ -217,14 +217,24 @@ class Bm extends Backend
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
 
-
                 //dd($checkList);
                 $dataList = [];
-                foreach($checkList as $v){
+                if(!empty($checkList)){
+                    foreach($checkList as $v){
+                        $dataList[] = [
+                            'demand_type'=>$demandType,
+                            'account_id'=>$accountId,
+                            'bm'=>$v,
+                            'account_name'=>$account['name'],
+                            'admin_id'=>$this->auth->id,
+                            'create_time'=>time()
+                        ];
+                    }
+                }else{
                     $dataList[] = [
                         'demand_type'=>$demandType,
                         'account_id'=>$accountId,
-                        'bm'=>$v,
+                        'bm'=>'',
                         'account_name'=>$account['name'],
                         'admin_id'=>$this->auth->id,
                         'create_time'=>time()
