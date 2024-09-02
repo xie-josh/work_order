@@ -18,11 +18,11 @@ class Bm extends Backend
      */
     protected object $model;
 
-    protected array|string $preExcludeFields = ['id', 'account_name', 'status', 'dispose_type','getBmList', 'create_time', 'update_time'];
+    protected array|string $preExcludeFields = ['id', 'account_name', 'status', 'dispose_type', 'create_time', 'update_time'];
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['disposeStatus','index'];
+    protected array $noNeedPermission = ['disposeStatus','index','getBmList'];
 
     protected bool|string|int $dataLimit = 'parent';
 
