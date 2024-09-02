@@ -112,7 +112,7 @@ class Recharge extends Backend
                 $data['account_name'] = $account['name'];
                 $data['admin_id'] = $this->auth->id;
 
-                if($data['type'] ==1) (new DdService())->send(['account_id'=>$data['account_id']]);
+                if($data['type'] ==1 && env('IS_ENV',false)) (new DdService())->send(['account_id'=>$data['account_id']]);
 
                 $result = $this->model->save($data);
                 $this->model->commit();
