@@ -3,6 +3,7 @@
 namespace app\admin\controller\demand;
 
 use app\common\controller\Backend;
+use app\common\service\DdService;
 use think\facade\Db;
 use Throwable;
 
@@ -95,16 +96,13 @@ class Recharge extends Backend
                 $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->where('status',4)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID或账户不可用");
                 
-                
                 if($data['type'] == 1){
-
                     if($data['number'] <= 0) throw new \Exception("充值金额不能小于零");
 
                     $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
                     $usableMoney = ($admin['money'] - $admin['used_money']);
                     if($usableMoney <= 0 || $usableMoney < $data['number']) throw new \Exception("余额不足,请联系管理员！");
 
-                    //DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
                     DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
                 }elseif(in_array($data['type'],[3,4])){
                     $recharge = $this->model->where('account_id',$data['account_id'])->order('id','desc')->find();
@@ -113,6 +111,8 @@ class Recharge extends Backend
                 
                 $data['account_name'] = $account['name'];
                 $data['admin_id'] = $this->auth->id;
+
+                if($data['type'] ==1) (new DdService())->send(['account_id'=>$data['account_id']]);
 
                 $result = $this->model->save($data);
                 $this->model->commit();
