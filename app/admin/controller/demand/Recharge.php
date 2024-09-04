@@ -202,7 +202,7 @@ class Recharge extends Backend
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
 
-                $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
+                $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
 
                 if($status == 1){
                     foreach($ids as $v){
