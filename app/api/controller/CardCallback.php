@@ -17,9 +17,43 @@ class CardCallback extends Frontend
         parent::initialize();
     }
 
+    /**
+    * 发卡交易类型:
+    * auth	消费
+    * corrective_auth	纠正授权
+    * verification	验证
+    * void	撤销
+    * refund	退款
+    * corrective_refund	校正退款
+    * recharge	转入
+    * recharge_return	卡金额退还
+    * discard_recharge_return	销卡退回
+    * service_fee	服务费
+    * refund_reversal	退款撤销
+    * fund_in	汇入
+     * 
+     */
+   
+     /**
+      * 发卡状态:
+      * normal	可用
+      * pending_recharge	待转入
+      * unactivated	未激活
+      * freezing	冻结中
+      * frozen	冻结
+      * risk_frozen	风控冻结
+      * system_frozen	系统冻结
+      * unfreezing	解冻中
+      * expired	过期
+      * canceling	销卡中
+      * cancelled	销卡
+      */
+
 
     public function handleCallback(Request $request)
     {
+
+        //TODO...  该数据没有鉴权，后面补充
         // 获取参数
         $params = $request->param();
         $header = $request->header();
@@ -64,9 +98,9 @@ class CardCallback extends Frontend
             return json(['roger' => false]);
         }
         // 记录日志
-        // Log::info('Received callback', $params);
-        // Log::info(json_encode($params));
-        // Log::info(json_encode($header));
+        Log::info('Received callback', $params);
+        Log::info(json_encode($params));
+        Log::info(json_encode($header));
         // 返回成功响应
         return json(['roger' => true]);
     }
@@ -86,6 +120,7 @@ class CardCallback extends Frontend
         // }
 
         DB::table('ba_cards')->where('id',$cards['id'])->update(['card_status'=>$params['cardStatus'],'update_at'=>$params['updatedAt'],'update_time'=>time()]);
+        DB::table('ba_cards_info')->where('cards_id',$cards['id'])->update(['card_status'=>$params['cardStatus']]);
         return true;
     }
     
@@ -181,5 +216,7 @@ class CardCallback extends Frontend
         DB::table('ba_cards_transactions')->insert($data);
         return true;
     }
+
+    
 
 }

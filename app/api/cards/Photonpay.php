@@ -7,7 +7,7 @@ use think\facade\Db;
 class Photonpay extends Backend implements CardInterface 
 {
     
-    protected $url = 'https://x-api1.uat.photontech.cc';
+    protected $url ;
     protected $accountId;
     protected $appId;
     protected $appSecret;
@@ -19,7 +19,9 @@ class Photonpay extends Backend implements CardInterface
 
     function __construct($cardAccount)
     {
+        //'https://x-api1.uat.photontech.cc'
         $token = json_decode($cardAccount['token'],true);
+        $this->url = env('CARD.PHOTONPAY_RUL');
         $this->appId = $token['appId'];
         $this->appSecret = $token['appSecret'];
         $this->accountId = $cardAccount['id'];
@@ -47,7 +49,7 @@ class Photonpay extends Backend implements CardInterface
             $accessToken = $result['data'];
 
             $data = [
-                'expires_in'=>($accessToken['expiresIn'] / 1000 - 4600),
+                'expires_in'=>($accessToken['expiresIn'] / 1000 - 3600),
                 'access_token'=>$accessToken['token'],
                 'update_time'=>date("Y-m-d H:i:s",time()),
             ];
@@ -107,6 +109,31 @@ class Photonpay extends Backend implements CardInterface
             'Content-Type'=>'application/json',
             'X-PD-TOKEN'=>$this->token
         ];
+        $param = [
+            'cardId'=>$params['card_id'],
+        ];
+        $result = $this->curlHttp($url,$method,$header,$param);
+        if($result['msg'] == 'succeed'){
+            $data = $result['data'];
+            
+            //$cardVcc = $this->cardCvv(['card_id'=>$param['cardId']]);
+            //$data['cvv'] = $cardVcc['data']['cvv'];
+            $data['cvv'] = '';
+            $data['expirationDate'] = '';
+            return $this->returnSucceed($data);
+        }else{
+            return $this->returnError($result['msg']);
+        }
+    }
+
+    public function cardCvv($params):array
+    {
+        $url = "$this->url/vcc/openApi/v4/getCvv";
+        $method = 'GET';
+        $header = [
+            'Content-Type'=>'application/json',
+            'X-PD-TOKEN'=>$this->token
+        ];
         $params = [
             'cardId'=>$params['card_id'],
         ];
@@ -127,6 +154,12 @@ class Photonpay extends Backend implements CardInterface
             'requestId'=>$UUID,
         ];
         if(!empty($params['nickname'])) $param['nickname'] = $params['nickname'];
+        if(!empty($params['max_on_daily'])) $param['maxOnDaily'] = $params['max_on_daily'];
+        if(!empty($params['max_on_monthly'])) $param['maxOnMonthly'] = $params['max_on_monthly'];
+        if(!empty($params['max_on_percent'])) $param['maxOnPercent'] = $params['max_on_percent'];
+        if(!empty($params['transaction_limit_type'])) $param['transactionLimitType'] = $params['transaction_limit_type'];
+        if(!empty($params['transaction_limit_change_type'])) $param['transactionLimitChangeType'] = $params['transaction_limit_change_type'];
+        if(!empty($params['transaction_limit'])) $param['transactionLimit'] = $params['transaction_limit'];
 
         $sign = $this->sign($param);
 

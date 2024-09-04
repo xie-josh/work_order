@@ -6,6 +6,8 @@ use app\common\controller\Backend;
 use app\common\service\DdService;
 use think\facade\Db;
 use Throwable;
+use app\admin\model\card\CardsModel;
+use app\services\CardService;
 
 /**
  * 充值需求
@@ -207,15 +209,40 @@ class Recharge extends Backend
                 if($status == 1){
                     foreach($ids as $v){
                         if($v['type'] == 1){
-                            // $admin = Db::table('ba_admin')->where('id',$v['admin_id'])->find();
-                            // $usableMoney = ($admin['money'] - $admin['used_money']);
-                            // if($usableMoney <= 0 || $usableMoney < $v['number']) throw new \Exception("余额不足,请联系管理员！");
-
                             DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
-                            // DB::table('ba_admin')->where('id',$v['admin_id'])->inc('used_money',$v['number'])->update();
+
+                            $param = [
+                                'transaction_limit_type'=>'limited',
+                                'transaction_limit_change_type'=>'increase',
+                                'transaction_limit'=>$v['number'],
+                            ];
+                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+                            if(empty($cards)) {
+                                //TODO...
+                                //throw new \Exception("未找到分配的卡");
+                            }else{
+                                $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                            }
                         }elseif($v['type'] == 2){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
+
+                            $param = [
+                                'transaction_limit_type'=>'limited',
+                                'transaction_limit_change_type'=>'decrease',
+                                'transaction_limit'=>$v['number'],
+                            ];
+                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+                            if(empty($cards)) {
+                                //TODO...
+                                //throw new \Exception("未找到分配的卡");
+                            }else{
+                                $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                            }
                         }elseif($v['type'] == 3 || $v['type'] == 4){
                             // $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
                             $data = [
@@ -225,6 +252,17 @@ class Recharge extends Backend
                             $this->model->where('id',$v['id'])->update($data);
                             DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$money)->update();
+                            
+
+                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+                            if(empty($cards)) {
+                                //TODO...
+                                //throw new \Exception("未找到分配的卡");
+                            }else{
+                                $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                            }
                         }
                     }
                 }else{

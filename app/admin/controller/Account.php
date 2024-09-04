@@ -2,9 +2,11 @@
 
 namespace app\admin\controller;
 
+use app\admin\model\card\CardsModel;
 use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
+use app\services\CardService;
 
 /**
  * 账户管理
@@ -81,7 +83,6 @@ class Account extends Backend
             ->paginate($limit);
 
         $dataList = $res->toArray()['data'];
-        // dd($dataList);
         if($dataList){
             
             $bmList = [];
@@ -95,9 +96,13 @@ class Account extends Backend
             
             foreach($dataList as &$v){
                 $v['bm_list'] = $bmList[$v['account_id']]??[];
+                $v['admin'] = [
+                    'username'=>$v['admin']['username'],
+                    'nickname'=>$v['admin']['nickname']
+                ];
             }
         }
-        $res->visible(['admin' => ['username']]);
+        //$res->visible(['admin' => ['username']]);
 
         $this->success('', [
             'list'   => $dataList,
@@ -306,8 +311,26 @@ class Account extends Backend
                         }else{
                             $this->model->whereIn('id',$v['id'])->update(['dispose_status'=>1]);
                         }
+                        if($v['money'] > 0){
+                            $param = [
+                                'transaction_limit_type'=>'limited',
+                                'transaction_limit_change_type'=>'increase',
+                                'transaction_limit'=>$v['money'],
+                            ];
+                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+                            if(empty($cards)) {
+                                //TODO...
+                                //throw new \Exception("未找到分配的卡");
+                            }else{
+                                $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                            }
+                        }
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time()]);
+
+
                 }elseif($status == 5){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
                     $accountIds = array_column($ids,'account_id');
@@ -509,6 +532,83 @@ class Account extends Backend
         $number = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
         $accountNumber['residue_account_number'] =  $accountNumber['account_number'] - $number;
         return $this->success('',[$accountNumber]);
+    }
+
+    function distribution()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            Db::startTrans();
+            try {                                
+                $id = $data['id'];
+                $status = $data['status'];
+                //$cardsId = $data['cards_id'];
+                $cardNo = $data['card_no'];
+                $timeZone = $data['time_zone'];
+                $cardStatus = $data['card_status']??0;
+                $accountStatus = $data['account_status']??0;
+
+                $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('id',$id)->where('status',0)->find();
+                if(empty($accountrequestProposal) || !empty($accountrequestProposal['cards_id'])) throw new \Exception('错误：未找到账户或账户不是未分配或已经分配了卡！'); 
+
+                $cards = DB::table('ba_cards_info')->where('card_no',$cardNo)->where('is_use',0)->find();
+                if(empty($cards)) throw new \Exception('错误：未找到卡或卡已经被使用！'); 
+                $accountId = $cards['account_id'];
+                $cardsId = $cards['cards_id'];
+
+                $param = [];
+                $param['card_id'] = $cards['card_id'];
+                $param['nickname'] = $accountrequestProposal['account_id'];
+                $param['transaction_limit_type'] = 'limited';
+                $param['transaction_limit_change_type'] = 'increase';
+                $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
+
+                $proposalData = [
+                    'status'=>$accountStatus,
+                    'time_zone'=>$timeZone,
+                ];
+
+                if($status == 1){
+                    //1.成功（卡状态（已使用）+ 备注 + 限额$2）
+                    $cardsInfo = DB::table('ba_cards_info')->where('cards_id',$cards['cards_id'])->where('is_use',0)->update(['is_use'=>1]);
+                    if(!$cardsInfo) throw new \Exception("请刷新,卡已经被占用！");
+                    $result = (new CardService($accountId))->updateCard($param);
+                    if($result['code'] == 1){
+                        (new CardsModel())->updateCardsInfo($cards,$param);
+                        $proposalData['cards_id'] = $cardsId;
+                    }else{
+                        throw new \Exception($result['msg']);
+                    }                
+                }else if($status == 2){
+                    //2.失败（卡状态列表[已使用/未使用]，账户状态列表[大BM挂/绑卡挂户/其他币种]）
+                    if($cardStatus == 1){
+                        $cardsInfo = DB::table('ba_cards_info')->where('cards_id',$cards['cards_id'])->where('is_use',0)->update(['is_use'=>1]);
+                        if(!$cardsInfo) throw new \Exception("请刷新,卡已经被占用！");
+                        $result = (new CardService($accountId))->updateCard($param);
+                        if($result['code'] == 1){
+                            (new CardsModel())->updateCardsInfo($cards,$param);
+                            $proposalData['cards_id'] = $cardsId;
+                        }else{
+                            throw new \Exception($result['msg']);
+                        }  
+                    }
+                }                
+                DB::table('ba_accountrequest_proposal')->where('id',$id)->update($proposalData);
+                
+                $result = true;
+                Db::commit();
+            } catch (Throwable $e) {
+                Db::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+
     }
 
 
