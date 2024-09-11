@@ -7,7 +7,7 @@ use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
 use app\services\CardService;
-use app\common\service\DdService;
+use app\common\service\QYWXService;
 
 /**
  * 账户管理
@@ -303,7 +303,7 @@ class Account extends Backend
                     //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
                          if(!empty($v['bm'])){
                             DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
-                            if(env('IS_ENV',false)) (new DdService())->bmSend(['account_id'=>$accountId],4);
+                            if(env('IS_ENV',false)) (new QYWXService())->bmSend(['account_id'=>$accountId],4);
                          }
                     }
                 }elseif($status == 4){
@@ -570,35 +570,52 @@ class Account extends Backend
                 $param['transaction_limit_type'] = 'limited';
                 $param['transaction_limit_change_type'] = 'increase';
                 $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
+                $param['transaction_is'] = 1;
 
                 $proposalData = [
                     // 'status'=>$accountStatus,
                     'time_zone'=>$timeZone,
                 ];
 
+                if(!empty($accountStatus)) $proposalData['status'] = $accountStatus;
+                
                 if($status == 1){
                     //1.成功（卡状态（已使用）+ 备注 + 限额$2）
                     $cardsInfo = DB::table('ba_cards_info')->where('cards_id',$cards['cards_id'])->where('is_use',0)->update(['is_use'=>1]);
+
                     if(!$cardsInfo) throw new \Exception("请刷新,卡已经被占用！");
-                    $result = (new CardService($accountId))->updateCard($param);
-                    if($result['code'] == 1){
-                        (new CardsModel())->updateCardsInfo($cards,$param);
-                        $proposalData['cards_id'] = $cardsId;
-                    }else{
-                        throw new \Exception($result['msg']);
-                    }
+
+                    $resultCards = (new CardsModel())->updateCard($cards,$param);
+
+                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    
+                    $proposalData['cards_id'] = $cardsId;
+                    // $result = (new CardService($accountId))->updateCard($param);
+                    // if($result['code'] == 1){
+                    //     (new CardsModel())->updateCardsInfo($cards,$param);
+                    //     $proposalData['cards_id'] = $cardsId;
+                    // }else{
+                    //     throw new \Exception($result['msg']);
+                    // }
                 }else if($status == 2){
                     //2.失败（卡状态列表[已使用/未使用]，账户状态列表[大BM挂/绑卡挂户/其他币种]）
                     if($cardStatus == 1){
                         $cardsInfo = DB::table('ba_cards_info')->where('cards_id',$cards['cards_id'])->where('is_use',0)->update(['is_use'=>1]);
+
                         if(!$cardsInfo) throw new \Exception("请刷新,卡已经被占用！");
-                        $result = (new CardService($accountId))->updateCard($param);
-                        if($result['code'] == 1){
-                            (new CardsModel())->updateCardsInfo($cards,$param);
-                            $proposalData['cards_id'] = $cardsId;
-                        }else{
-                            throw new \Exception($result['msg']);
-                        }  
+
+                        $resultCards = (new CardsModel())->updateCard($cards,$param);
+
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        
+                        $proposalData['cards_id'] = $cardsId;
+                        // $result = (new CardService($accountId))->updateCard($param);
+                        // if($result['code'] == 1){
+                        //     (new CardsModel())->updateCardsInfo($cards,$param);
+                        //     $proposalData['cards_id'] = $cardsId;
+                        // }else{
+                        //     throw new \Exception($result['msg']);
+                        // }  
                     }
                 }                
                 DB::table('ba_accountrequest_proposal')->where('id',$id)->update($proposalData);

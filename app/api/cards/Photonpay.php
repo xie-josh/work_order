@@ -157,9 +157,11 @@ class Photonpay extends Backend implements CardInterface
         if(!empty($params['max_on_daily'])) $param['maxOnDaily'] = $params['max_on_daily'];
         if(!empty($params['max_on_monthly'])) $param['maxOnMonthly'] = $params['max_on_monthly'];
         if(!empty($params['max_on_percent'])) $param['maxOnPercent'] = $params['max_on_percent'];
-        if(!empty($params['transaction_limit_type'])) $param['transactionLimitType'] = $params['transaction_limit_type'];
-        if(!empty($params['transaction_limit_change_type'])) $param['transactionLimitChangeType'] = $params['transaction_limit_change_type'];
-        if(!empty($params['transaction_limit'])) $param['transactionLimit'] = $params['transaction_limit'];
+        if(!empty($params['transaction_limit_type']) && !empty($params['transaction_limit_change_type']) && !empty($params['transaction_limit'])) {
+            $param['transactionLimitType'] = $params['transaction_limit_type'];
+            $param['transactionLimitChangeType'] = $params['transaction_limit_change_type'];
+            $param['transactionLimit'] = $params['transaction_limit'];
+        }
 
         $sign = $this->sign($param);
 
@@ -175,6 +177,12 @@ class Photonpay extends Backend implements CardInterface
         if($result['msg'] == 'succeed'){           
             return $this->returnSucceed();
         }else{
+            DB::table('ba_cards_logs')->insert([
+                'type'=>'update_card',
+                'data'=>json_encode($param),
+                'logs'=>$result['msg'],
+                'create_time'=>date('Y-m-d H:i:s',time())
+            ]);
             return $this->returnError($result['msg']);
         }
 
@@ -189,13 +197,13 @@ class Photonpay extends Backend implements CardInterface
         //     'requestId'=>$UUID,
         //     'status'=>'freeze',  //freeze：冻结卡； unfreeze：解冻卡。
         // ];
-        $params = [
+        $param = [
             'cardId'=>$params['card_id'],
             'requestId'=>$UUID,
             'status'=>'freeze',  //freeze：冻结卡； unfreeze：解冻卡。
         ];
 
-        $sign = $this->sign($params);
+        $sign = $this->sign($param);
 
         $url = "$this->url/vcc/openApi/v4/freezeCard";
         $method = 'POST';
@@ -204,11 +212,17 @@ class Photonpay extends Backend implements CardInterface
             'X-PD-TOKEN'=>$this->token,
             'X-PD-SIGN'=>$sign
         ];
-        $result = $this->curlHttp($url,$method,$header,$params);
+        $result = $this->curlHttp($url,$method,$header,$param);
 
         if($result['msg'] == 'succeed'){           
             return $this->returnSucceed();
         }else{
+            DB::table('ba_cards_logs')->insert([
+                'type'=>'card_freeze',
+                'data'=>json_encode($param),
+                'logs'=>$result['msg'],
+                'create_time'=>date('Y-m-d H:i:s',time())
+            ]);
             return $this->returnError($result['msg']);
         }
     }
@@ -221,13 +235,13 @@ class Photonpay extends Backend implements CardInterface
         //     'requestId'=>$UUID,
         //     'status'=>'freeze',  //freeze：冻结卡； unfreeze：解冻卡。
         // ];
-        $params = [
+        $param = [
             'cardId'=>$params['card_id'],
             'requestId'=>$UUID,
             'status'=>'unfreeze',  //freeze：冻结卡； unfreeze：解冻卡。
         ];
 
-        $sign = $this->sign($params);
+        $sign = $this->sign($param);
 
         $url = "$this->url/vcc/openApi/v4/freezeCard";
         $method = 'POST';
@@ -236,11 +250,17 @@ class Photonpay extends Backend implements CardInterface
             'X-PD-TOKEN'=>$this->token,
             'X-PD-SIGN'=>$sign
         ];
-        $result = $this->curlHttp($url,$method,$header,$params);
+        $result = $this->curlHttp($url,$method,$header,$param);
 
         if($result['msg'] == 'succeed'){           
             return $this->returnSucceed();
         }else{
+            DB::table('ba_cards_logs')->insert([
+                'type'=>'card_unfreeze',
+                'data'=>json_encode($param),
+                'logs'=>$result['msg'],
+                'create_time'=>date('Y-m-d H:i:s',time())
+            ]);
             return $this->returnError($result['msg']);
         }
     }
@@ -253,12 +273,12 @@ class Photonpay extends Backend implements CardInterface
             'Content-Type'=>'application/json',
             'X-PD-TOKEN'=>$this->token
         ];
-        $params = [
+        $param = [
             'cardId'=>$params['card_id'],
             'pageIndex'=>$params['page_index'],
             'pageSize'=>$params['page_size'],
         ];
-        $result = $this->curlHttp($url,$method,$header,$params);
+        $result = $this->curlHttp($url,$method,$header,$param);
         if($result['msg'] == 'succeed'){
             $data = [
                 'data' => $result['data'],

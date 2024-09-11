@@ -63,7 +63,8 @@ class CardsModel extends Model
         if(!empty($params['transaction_limit_type'])) $param['transaction_limit_type'] = $params['transaction_limit_type'];
         if(!empty($params['transaction_limit_change_type'])) $param['transaction_limit_change_type'] = $params['transaction_limit_change_type'];
         if(!empty($params['transaction_limit'])) $param['transaction_limit'] = $params['transaction_limit'];
-        
+        if(!empty($params['transaction_is'])) $param['transaction_is'] = $params['transaction_is'];
+
         try {
             $accountId = $cards['account_id'];
             $cardId = $cards['card_id'];

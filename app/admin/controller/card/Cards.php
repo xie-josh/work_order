@@ -89,7 +89,8 @@ class Cards extends Backend{
         $ids = $data['ids'];
         $error = [];
         
-        $cards = Db::table('ba_cards')->whereIn('id',$ids)->select()->toArray();
+        $cards = Db::table('ba_cards_info')->whereIn('cards_id',$ids)->field('account_id,card_id,card_no')->select()->toArray();
+
         if(empty($cards)) $this->error('未找到卡！');
 
         $result = false;
@@ -99,6 +100,7 @@ class Cards extends Backend{
                 $l++;
                 $accountId = $v['account_id'];
                 $cardId = $v['card_id'];
+                $cardNo = $v['card_no'];
 
                 if($status =='freeze')
                 {
@@ -106,7 +108,7 @@ class Cards extends Backend{
                 }elseif($status == 'unfreeze'){
                     $result = (new CardService($accountId))->cardUnfreeze(['card_id'=>$cardId]);
                 }
-                if($result['code'] != 1) $error[] = ['card_id'=>$cardId,'msg'=>$result['msg']];
+                if($result['code'] != 1) $error[] = ['card_no'=>$cardNo ,'msg'=>$result['msg']];
                 if($l % 3 == 0) sleep(1);
             }
             $result = true;
@@ -115,9 +117,9 @@ class Cards extends Backend{
         }
 
         if ($result !== false) {
-            $this->success(__('Update successful'),$error);
+            $this->success(__('Update successful'),['error'=>$error]);
         } else {
-            $this->error(__('No rows updated'),$error);
+            $this->error(__('No rows updated'),['error'=>$error]);
         }
     }
 
@@ -127,7 +129,7 @@ class Cards extends Backend{
         $ids = $data['ids'];
         $error = [];
         
-        $cards = Db::table('ba_cards')->whereIn('id',$ids)->select()->toArray();
+        $cards = Db::table('ba_cards_info')->whereIn('cards_id',$ids)->field('account_id,card_id,card_no')->select()->toArray();
 
         $param = [];
        
@@ -138,6 +140,7 @@ class Cards extends Backend{
         if(!empty($data['transaction_limit_type'])) $param['transaction_limit_type'] = $data['transaction_limit_type'];
         if(!empty($data['transaction_limit_change_type'])) $param['transaction_limit_change_type'] = $data['transaction_limit_change_type'];
         if(!empty($data['transaction_limit'])) $param['transaction_limit'] = $data['transaction_limit'];
+        $param['transaction_is'] = 0;
         
         $result = false;
         try {
@@ -146,12 +149,13 @@ class Cards extends Backend{
                 $l++;
                 $accountId = $v['account_id'];
                 $cardId = $v['card_id'];
-                //$id = $v['id'];
+                $cardNo = $v['card_no'];
+
                 $param['card_id'] = $cardId;
 
                 $result = (new CardService($accountId))->updateCard($param);
                 if($result['code'] == 1){
-                    $cardInfo = (new CardService(1))->cardInfo(['card_id'=>$cardId]);
+                    $cardInfo = (new CardService($accountId))->cardInfo(['card_id'=>$cardId]);
                     $infoData = $cardInfo['data'];
                     if(!empty($param['nickname'])) DB::table('ba_cards_info')->where('card_id',$cardId)->update(['nickname'=>$infoData['nickname']]);
                     
@@ -169,7 +173,7 @@ class Cards extends Backend{
                         DB::table('ba_cards_info')->where('account_id',$accountId)->where('card_id',$cardId)->update($data);
                     }
                 }else{
-                    $error[] = ['card_id'=>$cardId,'msg'=>$result['msg']];
+                    $error[] = ['card_no'=>$cardNo ,'msg'=>$result['msg']];
                 }
                 if($l % 2 == 0) sleep(1);
             }
@@ -180,9 +184,9 @@ class Cards extends Backend{
         }
 
         if ($result !== false) {
-            $this->success(__('Update successful'),$error);
+            $this->success(__('Update successful'),['error'=>$error]);
         } else {
-            $this->error(__('No rows updated'),$error);
+            $this->error(__('No rows updated'),['error'=>$error]);
         }
     }
 
