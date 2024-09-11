@@ -3,7 +3,7 @@
 namespace app\admin\controller\demand;
 
 use app\common\controller\Backend;
-use app\common\service\DdService;
+use app\common\service\QYWXService;
 use think\facade\Db;
 use Throwable;
 use app\admin\model\card\CardsModel;
@@ -114,7 +114,7 @@ class Recharge extends Backend
                 $data['account_name'] = $account['name'];
                 $data['admin_id'] = $this->auth->id;
 
-                if(in_array($data['type'],[1,2]) && env('IS_ENV',false)) (new DdService())->send(['account_id'=>$data['account_id']],$data['type']);
+                if(in_array($data['type'],[1,2]) && env('IS_ENV',false)) (new QYWXService())->send(['account_id'=>$data['account_id']],$data['type']);
 
                 $result = $this->model->save($data);
                 $this->model->commit();
@@ -195,7 +195,7 @@ class Recharge extends Backend
         if ($this->request->isPost()) {
             $data = $this->request->post();
             $result = false;
-            $this->model->startTrans();
+            DB::startTrans();
             try {
                 $ids = $data['ids'];
                 $status = $data['status'];
@@ -209,7 +209,7 @@ class Recharge extends Backend
                 if($status == 1){
                     foreach($ids as $v){
                         if($v['type'] == 1){
-                            DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time(),'is_'=>1]);
 
                             $param = [
                                 'transaction_limit_type'=>'limited',
@@ -220,7 +220,7 @@ class Recharge extends Backend
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
-                                //throw new \Exception("未找到分配的卡");
+                                throw new \Exception("未找到分配的卡");
                             }else{
                                 $resultCards = (new CardsModel())->updateCard($cards,$param);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -238,7 +238,7 @@ class Recharge extends Backend
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
-                                //throw new \Exception("未找到分配的卡");
+                                throw new \Exception("未找到分配的卡");
                             }else{
                                 $resultCards = (new CardsModel())->updateCard($cards,$param);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -250,7 +250,7 @@ class Recharge extends Backend
                                 'type'=>$type
                             ];
                             $this->model->where('id',$v['id'])->update($data);
-                            DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$money)->update();
                             
 
@@ -258,7 +258,7 @@ class Recharge extends Backend
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
-                                //throw new \Exception("未找到分配的卡");
+                                throw new \Exception("未找到分配的卡");
                             }else{
                                 $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -275,9 +275,9 @@ class Recharge extends Backend
                 }
                 
                 $result = true;
-                $this->model->commit();
+                DB::commit();
             } catch (Throwable $e) {
-                $this->model->rollback();
+                DB::rollback();
                 $this->error($e->getMessage());
             }
             if ($result !== false) {

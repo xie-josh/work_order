@@ -166,6 +166,59 @@ class AccountrequestProposal extends Backend
             'row' => $row
         ]);
     }
+
+    public function Export()
+    {
+        $where = [];
+        $ids = $this->request->post('ids');
+        if($ids) array_push($where,['accountrequest_proposal.id','in',$ids]);
+        
+        $data = DB::table('ba_accountrequest_proposal')
+        ->alias('accountrequest_proposal')
+        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm')
+        ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
+        ->where($where)->select()->toArray();
+
+        $resultAdmin = DB::table('ba_admin')->select()->toArray();
+
+        $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
+
+        $dataList = [];
+        foreach($data as $v){
+            $dataList[] = [
+                'bm'=>$v['bm'],
+                'account_id'=>$v['account_id'],
+                'account_name'=>$v['account_name'],
+                'affiliation_bm'=>$v['affiliation_bm'],
+                'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
+                'account_bm'=> $v['account_bm'],
+            ];  
+        }
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            'bm',
+            'account_id',
+            'account_name',
+            'affiliation_bm',
+            'affiliation_admin_name',
+            'account_bm',
+        ];
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $name = $folders['name'].'.xlsx';
+        $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList)
+            ->output();
+        
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */

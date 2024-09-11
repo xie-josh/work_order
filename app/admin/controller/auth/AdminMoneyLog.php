@@ -100,6 +100,7 @@ class AdminMoneyLog extends Backend
 
                 $money = Db::table('ba_admin')->where('id',$data['admin_id'])->value('money');
                 $money = $money + $rechargeMoney;
+                //$money = floor(($money + $rechargeMoney) * 100) / 100;
                 $money = Db::table('ba_admin')->where('id',$data['admin_id'])->update(['money'=>$money]);
                 
                 $data = [

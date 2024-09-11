@@ -5,6 +5,7 @@ namespace app\admin\controller\demand;
 use app\common\controller\Backend;
 use think\facade\Db;
 use Throwable;
+use app\common\service\QYWXService;
 
 /**
  * BM需求
@@ -217,7 +218,8 @@ class Bm extends Backend
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
 
-                //dd($checkList);
+                if(empty($checkList) && $demandType != 3) throw new \Exception("请填写或需要操作的BM");
+
                 $dataList = [];
                 if(!empty($checkList)){
                     foreach($checkList as $v){
@@ -242,6 +244,8 @@ class Bm extends Backend
                 }
                 //$data['account_name'] = $account['name'];
                 //$data['admin_id'] = $this->auth->id;
+
+                if(env('IS_ENV',false)) (new QYWXService())->bmSend(['account_id'=>$accountId],$demandType);
 
                 $result = $this->model->insertAll($dataList);
 
@@ -330,9 +334,15 @@ class Bm extends Backend
                 $ids = $data['ids'];
                 $status = $data['status'];
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',0)->column('id');
+                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray(); 
 
-                $result = $this->model->whereIn('id',$ids)->update(['status'=>$status,'update_time'=>time()]);
+                foreach($ids as $v){
+                    if($status == 1)$disposeStatus  = 2;
+                    else $disposeStatus = 3;
+                    DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>$disposeStatus]);
+                }
+
+                $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
                 
                 $result = true;
                 $this->model->commit();
@@ -386,7 +396,9 @@ class Bm extends Backend
                 $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray(); 
 
                 foreach($ids as $v){
-                    DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>1]);
+                    if($status == 1)$disposeStatus  = 1;
+                    else $disposeStatus = 4;
+                    DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>$disposeStatus]);
                 }
 
                 $this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'update_time'=>time()]);

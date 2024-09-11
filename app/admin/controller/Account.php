@@ -7,6 +7,7 @@ use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
 use app\services\CardService;
+use app\common\service\DdService;
 
 /**
  * 账户管理
@@ -300,7 +301,10 @@ class Account extends Backend
                     //     DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
 
                     //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
-                         if(!empty($v['bm'])) DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                         if(!empty($v['bm'])){
+                            DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                            if(env('IS_ENV',false)) (new DdService())->bmSend(['account_id'=>$accountId],4);
+                         }
                     }
                 }elseif($status == 4){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
@@ -313,6 +317,7 @@ class Account extends Backend
                         }
                         if($v['money'] > 0){
                             $param = [
+                                //'max_on_percent'=>env('CARD.MAX_ON_PERCENT',901),
                                 'transaction_limit_type'=>'limited',
                                 'transaction_limit_change_type'=>'increase',
                                 'transaction_limit'=>$v['money'],
@@ -321,7 +326,7 @@ class Account extends Backend
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
-                                //throw new \Exception("未找到分配的卡");
+                                throw new \Exception("未找到分配的卡");
                             }else{
                                 $resultCards = (new CardsModel())->updateCard($cards,$param);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -430,9 +435,9 @@ class Account extends Backend
             'usableMoney'=>0
         ];
         $admin = DB::table('ba_admin')->where('id',$this->auth->id)->find();
-        $data['totalMoney'] = $admin['money'];
-        $data['usedMoney'] = $admin['used_money'];
-        $data['usableMoney'] = ($admin['money'] - $admin['used_money']);
+        $data['totalMoney'] = floor($admin['money'] * 100) / 100;
+        $data['usedMoney'] = floor($admin['used_money'] * 100) / 100;
+        $data['usableMoney'] = floor((($admin['money'] - $admin['used_money'])) * 100) / 100;
 
         // if($this->auth->isSuperAdmin()){
         //     $money = $this->model->where('is_',1)->sum('money');
@@ -549,23 +554,25 @@ class Account extends Backend
                 $cardStatus = $data['card_status']??0;
                 $accountStatus = $data['account_status']??0;
 
-                $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('id',$id)->where('status',0)->find();
-                if(empty($accountrequestProposal) || !empty($accountrequestProposal['cards_id'])) throw new \Exception('错误：未找到账户或账户不是未分配或已经分配了卡！'); 
+                $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('id',$id)->find();
+                if(empty($accountrequestProposal) || !empty($accountrequestProposal['cards_id'])) throw new \Exception('错误：未找到账户或已经分配了卡！'); 
 
                 $cards = DB::table('ba_cards_info')->where('card_no',$cardNo)->where('is_use',0)->find();
-                if(empty($cards)) throw new \Exception('错误：未找到卡或卡已经被使用！'); 
+                if(empty($cards) || $cards['card_status'] != 'normal') throw new \Exception('错误：[未找到卡]或[卡已经被使用]或[卡不可使用]！');
+
                 $accountId = $cards['account_id'];
                 $cardsId = $cards['cards_id'];
 
                 $param = [];
                 $param['card_id'] = $cards['card_id'];
                 $param['nickname'] = $accountrequestProposal['account_id'];
+                $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
                 $param['transaction_limit_type'] = 'limited';
                 $param['transaction_limit_change_type'] = 'increase';
                 $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
 
                 $proposalData = [
-                    'status'=>$accountStatus,
+                    // 'status'=>$accountStatus,
                     'time_zone'=>$timeZone,
                 ];
 
@@ -579,7 +586,7 @@ class Account extends Backend
                         $proposalData['cards_id'] = $cardsId;
                     }else{
                         throw new \Exception($result['msg']);
-                    }                
+                    }
                 }else if($status == 2){
                     //2.失败（卡状态列表[已使用/未使用]，账户状态列表[大BM挂/绑卡挂户/其他币种]）
                     if($cardStatus == 1){
