@@ -267,14 +267,14 @@ class Account extends Backend
                 if($status == 1){
 
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                     
                 }elseif($status == 2){
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     foreach($ids as $v){
                         DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
                     }
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                 }elseif($status == 3){
                     $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray();
 
@@ -286,7 +286,8 @@ class Account extends Backend
                             'status'=>3,
                             'account_id'=>$accountId,
                             'is_'=>1,
-                            'update_time'=>time()
+                            'update_time'=>time(),
+                            'operate_admin_id'=>$this->auth->id
                         ];
                         if(!empty($accountrequestProposal['time_zone'])) $data['time_zone'] = $accountrequestProposal['time_zone'];
                         $this->model->where('id',$v['id'])->update($data);
@@ -333,7 +334,7 @@ class Account extends Backend
                             }
                         }
                     }
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time()]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
 
 
                 }elseif($status == 5){
@@ -342,12 +343,12 @@ class Account extends Backend
                     foreach($ids as $v){
                         DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
                     }
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>5,'money'=>0,'update_time'=>time()]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>5,'money'=>0,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                     DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['dispose_type'=>2]);
                 }elseif($status == 6){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
                     $accountIds = array_column($ids,'account_id');
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>1,'account_id'=>'','update_time'=>time()]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>1,'account_id'=>'','update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                     DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['status'=>2,'affiliation_admin_id'=>null]);
 
                     DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['status'=>2]);
