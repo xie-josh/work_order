@@ -23,6 +23,7 @@ class CardListTask extends Command
         ->field('card_account.*,card_platform.name,card_platform.platform')
         ->leftJoin('ba_card_platform card_platform','card_platform.id=card_account.card_platform_id')
         ->where('card_account.status',1)
+        ->whereNotIn('card_account.card_platform_id',2)
         ->select()->toArray();
 
         foreach($account as  $v){

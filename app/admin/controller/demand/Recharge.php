@@ -116,6 +116,8 @@ class Recharge extends Backend
 
                 if(in_array($data['type'],[1,2]) && env('IS_ENV',false)) (new QYWXService())->send(['account_id'=>$data['account_id']],$data['type']);
 
+                if(in_array($data['type'],[3,4])) $data['number'] = 0;
+
                 $result = $this->model->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {

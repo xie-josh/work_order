@@ -26,4 +26,9 @@ class AccountrequestProposal extends Model
         return $this->belongsTo(\app\admin\model\Admin::class, 'affiliation_admin_id', 'id');
     }
 
+    public function cards(): \think\model\relation\BelongsTo
+    {
+        return $this->belongsTo(\app\admin\model\card\CardsInfoModel::class, 'cards_id', 'cards_id');
+    }
+
 }

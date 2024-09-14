@@ -20,8 +20,9 @@ class CardInfoTask extends Command
         //php think CardInfoTask
         $result = DB::table('ba_cards')
             ->alias('cards')
-            ->field('cards.id,cards.account_id,cards.card_id')
+            ->field('cards.id,cards.account_id,cards.card_id,card_platform.platform')
             ->leftJoin('ba_card_account card_account','card_account.id=cards.account_id')
+            ->leftJoin('ba_card_platform card_platform','card_platform.id=card_account.card_platform_id')
             ->where('cards.is_info',0)
             ->where('card_account.status',1)
             ->select()->toArray();

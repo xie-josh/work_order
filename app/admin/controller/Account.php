@@ -302,6 +302,7 @@ class Account extends Backend
                     //     DB::table('ba_accountrequest_proposal')->where('id',$accountrequestProposal['id'])->update(['status'=>1,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
 
                     //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+
                          if(!empty($v['bm'])){
                             DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
                             if(env('IS_ENV',false)) (new QYWXService())->bmSend(['account_id'=>$accountId],4);
@@ -554,6 +555,7 @@ class Account extends Backend
                 $timeZone = $data['time_zone'];
                 $cardStatus = $data['card_status']??0;
                 $accountStatus = $data['account_status']??0;
+                $cardLimitedStatus = $data['card_limited_status']??0;
 
                 $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('id',$id)->find();
                 if(empty($accountrequestProposal) || !empty($accountrequestProposal['cards_id'])) throw new \Exception('错误：未找到账户或已经分配了卡！'); 
@@ -567,12 +569,14 @@ class Account extends Backend
                 $param = [];
                 $param['card_id'] = $cards['card_id'];
                 $param['nickname'] = $accountrequestProposal['account_id'];
-                $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
-                $param['transaction_limit_type'] = 'limited';
-                $param['transaction_limit_change_type'] = 'increase';
-                $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
-                $param['transaction_is'] = 1;
-
+                if($cardLimitedStatus == 1){
+                    $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                    $param['transaction_limit_type'] = 'limited';
+                    $param['transaction_limit_change_type'] = 'increase';
+                    $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
+                    $param['transaction_is'] = 1;
+                }
+                
                 $proposalData = [
                     // 'status'=>$accountStatus,
                     'time_zone'=>$timeZone,
@@ -589,7 +593,6 @@ class Account extends Backend
                     $resultCards = (new CardsModel())->updateCard($cards,$param);
 
                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-                    
                     $proposalData['cards_id'] = $cardsId;
                     // $result = (new CardService($accountId))->updateCard($param);
                     // if($result['code'] == 1){
@@ -618,9 +621,9 @@ class Account extends Backend
                         //     throw new \Exception($result['msg']);
                         // }  
                     }
-                }                
+                }        
                 DB::table('ba_accountrequest_proposal')->where('id',$id)->update($proposalData);
-                
+
                 $result = true;
                 Db::commit();
             } catch (Throwable $e) {

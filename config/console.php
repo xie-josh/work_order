@@ -9,5 +9,6 @@ return [
         'CardInfoTask' => 'app\command\CardInfoTask',
         'AccountTask' => 'app\command\AccountTask',
         'CardTransactionsTask' => 'app\command\CardTransactionsTask',
+        'LampayCardListTask' => 'app\command\LampayCardListTask',
     ],
 ];

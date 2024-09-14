@@ -50,6 +50,7 @@ class AccountrequestProposal extends Backend
 
         //dd($this->request->get());
         array_push($this->withJoinTable,'affiliationAdmin');
+        array_push($this->withJoinTable,'cards');
 
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
@@ -64,7 +65,7 @@ class AccountrequestProposal extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
-        $res->visible(['admin' => ['username','nickname']]);
+        $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no']]);
 
         $this->success('', [
             'list'   => $res->items(),

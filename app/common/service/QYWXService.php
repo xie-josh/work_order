@@ -24,7 +24,6 @@ class QYWXService
         $client = (new Client(['verify' => false,'headers'=>$header]));
         $response = $client->request('POST', $url,['body'=>json_encode($data)]);
         $data = $response->getBody()->getContents();
-        dd($data,2);
     }
 
     function rechargeType($type){

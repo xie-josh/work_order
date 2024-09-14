@@ -4,6 +4,7 @@ namespace app\services;
 use app\api\factories\CardFactory;
 use app\api\interfaces\ApiClientInterface;
 use think\facade\Db;
+use think\facade\Queue;
 
 class CardService
 {
@@ -20,8 +21,8 @@ class CardService
         ->where('card_account.id',$cardAccountId)
         ->find();
 
-        if(empty($account)) throw new \Exception("账户异常!");
-        if($account['status'] != 1) throw new \Exception($account['logs']);
+        if(empty($account)) throw new \Exception("service:账户异常!");
+        if($account['status'] != 1) throw new \Exception('service:'.$account['logs']);
 
         $this->apiClient = CardFactory::create($account);
         
@@ -36,7 +37,7 @@ class CardService
         try {
             return $this->apiClient->cardList($params);
         } catch (\Throwable $th) {
-            $logs = '错误:'.json_encode($th->getMessage());
+            $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
     }
@@ -45,7 +46,7 @@ class CardService
         try {
             return $this->apiClient->cardInfo($params);
         } catch (\Throwable $th) {
-            $logs = '错误:'.json_encode($th->getMessage());
+            $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
     }
@@ -56,7 +57,7 @@ class CardService
             $params = $this->updateCardParams($params);
             return $this->apiClient->updateCard($params);
         } catch (\Throwable $th) {
-            $logs = '错误:'.json_encode($th->getMessage());
+            $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
     }
@@ -66,7 +67,7 @@ class CardService
         try {
             return $this->apiClient->cardFreeze($params);
         } catch (\Throwable $th) {
-            $logs = '错误:'.json_encode($th->getMessage());
+            $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
     }
@@ -76,7 +77,7 @@ class CardService
         try {
             return $this->apiClient->cardUnfreeze($params);
         } catch (\Throwable $th) {
-            $logs = '错误:'.json_encode($th->getMessage());
+            $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
     }
@@ -86,7 +87,7 @@ class CardService
         try {
             return $this->apiClient->transactionDetail($params);
         } catch (\Throwable $th) {
-            $logs = '错误:'.json_encode($th->getMessage());
+            $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
     }
@@ -97,7 +98,7 @@ class CardService
         try {
             return $this->apiClient->test($params);
         } catch (\Throwable $th) {
-            $logs = '错误:'.json_encode($th->getMessage());
+            $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
     }
@@ -106,9 +107,7 @@ class CardService
 
     public function updateCardParams($params)
     {
-
         $param = [];
-
         $param['card_id'] = $params['card_id'];
         if(!empty($params['nickname'])) $param['nickname'] = $params['nickname'];
         if(!empty($params['max_on_daily'])) $param['max_on_daily'] = $params['max_on_daily'];
@@ -137,7 +136,10 @@ class CardService
 
             }elseif($this->platform == 'lampay'){
                 //不需要处理，没有加减的概览
-
+                if(!empty($params['max_on_percent']) || !empty($params['transaction_limit'])){
+                    $param['max_on_percent'] = (int)$param['max_on_percent'];
+                    $param['transaction_limit'] = (int)$param['transaction_limit'];
+                }          
             }else{
                 return ['code'=>0,'msg'=>'未找到该平台！'];
                 // throw new \Exception('未找到该平台！');
@@ -151,10 +153,19 @@ class CardService
                 $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
                 if($cardInfo['code'] != 1) throw new \Exception($cardInfo['msg']);
                 $totalTransactionLimit = $cardInfo['data']['totalTransactionLimit']??0;
-                if($params['transaction_limit_change_type'] == 'increase'){
+                if(!empty($params['transaction_limit']) && $params['transaction_limit_change_type'] == 'increase'){
                     $param['transaction_limit'] = $totalTransactionLimit + $params['transaction_limit'];
-                }elseif($params['transaction_limit_change_type'] == 'decrease'){
-                    $params['transaction_limit'] = $totalTransactionLimit - $params['transaction_limit'];
+                }elseif(!empty($params['transaction_limit']) && $params['transaction_limit_change_type'] == 'decrease'){
+                    $param['transaction_limit'] = $totalTransactionLimit - $params['transaction_limit'];
+                }
+                
+                //lamp (两个要是必填，不然报错)
+                //只能填整数
+                if(!empty($params['max_on_percent']) || !empty($params['transaction_limit'])){
+                    if(empty($params['max_on_percent'])) $param['max_on_percent'] = $cardInfo['data']['maxOnPercent'];
+                    if(empty($params['transaction_limit'])) $param['transaction_limit'] = $cardInfo['data']['totalTransactionLimit'];
+                    $param['max_on_percent'] = (int)$param['max_on_percent'];
+                    $param['transaction_limit'] = (int)$param['transaction_limit'];
                 }
             }else{
                 return ['code'=>0,'msg'=>'未找到该平台！'];
@@ -163,6 +174,7 @@ class CardService
         }
         return $param;
     }
+    
 
 
     // public function fetchData($endpoint, $method = 'GET', $data = [])

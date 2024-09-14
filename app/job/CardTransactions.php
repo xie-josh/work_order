@@ -12,7 +12,14 @@ class CardTransactions
     {
         //php think queue:listen --queue CardTransactions
         sleep(1);
-        $this->photonpayCardTransactions($data);
+        
+        if($data['platform'] == 'photonpay')
+        {
+            $this->photonpayCardTransactions($data);
+        }elseif($data['platform'] == 'lampay')
+        {
+            
+        }
         $job->delete();
     }
 

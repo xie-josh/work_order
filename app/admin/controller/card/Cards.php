@@ -48,7 +48,7 @@ class Cards extends Backend{
             ->order($order)
             ->paginate($limit);
 
-        $res->visible(['cardInfo' => ['nickname','card_no']]);
+        $res->visible(['cardInfo' => ['nickname','card_no','card_status']]);
 
 
         $this->success('', [
@@ -65,6 +65,7 @@ class Cards extends Backend{
         $id = $data['id'];
         
         $row = Db::table('ba_cards_info')->where('cards_id',$id)->find();
+        (new CardsModel())->updateCardsInfo($row);
         $this->success('', [
             'row' => $row
         ]);
@@ -75,7 +76,6 @@ class Cards extends Backend{
         $data = $this->request->get();
         $id = $data['id'];
         $row = Db::table('ba_cards_transactions')->where('cards_id',$id)->order('created_at','desc')->select()->toArray();
-
         $this->success('', [
             'row' => $row
         ]);
@@ -109,7 +109,7 @@ class Cards extends Backend{
                     $result = (new CardService($accountId))->cardUnfreeze(['card_id'=>$cardId]);
                 }
                 if($result['code'] != 1) $error[] = ['card_no'=>$cardNo ,'msg'=>$result['msg']];
-                if($l % 3 == 0) sleep(1);
+                //if($l % 3 == 0) sleep(1);
             }
             $result = true;
         } catch (\Throwable $th) {
@@ -139,9 +139,15 @@ class Cards extends Backend{
         if(!empty($data['max_on_percent'])) $param['max_on_percent'] = $data['max_on_percent'];
         if(!empty($data['transaction_limit_type'])) $param['transaction_limit_type'] = $data['transaction_limit_type'];
         if(!empty($data['transaction_limit_change_type'])) $param['transaction_limit_change_type'] = $data['transaction_limit_change_type'];
-        if(!empty($data['transaction_limit'])) $param['transaction_limit'] = $data['transaction_limit'];
-        $param['transaction_is'] = 0;
-        
+        if(!empty($data['transaction_limit'])) $param['transaction_limit'] = $data['transaction_limit'];    
+        if(!empty($data['transaction_limit_type']) && $data['transaction_limit_type'] == 'cover'){
+            $param['transaction_is'] = 1;
+        }else{
+            $param['transaction_is'] = 0;
+        }
+
+        if(!empty($data['transaction_limit_type']) && $data['transaction_limit_type'] == 'cover' && empty($data['transaction_limit']))  $this->error('请填写覆盖金额！');
+
         $result = false;
         try {
             $l = 0;
@@ -175,7 +181,7 @@ class Cards extends Backend{
                 }else{
                     $error[] = ['card_no'=>$cardNo ,'msg'=>$result['msg']];
                 }
-                if($l % 2 == 0) sleep(1);
+                //if($l % 2 == 0) sleep(1);
             }
 
             $result = true;
