@@ -139,7 +139,8 @@ class CardService
                 if(!empty($params['max_on_percent']) || !empty($params['transaction_limit'])){
                     $param['max_on_percent'] = (int)$param['max_on_percent'];
                     $param['transaction_limit'] = (int)$param['transaction_limit'];
-                }          
+                    if($param['transaction_limit'] < 1) return ['code'=>0,'msg'=>'限额不能小于1'];
+                }
             }else{
                 return ['code'=>0,'msg'=>'未找到该平台！'];
                 // throw new \Exception('未找到该平台！');
@@ -166,12 +167,13 @@ class CardService
                     if(empty($params['transaction_limit'])) $param['transaction_limit'] = $cardInfo['data']['totalTransactionLimit'];
                     $param['max_on_percent'] = (int)$param['max_on_percent'];
                     $param['transaction_limit'] = (int)$param['transaction_limit'];
+                    if($param['transaction_limit'] < 1) return ['code'=>0,'msg'=>'限额不能小于1'];
                 }
             }else{
                 return ['code'=>0,'msg'=>'未找到该平台！'];
                 // throw new \Exception('未找到该平台！');
             }
-        }
+        }        
         return $param;
     }
     
