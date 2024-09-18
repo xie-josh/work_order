@@ -318,6 +318,7 @@ class Account extends Backend
                             $this->model->whereIn('id',$v['id'])->update(['dispose_status'=>1]);
                         }
                         if($v['money'] > 0){
+                            $this->model->whereIn('id',$v['id'])->update(['open_money'=>$v['money']]);
                             $param = [
                                 //'max_on_percent'=>env('CARD.MAX_ON_PERCENT',901),
                                 'transaction_limit_type'=>'limited',
@@ -335,7 +336,7 @@ class Account extends Backend
                             }
                         }
                     }
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
 
 
                 }elseif($status == 5){
@@ -410,7 +411,7 @@ class Account extends Backend
                 $ids = $data['ids'];
                 $status = $data['status'];
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',1)->column('id'); 
+                $ids = $this->model->whereIn('id',$ids)->column('id');
 
                 $result = $this->model->whereIn('id',$ids)->update(['is_'=>$status]);
 
@@ -561,7 +562,7 @@ class Account extends Backend
                 if(empty($accountrequestProposal) || !empty($accountrequestProposal['cards_id'])) throw new \Exception('错误：未找到账户或已经分配了卡！'); 
 
                 $cards = DB::table('ba_cards_info')->where('card_no',$cardNo)->where('is_use',0)->find();
-                if(empty($cards) || $cards['card_status'] != 'normal') throw new \Exception('错误：[未找到卡]或[卡已经被使用]或[卡不可使用]！');
+                if(empty($cards)) throw new \Exception('错误：[未找到卡]或[卡已经被使用]或[卡不可使用]！');
 
                 $accountId = $cards['account_id'];
                 $cardsId = $cards['cards_id'];

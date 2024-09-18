@@ -210,8 +210,11 @@ class Recharge extends Backend
 
                 if($status == 1){
                     foreach($ids as $v){
+                        $accountIs_ = DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->value('is_');
+                        if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+
                         if($v['type'] == 1){
-                            DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time(),'is_'=>1]);
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
 
                             $param = [
                                 'transaction_limit_type'=>'limited',
