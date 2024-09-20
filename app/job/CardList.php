@@ -11,14 +11,29 @@ class CardList
 {
     public function fire(Job $job, $data)
     {
-        //php think queue:listen --queue CardList
-        if($data['platform'] == 'photonpay')
-        {
-            $this->photonpayCardList($data);
-        }elseif($data['platform'] == 'lampay'){
-            $this->lampayCardList($data);
+
+        try {
+            //php think queue:listen --queue CardList
+            if($data['platform'] == 'photonpay')
+            {
+                $this->photonpayCardList($data);
+            }elseif($data['platform'] == 'lampay'){
+                $this->lampayCardList($data);
+            }
+            $job->delete();
+
+        } catch (\Throwable $th) {
+
+            if ($job->attempts() >= 3) {
+                // 超过3次，删除任务
+                $job->delete();
+            }
+            //throw $th;
         }
-        $job->delete();
+        if ($job->attempts() >= 3) {
+            // 超过3次，删除任务
+            $job->delete();
+        }
         //$acc = (new CardService($data['id']))->cardList([]);
         //dd(1,$acc);
         
@@ -187,7 +202,7 @@ class CardList
             Db::commit();
         } catch (\Throwable $th) {
             Db::rollback();
-            $logs = '错误:('.$th->getLine().')'.json_encode($th->getMessage());
+            $logs = '错误:('.$pageIndex.'-'.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
             $is_ = false;
             DB::table('ba_card_account')->where('id',$accountId)->update(['status'=>2,'update_time'=>date('Y-m-d H:i:s',time()),'logs'=>$logs]);
