@@ -24,6 +24,8 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
+    protected array $noNeedPermission = ['Export'];
+
     protected bool|string|int $dataLimit = 'parent';
 
     public function initialize(): void
