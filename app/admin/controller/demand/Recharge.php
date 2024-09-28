@@ -263,7 +263,7 @@ class Recharge extends Backend
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
-                                //throw new \Exception("未找到分配的卡");
+                                if($resultProposal['is_cards'] != 2) throw new \Exception("未找到分配的卡");
                             }else{
                                 $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);

@@ -664,6 +664,53 @@ class Account extends Backend
     }
 
 
+    public function import(){
+
+        $result = false;
+        try {
+            $file = $this->request->file('file');
+            
+            $path = '/www/wwwroot/workOrder.test/public/storage/excel';
+            $fineName = 'accountImport.xlsx';
+
+            $info = $file->move($path,$fineName);
+    
+            $config = [
+                'path' => $path
+            ];
+
+            $excel = new \Vtiful\Kernel\Excel($config);
+
+            $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
+ 
+            $data = [];
+            foreach($fileObject as $v){
+                if(empty($v[0]) || empty($v[1]) || empty($v[2]) || empty($v[3]) || empty($v[4])) continue;
+                $data[] = [
+                    'name'=>$v[0],
+                    'time_zone'=>$v[2],
+                    'bm'=>$v[1],
+                    'money'=>$v[3],
+                    'admin_id'=>$v[4],
+                    'status'=>1,
+                    'create_time'=>time()
+                ];
+            }
+
+            DB::table('ba_account')->insertAll($data);
+            $result = true;
+            $fileObject->closeSheet();  
+            //code...
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+        if ($result !== false) {
+            $this->success(__('Added successfully'));
+        } else {
+            $this->error(__('No rows were added'));
+        }
+    }
+
 
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
