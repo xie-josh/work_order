@@ -670,9 +670,9 @@ class Account extends Backend
         try {
             $file = $this->request->file('file');
             
-            $path = '/www/wwwroot/workOrder.test/public/storage/excel';
+            //$path = '/www/wwwroot/workOrder.test/public/storage/excel';
+            $path = $_SERVER['DOCUMENT_ROOT'].'/storage/excel';
             $fineName = 'accountImport.xlsx';
-
             $info = $file->move($path,$fineName);
     
             $config = [
@@ -685,7 +685,8 @@ class Account extends Backend
  
             $data = [];
             foreach($fileObject as $v){
-                if(empty($v[0]) || empty($v[1]) || empty($v[2]) || empty($v[3]) || empty($v[4])) continue;
+                if(empty($v[0]) || empty($v[1]) || empty($v[2]) || empty($v[4])) continue;
+                if(empty($v[3])) $v[3] = 0;
                 $data[] = [
                     'name'=>$v[0],
                     'time_zone'=>$v[2],
