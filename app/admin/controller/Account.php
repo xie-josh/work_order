@@ -3,6 +3,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\card\CardsModel;
+use think\facade\Cache;
 use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
@@ -327,11 +328,18 @@ class Account extends Backend
                             ];
                             $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+
+                            $key = 'account_audit_'.$v['id'];
+                            $redisValue = Cache::store('redis')->get($key);
+                            if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+                                                        
                             if(empty($cards)) {
                                 //TODO...
                                 throw new \Exception("未找到分配的卡");
                             }else{
+                                Cache::store('redis')->set($key, '1', 180);
                                 $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                Cache::store('redis')->delete($key);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                             }
                         }
