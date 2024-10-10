@@ -8,6 +8,7 @@ use think\facade\Db;
 use Throwable;
 use app\admin\model\card\CardsModel;
 use app\services\CardService;
+use think\facade\Cache;
 
 /**
  * 充值需求
@@ -210,6 +211,12 @@ class Recharge extends Backend
 
                 if($status == 1){
                     foreach($ids as $v){
+
+                        $key = 'recharge_audit_'.$v['id'];
+                        $redisValue = Cache::store('redis')->get($key);
+                        if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+                        Cache::store('redis')->set($key, '1', 180);
+
                         $accountIs_ = DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->value('is_');
                         if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
@@ -269,6 +276,7 @@ class Recharge extends Backend
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                             }
                         }
+                        Cache::store('redis')->delete($key);
                     }
                 }else{
                     foreach($ids as $v){
