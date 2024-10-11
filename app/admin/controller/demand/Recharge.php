@@ -291,6 +291,7 @@ class Recharge extends Backend
                 DB::commit();
             } catch (Throwable $e) {
                 DB::rollback();
+                Cache::store('redis')->delete($key);
                 $this->error($e->getMessage());
             }
             if ($result !== false) {
