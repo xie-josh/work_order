@@ -186,6 +186,8 @@ class AccountrequestProposal extends Backend
 
         $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
+        $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户'];
+
         $dataList = [];
         foreach($data as $v){
             $dataList[] = [
@@ -195,6 +197,7 @@ class AccountrequestProposal extends Backend
                 'affiliation_bm'=>$v['affiliation_bm'],
                 'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
                 'account_bm'=> $v['account_bm'],
+                'status'=> $statusValue[$v['status']]??'未知的状态',
             ];  
         }
 
@@ -206,6 +209,7 @@ class AccountrequestProposal extends Backend
             'affiliation_bm',
             'affiliation_admin_name',
             'account_bm',
+            'status'
         ];
 
         $config = [
