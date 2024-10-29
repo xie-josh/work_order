@@ -366,15 +366,21 @@ class Bm extends Backend
             $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
             if(empty($account)) throw new \Exception("未找到该账户ID");
 
-            //$bmList =  DB::table('ba_bm')->where('account_id',$accountId)->order('demand_type')->group('account_id,bm')->select()->toArray();
-
-            $result = Db::table('ba_bm')
-            ->alias('t1')
-            ->where('t1.account_id',$accountId)
-            ->join('(SELECT account_id, bm, MAX(id) AS max_id FROM ba_bm GROUP BY account_id, bm) t2', 't1.id = t2.max_id')
-            ->order('t1.id', 'desc')
-            ->having('demand_type = 1')
+            $result =  DB::table('ba_bm')
+            ->where('account_id',$accountId)
+            ->whereIn('demand_type',[1,4])
+            ->where('dispose_type',1)
+            ->where('new_status',1)
+            ->group('account_id,bm')
             ->select()->toArray();
+
+            // $result = Db::table('ba_bm')
+            // ->alias('t1')
+            // ->where('t1.account_id',$accountId)
+            // ->join('(SELECT account_id, bm, MAX(id) AS max_id FROM ba_bm GROUP BY account_id, bm) t2', 't1.id = t2.max_id')
+            // ->order('t1.id', 'desc')
+            // ->having('demand_type = 1')
+            // ->select()->toArray();
 
             $bmList = array_column($result,'bm');
         } catch (\Throwable $th) {
@@ -395,13 +401,19 @@ class Bm extends Backend
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray(); 
 
+                $accountIds = [];
                 foreach($ids as $v){
-                    if($status == 1)$disposeStatus  = 1;
-                    else $disposeStatus = 4;
-                    DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>$disposeStatus]);
+                    $accountIds[] = $v['account_id'];
+                    if($v['demand_type'] == 2 && $status == 1){
+                        $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
+                    }
                 }
-
+                
                 $this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'update_time'=>time()]);
+
+                if($status == 1)$disposeStatus  = 1;
+                else $disposeStatus = 4;
+                DB::table('ba_account')->whereIn('account_id',$accountIds)->where('dispose_status',2)->update(['dispose_status'=>$disposeStatus]);
 
                 $result = true;
                 $this->model->commit();

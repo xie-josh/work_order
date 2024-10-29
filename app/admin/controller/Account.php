@@ -90,7 +90,12 @@ class Account extends Backend
             $bmList = [];
             if($status == 3){
                 $accountIds = array_column($dataList,'account_id');
-                $resultBm = DB::table('ba_bm')->where('status',1)->whereIn('account_id',$accountIds)->select()->toArray();
+                $resultBm = DB::table('ba_bm')->where('status',1)
+                ->whereIn('account_id',$accountIds)
+                ->whereIn('demand_type',[1,4])
+                ->where('dispose_type',1)
+                ->where('new_status',1)
+                ->select()->toArray();
                 foreach($resultBm as $v){
                     $bmList[$v['account_id']][] = $v['bm'];
                 }
@@ -254,8 +259,7 @@ class Account extends Backend
 
 
     public function audit(): void
-    {
-       
+    {   
         if ($this->request->isPost()) {
             $data = $this->request->post();
             $result = false;
@@ -264,6 +268,13 @@ class Account extends Backend
                 $ids = $data['ids'];
                 $accountId = $data['account_id']??0;
                 $status = $data['status'];
+
+                foreach($ids as $k => $v){
+                    $key = 'account_audit_'.$v['id'];
+                    $redisValue = Cache::store('redis')->get($key);
+                    if(!empty($redisValue)) unset($ids[$k]);
+                    Cache::store('redis')->set($key, '1', 120);
+                }
 
                 if($status == 1){
 
