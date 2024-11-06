@@ -104,6 +104,16 @@ class CardService
     }
 
 
+    public function cardGetLimits($params){
+        try {
+            return $this->apiClient->cardGetLimits($params);
+        } catch (\Throwable $th) {
+            $logs = '错误(service):'.json_encode($th->getMessage());
+            return ['code'=>0,'msg'=>$logs];
+        }
+    }
+
+
 
     public function updateCardParams($params)
     {
@@ -141,6 +151,8 @@ class CardService
                     $param['transaction_limit'] = (int)$param['transaction_limit'];
                     if($param['transaction_limit'] < 1) throw new \Exception('限额不能小于1');
                 }
+            }elseif($this->platform == 'airwallex'){
+                
             }else{
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');
@@ -169,6 +181,15 @@ class CardService
                     $param['transaction_limit'] = (int)$param['transaction_limit'];
                     if($param['transaction_limit'] < 1) throw new \Exception('限额不能小于1');
                 }
+            }elseif($this->platform == 'airwallex'){
+                $cardInfo = $this->cardGetLimits(['card_id'=>$params['card_id']]);
+                if($cardInfo['code'] != 1) throw new \Exception($cardInfo['msg']);
+                $totalTransactionLimit = $cardInfo['data']['limits']['ALL_TIME_AMOUNT']??0; 
+                if(!empty($params['transaction_limit']) && $params['transaction_limit_change_type'] == 'increase'){
+                    $param['transaction_limit'] = $totalTransactionLimit + $params['transaction_limit'];
+                }elseif(!empty($params['transaction_limit']) && $params['transaction_limit_change_type'] == 'decrease'){
+                    $param['transaction_limit'] = $totalTransactionLimit - $params['transaction_limit'];
+                }                
             }else{
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');

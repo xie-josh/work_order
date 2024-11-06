@@ -64,7 +64,7 @@ class Cards extends Backend{
         $data = $this->request->get();
         $id = $data['id'];
         
-        $row = Db::table('ba_cards_info')->where('cards_id',$id)->find();
+        $row = Db::table('ba_cards_info')->field('card_no,account_id,card_id')->where('cards_id',$id)->find();
         (new CardsModel())->updateCardsInfo($row);
         $this->success('', [
             'row' => $row
@@ -75,7 +75,7 @@ class Cards extends Backend{
     {
         $data = $this->request->get();
         $id = $data['id'];
-        $row = Db::table('ba_cards_transactions')->where('cards_id',$id)->order('created_at','desc')->select()->toArray();
+        $row = Db::table('ba_cards_transactions')->where('cards_id',$id)->limit(50)->order('created_at','desc')->select()->toArray();
         $this->success('', [
             'row' => $row
         ]);
@@ -89,7 +89,7 @@ class Cards extends Backend{
         $ids = $data['ids'];
         $error = [];
         
-        $cards = Db::table('ba_cards_info')->whereIn('cards_id',$ids)->field('account_id,card_id,card_no')->select()->toArray();
+        $cards = Db::table('ba_cards_info')->whereIn('cards_id',$ids)->field('id,account_id,card_id,card_no')->select()->toArray();
 
         if(empty($cards)) $this->error('未找到卡！');
 
@@ -108,6 +108,7 @@ class Cards extends Backend{
                 }elseif($status == 'unfreeze'){
                     $result = (new CardService($accountId))->cardUnfreeze(['card_id'=>$cardId]);
                 }
+                if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$v['id'])->update(['card_status'=>$result['data']['cardStatus']]);
                 if($result['code'] != 1) $error[] = ['card_no'=>$cardNo ,'msg'=>$result['msg']];
                 //if($l % 3 == 0) sleep(1);
             }
