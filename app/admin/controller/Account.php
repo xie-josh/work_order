@@ -269,12 +269,12 @@ class Account extends Backend
                 $accountId = $data['account_id']??0;
                 $status = $data['status'];
 
-                foreach($ids as $k => $v){
-                    $key = 'account_audit_'.$v['id'];
-                    $redisValue = Cache::store('redis')->get($key);
-                    if(!empty($redisValue)) unset($ids[$k]);
-                    Cache::store('redis')->set($key, '1', 120);
-                }
+                // foreach($ids as $k => $v){
+                //     $key = 'account_audit_'.$v['id'];
+                //     $redisValue = Cache::store('redis')->get($key);
+                //     if(!empty($redisValue)) unset($ids[$k]);
+                //     Cache::store('redis')->set($key, '1', 120);
+                // }
 
                 if($status == 1){
 
