@@ -338,6 +338,7 @@ class Account extends Backend
                                 'transaction_limit'=>$v['money'],
                             ];
                             $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
 
                             $key = 'account_audit_'.$v['id'];

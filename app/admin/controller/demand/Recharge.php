@@ -229,6 +229,7 @@ class Recharge extends Backend
                                 'transaction_limit'=>$v['number'],
                             ];
                             $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
@@ -247,6 +248,7 @@ class Recharge extends Backend
                                 'transaction_limit'=>$v['number'],
                             ];
                             $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
@@ -267,10 +269,12 @@ class Recharge extends Backend
                             
 
                             $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
                                 //TODO...
-                                if($resultProposal['is_cards'] != 2) throw new \Exception("未找到分配的卡");
+                                // if($resultProposal['is_cards'] != 2) throw new \Exception("未找到分配的卡");
+                                throw new \Exception("未找到分配的卡");
                             }else{
                                 $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
