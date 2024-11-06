@@ -261,6 +261,10 @@ class Lampay extends Backend implements CardInterface
             return $this->returnError($result['msg']);
         }
     }
+    public function cardGetLimits($params):array
+    {
+        return [];
+    }
     public function transactionDetail($params):array{
         return [];
     }
