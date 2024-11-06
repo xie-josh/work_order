@@ -64,7 +64,7 @@ class Cards extends Backend{
         $data = $this->request->get();
         $id = $data['id'];
         
-        $row = Db::table('ba_cards_info')->field('card_no,account_id,card_id')->where('cards_id',$id)->find();
+        $row = Db::table('ba_cards_info')->where('cards_id',$id)->find();
         (new CardsModel())->updateCardsInfo($row);
         $this->success('', [
             'row' => $row
