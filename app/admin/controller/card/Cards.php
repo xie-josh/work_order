@@ -65,9 +65,9 @@ class Cards extends Backend{
         $id = $data['id'];
         
         $row = Db::table('ba_cards_info')->where('cards_id',$id)->find();
-        (new CardsModel())->updateCardsInfo($row);
+        $row = (new CardsModel())->updateCardsInfo($row);
         $this->success('', [
-            'row' => $row
+            'row' => $row['data']??[]
         ]);
     }
 

@@ -45,7 +45,10 @@ class CardsModel extends Model
         } catch (\Throwable $th) {
             return ['code'=>0,'msg'=>$th->getMessage()];
         }
-        return ['code'=>1,'msg'=>''];
+        $row = Db::table('ba_cards_info')->where('card_id',$cardId)->find();
+        $row['cvv'] = $infoData['cvv']??'';
+        $row['expiration_date'] = $infoData['expirationDate']??'';
+        return ['code'=>1,'msg'=>'','data'=>$row];
     }
 
     public function updateCard($cards,$params)
