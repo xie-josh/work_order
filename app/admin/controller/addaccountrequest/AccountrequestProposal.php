@@ -91,6 +91,7 @@ class AccountrequestProposal extends Backend
                 $timeZone = $data['timeZone'];
                 $adminId = $data['adminId'];
                 $isCards = $data['is_cards']??0;
+                $type = $data['type']??1;
                 $dataList = [];
 
                 if(empty($ids)) throw new \Exception("账户为空！");
@@ -104,6 +105,7 @@ class AccountrequestProposal extends Backend
                         'time_zone'=>$timeZone,
                         'account_id'=>$v,
                         'is_cards'=>$isCards,
+                        'type'=>$type,
                         'create_time'=>time()
                     ];
                 }

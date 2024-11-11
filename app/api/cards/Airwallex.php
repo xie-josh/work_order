@@ -156,7 +156,7 @@ class Airwallex extends Backend implements CardInterface
                 'firstName'=>'',
                 'lastName'=>'',
                 'maskCardNo'=>$result['card_number'],
-                'maxOnDaily'=>'',
+                'maxOnDaily'=>$maxOnDaily,
                 'maxOnMonthly'=>'',
                 'maxOnPercent'=>$maxOnPercent,
                 'mobile'=>'',
@@ -236,6 +236,7 @@ class Airwallex extends Backend implements CardInterface
 
         if(!empty($params['max_on_percent'])) array_push($transactionLimits,['interval'=>'PER_TRANSACTION','amount'=>$params['max_on_percent']]);
         if(!empty($params['transaction_limit'])) array_push($transactionLimits,['interval'=>'ALL_TIME','amount'=>$params['transaction_limit']]);
+        if(!empty($params['max_on_daily'])) array_push($transactionLimits,['interval'=>'DAILY','amount'=>$params['max_on_daily']]);
 
         $param = [
             'cardId'=>$params['card_id'],

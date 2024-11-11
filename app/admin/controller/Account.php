@@ -25,7 +25,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution'];
+    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -643,6 +643,64 @@ class Account extends Backend
                         // }  
                     }
                 }        
+                DB::table('ba_accountrequest_proposal')->where('id',$id)->update($proposalData);
+
+                $result = true;
+                Db::commit();
+            } catch (Throwable $e) {
+                Db::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+
+    }
+
+    function inDistribution()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            Db::startTrans();
+            try {                                
+                $id = $data['id'];
+                $cardNo = $data['card_no'];                
+                $limited = $data['limited'];
+                
+                if(empty($id) || empty($cardNo) || empty($limited)) throw new \Exception('Params Required');
+
+                $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('id',$id)->find();
+                if(empty($accountrequestProposal)) throw new \Exception('错误：未找到账户！'); 
+
+                $cards = DB::table('ba_cards_info')->where('card_no',$cardNo)->where('is_use',0)->find();
+                if(empty($cards)) throw new \Exception('错误：[未找到卡]或[卡已经被使用]或[卡不可使用]！');
+
+                $cardsId = $cards['cards_id'];
+
+                $param = [];
+                $param['card_id'] = $cards['card_id'];
+                $param['nickname'] = $accountrequestProposal['account_id'];
+                $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                $param['transaction_limit_type'] = 'limited';
+                $param['transaction_limit_change_type'] = 'increase';
+                $param['transaction_limit'] = $limited;
+                $param['transaction_is'] = 1;
+                
+                $proposalData = [];
+
+                $cardsInfo = DB::table('ba_cards_info')->where('cards_id',$cards['cards_id'])->where('is_use',0)->update(['is_use'=>1]);
+
+                if(!$cardsInfo) throw new \Exception("请刷新,卡已经被占用！");
+
+                $resultCards = (new CardsModel())->updateCard($cards,$param);
+
+                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                $proposalData['cards_id'] = $cardsId;
+               
                 DB::table('ba_accountrequest_proposal')->where('id',$id)->update($proposalData);
 
                 $result = true;
