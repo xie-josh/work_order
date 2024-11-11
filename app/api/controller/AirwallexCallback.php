@@ -122,7 +122,8 @@ class AirwallexCallback extends Frontend
             'arrival_account'=>'',
             'arrival_amount'=>'',
             'mask_card_no'=>$transactionData['masked_card_number']??'',
-            'merchant_name_location'=>'',
+            //'merchant_name_location'=>'',
+            'merchant_name_location'=>$transactionData['merchant']['name'].','.$transactionData['merchant']['city'].','.$transactionData['merchant']['country'],
             'create_time'=>time()
         ];
         DB::table('ba_cards_transactions')->insert($data);
