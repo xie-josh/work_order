@@ -380,7 +380,7 @@ class Airwallex extends Backend implements CardInterface
                     'arrivalAccount'=>'',
                     'arrivalAmount'=>'',
                     'maskCardNo'=>$v['masked_card_number']??'',
-                    'merchantNameLocation'=>'',
+                    'merchantNameLocation'=>$v['merchant']['name'].','.$v['merchant']['city'].','.$v['merchant']['country'],
                     'create_time'=>time()
                 ];
             }

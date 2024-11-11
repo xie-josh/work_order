@@ -90,6 +90,7 @@ class AccountrequestProposal extends Backend
                 $affiliationBm = $data['affiliationBm'];
                 $timeZone = $data['timeZone'];
                 $adminId = $data['adminId'];
+                $isCards = $data['is_cards']??0;
                 $dataList = [];
 
                 if(empty($ids)) throw new \Exception("账户为空！");
@@ -102,6 +103,7 @@ class AccountrequestProposal extends Backend
                         'status'=>0,
                         'time_zone'=>$timeZone,
                         'account_id'=>$v,
+                        'is_cards'=>$isCards,
                         'create_time'=>time()
                     ];
                 }
@@ -192,6 +194,7 @@ class AccountrequestProposal extends Backend
         foreach($data as $v){
             $dataList[] = [
                 'bm'=>$v['bm'],
+                'time_zone'=>$v['time_zone'],
                 'account_id'=>$v['account_id'],
                 'account_name'=>$v['account_name'],
                 'affiliation_bm'=>$v['affiliation_bm'],
@@ -204,6 +207,7 @@ class AccountrequestProposal extends Backend
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
             'bm',
+            'time_zone',
             'account_id',
             'account_name',
             'affiliation_bm',
