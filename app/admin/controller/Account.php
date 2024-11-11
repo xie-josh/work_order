@@ -589,7 +589,7 @@ class Account extends Backend
 
                 $param = [];
                 $param['card_id'] = $cards['card_id'];
-                $param['nickname'] = $accountrequestProposal['account_id'];
+                $param['nickname'] = $this->getNickname($accountrequestProposal['account_id']);
                 if($cardLimitedStatus == 1){
                     $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
                     $param['transaction_limit_type'] = 'limited';
@@ -683,7 +683,7 @@ class Account extends Backend
 
                 $param = [];
                 $param['card_id'] = $cards['card_id'];
-                $param['nickname'] = $accountrequestProposal['account_id'];
+                $param['nickname'] = $this->getNickname($accountrequestProposal['account_id']);
                 $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
                 $param['transaction_limit_type'] = 'limited';
                 $param['transaction_limit_change_type'] = 'increase';
@@ -716,6 +716,14 @@ class Account extends Backend
             }
         }
 
+    }
+
+
+    function getNickname($nickname)
+    {
+        $nickname = (string)$nickname;
+        if($nickname[0] == 4 && strlen($nickname) >= 16) $nickname = substr($nickname,0,15);
+        return $nickname;
     }
 
 
