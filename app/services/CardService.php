@@ -184,12 +184,17 @@ class CardService
             }elseif($this->platform == 'airwallex'){
                 $cardInfo = $this->cardGetLimits(['card_id'=>$params['card_id']]);
                 if($cardInfo['code'] != 1) throw new \Exception($cardInfo['msg']);
-                $totalTransactionLimit = $cardInfo['data']['limits']['ALL_TIME_AMOUNT']??0; 
+                $totalTransactionLimit = $cardInfo['data']['limits']['ALL_TIME_AMOUNT']??0;
+                $perTransaction  = $cardInfo['data']['limits']['PER_TRANSACTION']??0;
+                $maxOnDaily = $cardInfo['data']['limits']['DAILY']??0;
+
                 if(!empty($params['transaction_limit']) && $params['transaction_limit_change_type'] == 'increase'){
                     $param['transaction_limit'] = $totalTransactionLimit + $params['transaction_limit'];
                 }elseif(!empty($params['transaction_limit']) && $params['transaction_limit_change_type'] == 'decrease'){
                     $param['transaction_limit'] = $totalTransactionLimit - $params['transaction_limit'];
-                }                
+                }
+                if(empty($params['max_on_percent']) && !empty($perTransaction)) $param['max_on_percent'] = $perTransaction;
+                if(empty($params['max_on_daily']) && !empty($maxOnDaily)) $param['max_on_daily'] = $maxOnDaily;
             }else{
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');
