@@ -722,7 +722,7 @@ class Account extends Backend
     function getNickname($nickname)
     {
         $nickname = (string)$nickname;
-        if($nickname[0] == 4 && strlen($nickname) >= 16) $nickname = substr($nickname,0,15);
+        if(in_array($nickname[0],[1,4]) && strlen($nickname) >= 16) $nickname = substr($nickname,0,15);
         return $nickname;
     }
 

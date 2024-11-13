@@ -17,7 +17,7 @@ class CardList
             {
                 //$this->photonpayCardList($data);
             }elseif($data['platform'] == 'lampay'){
-                //$this->lampayCardList($data);
+                $this->lampayCardList($data);
             }elseif($data['platform'] == 'airwallex'){
                 $this->airwallexCardList($data);
             }
@@ -259,7 +259,7 @@ class CardList
 
                     if(in_array($v['card_id'],$resultListIds)) continue;
 
-                    $cardStatus = ['ACTIVE'=>'normal','PENDING'=>'pending_recharge','INACTIVE'=>'frozen','BLOCKED'=>'risk_frozen','LOST'=>'risk_frozen','STOLEN'=>'risk_frozen','CLOSED'=>'cancelled','FAILED'=>''];
+                    $cardStatus = ['ACTIVE'=>'normal','PENDING'=>'pending_recharge','INACTIVE'=>'frozen','BLOCKED'=>'risk_frozen','LOST'=>'risk_frozen','STOLEN'=>'risk_frozen','CLOSED'=>'cancelled','FAILED'=>'unactivated'];
 
                     $dataList[] = [
                         'account_id'=>$accountId,
@@ -272,8 +272,8 @@ class CardList
                         'card_scheme'=>$v['brand'],
                         'card_status'=>$cardStatus[$v['card_status']],
                         'card_type'=>'share',
-                        'mask_card_no'=>$v['card_number'],
-                        'nickname'=>$v['nick_name'],
+                        'mask_card_no'=>$v['card_number']??'',
+                        'nickname'=>$v['nick_name']??'',
                         'card_balance'=>'',
                         'create_time'=>time(),
                     ];
