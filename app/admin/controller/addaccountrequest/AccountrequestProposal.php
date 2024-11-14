@@ -24,7 +24,7 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['Export'];
+    protected array $noNeedPermission = ['Export','getAccountrequestProposal'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -230,6 +230,17 @@ class AccountrequestProposal extends Backend
             ->output();
         
         $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+
+    public function getAccountrequestProposal(): void
+    {
+        $accountId  = $this->request->param('account_id');
+        $row = $this->model->where('affiliation_admin_id',$this->auth->id)->where('account_id',$accountId)->find();
+        
+        $this->success('', [
+            'row' => $row
+        ]);
     }
 
     /**
