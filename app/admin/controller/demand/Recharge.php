@@ -278,6 +278,7 @@ class Recharge extends Backend
                             }else{
                                 $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                             }
                         }
                         Cache::store('redis')->delete($key);
