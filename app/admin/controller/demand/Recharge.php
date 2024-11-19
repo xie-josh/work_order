@@ -100,7 +100,7 @@ class Recharge extends Backend
                 if(empty($account)) throw new \Exception("未找到该账户ID或账户不可用");
 
                 $recharge = $this->model->where('account_id',$data['account_id'])->order('id','desc')->find();
-                if(in_array($recharge['type'],[3,4]) && $recharge['status'] == 0) throw new \Exception("有未完成的清零请求,请找客服处理!");
+                if(!empty($recharge) && in_array($recharge['type'],[3,4]) && $recharge['status'] == 0) throw new \Exception("有未完成的清零请求,请找客服处理!");
                 
                 if($data['type'] == 1){
                     if($data['number'] <= 0) throw new \Exception("充值金额不能小于零");
