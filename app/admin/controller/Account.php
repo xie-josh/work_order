@@ -315,10 +315,10 @@ class Account extends Backend
 
                     //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
 
-                         if(!empty($v['bm'])){
-                            DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                        if(!empty($v['bm'])){
+                            DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'bm_type'=>$v['bm_type'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
                             if(env('IS_ENV',false)) (new QYWXService())->bmSend(['account_id'=>$accountId],4);
-                         }
+                        }
                     }
                 }elseif($status == 4){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();

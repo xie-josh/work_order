@@ -211,6 +211,7 @@ class Bm extends Backend
                 $demandType = $data['demand_type']??'';
                 $accountId = $data['account_id']??'';
                 $bm = $data['bm']??'';
+                $bmType = $data['bm_type']??1;
                 $checkList = $data['checkList']??[];
 
                 if($bm) array_push($checkList,$bm);
@@ -227,6 +228,7 @@ class Bm extends Backend
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,
                             'bm'=>$v,
+                            'bm_type'=>$bmType,
                             'account_name'=>$account['name'],
                             'admin_id'=>$this->auth->id,
                             'create_time'=>time()
@@ -237,6 +239,7 @@ class Bm extends Backend
                         'demand_type'=>$demandType,
                         'account_id'=>$accountId,
                         'bm'=>'',
+                        'bm_type'=>$bmType,
                         'account_name'=>$account['name'],
                         'admin_id'=>$this->auth->id,
                         'create_time'=>time()
@@ -246,7 +249,6 @@ class Bm extends Backend
                 //$data['admin_id'] = $this->auth->id;
 
                 if(env('IS_ENV',false)) (new QYWXService())->bmSend(['account_id'=>$accountId],$demandType);
-
                 $result = $this->model->insertAll($dataList);
 
                 //$result = $this->model->save($data);
