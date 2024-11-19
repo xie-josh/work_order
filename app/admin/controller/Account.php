@@ -25,7 +25,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution'];
+    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -727,26 +727,82 @@ class Account extends Backend
     }
 
 
-    public function excel()
+    public function export()
     {
+        $where = [];
+        
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        array_push($this->withJoinTable,'accountrequestProposal');
+        // $res = $this->model
+        // ->withJoin($this->withJoinTable, $this->withJoinType)
+        // ->alias($alias)
+        // ->where($where)
+        // ->order($order)
+        // ->limit(100)
+        // ->select();
+        //$data = $res->toArray();
+
+        $data = $this->model
+        //DB::table(table: 'ba_account')
+        ->alias('account')
+        ->field('account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.bm accountrequest_proposal_bm,admin.nickname')
+        ->leftJoin('ba_admin admin','admin.id = account.admin_id')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id = account.account_id')
+        ->order('id','desc')
+        ->where($where)
+        ->select()
+        ->toArray();
+
+        // dd($where);
+        $statusValue = [0=>'待审核',1=>'审核通过',2=>'审核拒绝',3=>'分配账户',4=>'完成',5=>'开户失败'];
+        $disposeStatusValue = [0=>'待处理',1=>'处理完成',2=>'已提交',3=>'提交异常',4=>'处理异常'];
+
+        $dataList = [];
+        foreach($data as $v){
+            $dataList[] = [
+                $v['uuid'],
+                $v['accountrequest_proposal_bm']??'',
+                $v['nickname']??'',
+                $v['name'],
+                $v['account_id'],
+                $v['time_zone'],
+                $v['bm'],
+                $v['open_money'],
+                $disposeStatusValue[$v['dispose_status']],
+                $statusValue[$v['status']],
+                $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
+                $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
+            ];  
+        }
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            'ID',
+            '管理BM',
+            '用户名',
+            '账户名称',
+            '账户ID',
+            '时区',
+            '绑定BM',
+            '首充金额',
+            'BM绑定',
+            '开户状态',
+            '创建时间',
+            '修改时间'
+        ];
+
         $config = [
-            'path' => '/www/wwwroot/workOrder/public/storage/excel' // xlsx文件保存路径
+            'path' => $folders['path']
         ];
         $excel  = new \Vtiful\Kernel\Excel($config);
-        
-        // fileName 会自动创建一个工作表，你可以自定义该工作表名称，工作表名称为可选参数
-        $filePath = $excel->fileName('tutorial01.xlsx', 'sheet1')
-            ->header(['Item', 'Cost'])
-            ->data([
-                ['Rent', 1000],
-                ['Gas',  100],
-                ['Food', 300],
-                ['Gym',  50],
-            ])
+
+        $name = $folders['name'].'.xlsx';
+        $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList)
             ->output();
-
-        dd($filePath);
-
+        
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
     }
 
 
