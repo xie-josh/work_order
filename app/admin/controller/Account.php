@@ -742,8 +742,8 @@ class Account extends Backend
         // ->select();
         //$data = $res->toArray();
 
-        $data = $this->model
-        //DB::table(table: 'ba_account')
+        $data = DB::table(table: 'ba_account')
+        //$this->model 
         ->alias('account')
         ->field('account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.bm accountrequest_proposal_bm,admin.nickname')
         ->leftJoin('ba_admin admin','admin.id = account.admin_id')
@@ -753,14 +753,13 @@ class Account extends Backend
         ->select()
         ->toArray();
 
-        // dd($where);
         $statusValue = [0=>'待审核',1=>'审核通过',2=>'审核拒绝',3=>'分配账户',4=>'完成',5=>'开户失败'];
         $disposeStatusValue = [0=>'待处理',1=>'处理完成',2=>'已提交',3=>'提交异常',4=>'处理异常'];
 
         $dataList = [];
         foreach($data as $v){
             $dataList[] = [
-                $v['uuid'],
+                $v['id'],
                 $v['accountrequest_proposal_bm']??'',
                 $v['nickname']??'',
                 $v['name'],
