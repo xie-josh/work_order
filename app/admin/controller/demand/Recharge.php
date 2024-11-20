@@ -44,6 +44,8 @@ class Recharge extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
+        array_push($this->withJoinTable,'account');
+
         foreach($where as $k => &$v){
             if($v[0] == 'recharge.id'){
                 if (preg_match('/\d+/', $v[2], $matches)) {
@@ -62,6 +64,8 @@ class Recharge extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
+
+        $res->visible(['account'=>['money']]);
 
         $this->success('', [
             'list'   => $res->items(),
@@ -215,6 +219,7 @@ class Recharge extends Backend
                 $status = $data['status'];
                 $money = $data['money']??0;
                 $type = $data['type']??0;
+                $fbBoney = $data['fb_money']??0;
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
 
@@ -271,6 +276,7 @@ class Recharge extends Backend
                         }elseif($v['type'] == 3 || $v['type'] == 4){
                             // $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
                             $data = [
+                                'fb_money'=>$fbBoney,
                                 'number'=>$money,
                                 'type'=>$type
                             ];
