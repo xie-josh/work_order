@@ -103,8 +103,11 @@ class Recharge extends Backend
                 $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->where('status',4)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID或账户不可用");
 
-                $recharge = $this->model->where('account_id',$data['account_id'])->order('id','desc')->find();
-                if(!empty($recharge) && in_array($recharge['type'],[3,4]) && $recharge['status'] == 0) throw new \Exception("有未完成的清零请求,请找客服处理!");
+                // $recharge = $this->model->where('account_id',$data['account_id'])->order('id','desc')->find();
+                // if(!empty($recharge) && in_array($recharge['type'],[3,4]) && $recharge['status'] == 0) throw new \Exception("有未完成的清零请求,请找客服处理!");
+
+                $recharge = $this->model->where('account_id',$data['account_id'])->whereIn('type',[3,4])->where('status',0)->find();
+                if(!empty($recharge)) throw new \Exception("有未完成的清零请求,请找客服处理!");
                 
                 if($data['type'] == 1){
                     if($data['number'] <= 0) throw new \Exception("充值金额不能小于零");
@@ -115,16 +118,19 @@ class Recharge extends Backend
 
                     DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
                 }elseif(in_array($data['type'],[3,4])){
-                    // $recharge = $this->model->where('account_id',$data['account_id'])->whereIn('type',[3,4])->order('id','desc')->find();
-                    // $where = [
-                    //     ['account_id','=',$data['account_id']],
-                    //     ['type','=',1],
-                    //     ['id','>',$recharge['id']],
-                    //     ['status','=',1]
-                    // ];
+                    $recharge = $this->model->where('account_id',$data['account_id'])->whereIn('type',[3,4])->order('id','desc')->find();
 
-                    // $recharge2 = $this->model->where($where)->find();
-                    // if(!empty($recharge) && empty($recharge2)) throw new \Exception("待清零中，不需要重复提交");
+                    if(!empty($recharge['id'])){
+                        $where = [
+                            ['account_id','=',$data['account_id']],
+                            ['type','=',1],
+                            ['id','>',$recharge['id']],
+                            ['status','=',1]
+                        ];
+    
+                        $recharge2 = $this->model->where($where)->find();
+                        if(!empty($recharge) && empty($recharge2)) throw new \Exception("账号已经完成了清零请求,不可以在提交清零与扣款!");
+                    }
                 }
                 
                 $data['account_name'] = $account['name'];

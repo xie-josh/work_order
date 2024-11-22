@@ -92,24 +92,27 @@ class AccountrequestProposal extends Backend
                 $adminId = $data['adminId'];
                 $isCards = $data['is_cards']??0;
                 $type = $data['type']??1;
+                $currency = $data['currency']??'';
+                $nameList = $data['name_list']??[];
                 $dataList = [];
 
                 if(empty($ids)) throw new \Exception("账户为空！");
 
-                foreach($ids as $v){
+                foreach($ids as $k =>$v){
                     $dataList[] = [
                         'bm'=>$bm,
                         'affiliation_bm'=>$affiliationBm,
                         'admin_id'=>$adminId,
                         'status'=>0,
                         'time_zone'=>$timeZone,
+                        'currency'=>$currency,
                         'account_id'=>$v,
                         'is_cards'=>$isCards,
+                        'name'=>$nameList[$k]??'',
                         'type'=>$type,
                         'create_time'=>time()
                     ];
                 }
-
                 Db::table('ba_accountrequest_proposal')->insertAll($dataList);
 
                 $result = true;
@@ -182,8 +185,9 @@ class AccountrequestProposal extends Backend
         
         $data = DB::table('ba_accountrequest_proposal')
         ->alias('accountrequest_proposal')
-        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm')
+        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname')
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
+        ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
         ->where($where)->select()->toArray();
 
         $resultAdmin = DB::table('ba_admin')->select()->toArray();
@@ -203,6 +207,7 @@ class AccountrequestProposal extends Backend
                 'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
                 'account_bm'=> $v['account_bm'],
                 'status'=> $statusValue[$v['status']]??'未知的状态',
+                'nickname'=>$v['nickname'],
             ];  
         }
 
@@ -215,7 +220,8 @@ class AccountrequestProposal extends Backend
             'affiliation_bm',
             'affiliation_admin_name',
             'account_bm',
-            'status'
+            'status',
+            'nickname'
         ];
 
         $config = [
