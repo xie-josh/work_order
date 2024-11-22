@@ -29,6 +29,8 @@ class Recharge extends Backend
 
     protected bool|string|int $dataLimit = 'parent';
 
+    protected $currencyRate = ["EUR"=>"0.84"];
+
     public function initialize(): void
     {
         parent::initialize();
@@ -166,9 +168,8 @@ class Recharge extends Backend
             $this->error(__('Record not found'));
         }
 
-        if($row['status'] != 0){
-            $this->error('该状态不可编辑');
-        }
+        if($row['status'] != 0 && $row['type'] == 1) $this->error('该状态不可编辑');
+        
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
@@ -280,18 +281,27 @@ class Recharge extends Backend
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                             }
                         }elseif($v['type'] == 3 || $v['type'] == 4){
-                            // $money = DB::table('ba_account')->where('account_id',$v['account_id'])->where('status',1)->value('money');
+
+                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            $currency = $resultProposal['currency'];
+
+                            $currencyNumber =  '';
+                            if(!empty($this->currencyRate[$currency])){
+                                $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
+                            }else{
+                                $currencyNumber = (string)$money;
+                            }
+
                             $data = [
                                 'fb_money'=>$fbBoney,
-                                'number'=>$money,
+                                'number'=>$currencyNumber,
                                 'type'=>$type
                             ];
                             $this->model->where('id',$v['id'])->update($data);
                             DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
-                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$money)->update();
-                            
+                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$currencyNumber)->update();
 
-                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            
                             if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {

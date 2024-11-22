@@ -324,11 +324,19 @@ class Account extends Backend
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
                     foreach($ids as $v){
                         //$this->model->where('id',$v['id'])->update(['status'=>4,'update_time'=>time()]);
-                        if(!empty($v['bm'])){
-                            //DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$v['account_id'],'bm'=>$v['bm'],'demand_type'=>1,'status'=>1,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
-                        }else{
-                            $this->model->whereIn('id',$v['id'])->update(['dispose_status'=>1]);
-                        }
+                        // if(!empty($v['bm'])){
+                        //     //DB::table('ba_bm')->insert(['account_name'=>$v['name'],'account_id'=>$v['account_id'],'bm'=>$v['bm'],'demand_type'=>1,'status'=>1,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
+                        // }else{
+                        //     //$this->model->where('id',$v['id'])->update(['dispose_status'=>1]);
+                        // }
+
+                        $accountData = [];
+                        $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                        if(empty($v['name']) && !empty($resultProposal['name'])) $accountData['name'] = $resultProposal['name'];
+                        if(empty($v['bm'])) $accountData['dispose_status'] = 1;
+                        if(!empty($accountData)) $this->model->where('id',$v['id'])->update($accountData);
+
+
                         if($v['money'] > 0){
                             $this->model->whereIn('id',$v['id'])->update(['open_money'=>$v['money']]);
                             $param = [
@@ -337,7 +345,6 @@ class Account extends Backend
                                 'transaction_limit_change_type'=>'increase',
                                 'transaction_limit'=>$v['money'],
                             ];
-                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
                             if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
 
@@ -826,7 +833,7 @@ class Account extends Backend
  
             $data = [];
             foreach($fileObject as $v){
-                if(empty($v[0]) || empty($v[1]) || empty($v[2]) || empty($v[4])) continue;
+                if(empty($v[1]) || empty($v[2]) || empty($v[4])) continue;
                 if(empty($v[3])) $v[3] = 0;
                 $data[] = [
                     'name'=>$v[0],

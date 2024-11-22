@@ -13,7 +13,8 @@ class Account extends Model
     // 表名
     protected $name = 'account';
 
-    protected $append = ['uuid'];
+    protected $append = ['uuid','currency_number','currency_open_money'];
+    protected $currencyRate = ["EUR"=>"0.84"];
 
     protected $ud  = 'KH';
 
@@ -25,6 +26,27 @@ class Account extends Model
         return (float)$value;
     }
 
+    public function getCurrencyNumberAttr($value,$data){
+        $currency = $this->accountrequestProposal()->where('account_id',$data['account_id'])->value('currency');
+        $currencyNumber =  '';
+        if(!empty($this->currencyRate[$currency])){
+            $currencyNumber = bcmul((string)$data['money'], $this->currencyRate[$currency],2);
+        }else{
+            $currencyNumber = (string)$data['money'];
+        }
+        return $currencyNumber;
+    }
+
+    public function getCurrencyOpenMoneyAttr($value,$data){
+        $currency = $this->accountrequestProposal()->where('account_id',$data['account_id'])->value('currency');
+        $currencyNumber =  '';
+        if(!empty($this->currencyRate[$currency])){
+            $currencyNumber = bcmul((string)$data['open_money'], $this->currencyRate[$currency],2);
+        }else{
+            $currencyNumber = (string)$data['open_money'];
+        }
+        return $currencyNumber;
+    }
 
     public function getUuidAttr($value,$data)
     {
