@@ -213,17 +213,26 @@ class Bm extends Backend
                 $bm = $data['bm']??'';
                 $bmType = $data['bm_type']??1;
                 $checkList = $data['checkList']??[];
-
+                
                 if($bm) array_push($checkList,$bm);
+
+                $checkList = array_unique($checkList);
 
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
 
                 if(empty($checkList) && $demandType != 3) throw new \Exception("请填写或需要操作的BM");
 
+                $bmList = DB::table('ba_bm')->where('account_id',$accountId)->whereIn('bm',$checkList)->where([['dispose_type','<>','1']])->column('bm');
+                $error = [];
+
                 $dataList = [];
                 if(!empty($checkList)){
                     foreach($checkList as $v){
+                        if(in_array($v,$bmList)){
+                            array_push($error,$v);
+                            continue;
+                        } 
                         $dataList[] = [
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,
@@ -258,9 +267,9 @@ class Bm extends Backend
                 $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Added successfully'));
+                $this->success(__('Added successfully'),['error'=>$error]);
             } else {
-                $this->error(__('No rows were added'));
+                $this->error(__('No rows were added'),['error'=>$error]);
             }
         }
 
@@ -335,16 +344,24 @@ class Bm extends Backend
             try {
                 $ids = $data['ids'];
                 $status = $data['status'];
+                $comment = $data['comment']??'';
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray(); 
 
                 foreach($ids as $v){
                     if($status == 1)$disposeStatus  = 2;
-                    else $disposeStatus = 3;
+                    else if($status == 2) $disposeStatus = 3;
+                    else if($status == 3) $disposeStatus = 1;
                     DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>$disposeStatus]);
                 }
 
-                $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time()]);
+                $bmData = [];
+                if($status == 3){
+                    $bmData = ['status'=>1,'dispose_type'=>1,'comment'=>$comment,'update_time'=>time()];
+                }else{
+                    $bmData = ['status'=>$status,'comment'=>$comment,'update_time'=>time()];
+                }
+                $result = $this->model->whereIn('id',array_column($ids,'id'))->update($bmData);
                 
                 $result = true;
                 $this->model->commit();
@@ -400,6 +417,7 @@ class Bm extends Backend
             try {
                 $ids = $data['ids'];
                 $status = $data['status'];
+                $comment = $data['comment']??'';
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray(); 
 
@@ -411,7 +429,7 @@ class Bm extends Backend
                     }
                 }
                 
-                $this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'update_time'=>time()]);
+                $this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'comment'=>$comment,'update_time'=>time()]);
 
                 if($status == 1)$disposeStatus  = 1;
                 else $disposeStatus = 4;
