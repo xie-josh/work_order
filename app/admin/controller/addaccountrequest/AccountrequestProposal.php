@@ -185,10 +185,12 @@ class AccountrequestProposal extends Backend
         
         $data = DB::table('ba_accountrequest_proposal')
         ->alias('accountrequest_proposal')
-        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname')
+        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no')
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
         ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
+        ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
         ->where($where)->select()->toArray();
+
 
         $resultAdmin = DB::table('ba_admin')->select()->toArray();
 
@@ -208,6 +210,7 @@ class AccountrequestProposal extends Backend
                 'account_bm'=> $v['account_bm'],
                 'status'=> $statusValue[$v['status']]??'未知的状态',
                 'nickname'=>$v['nickname'],
+                'card_no'=>$v['card_no']
             ];  
         }
 
@@ -221,7 +224,8 @@ class AccountrequestProposal extends Backend
             'affiliation_admin_name',
             'account_bm',
             'status',
-            'nickname'
+            'nickname',
+            'card_no'
         ];
 
         $config = [
