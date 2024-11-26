@@ -45,12 +45,17 @@ class Admin extends Backend
             $this->select();
         }
 
-        list($where, $alias, $limit, $order) = $this->queryBuilder();
-        if($this->request->param('type') == 1){
-            $adminIds = Db::table('ba_admin_group_access')->where('group_id',5)->column('uid');
-            array_push($where,['id','in',$adminIds]);
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId == 2) {
+            $this->dataLimit = false;
         }
 
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        // if($this->request->param('type') == 1){
+        //     $adminIds = Db::table('ba_admin_group_access')->where('group_id',5)->column('uid');
+        //     array_push($where,['id','in',$adminIds]);
+        // }
+        
         $res = $this->model
             ->field('*,(money - used_money) usableMoney')
             ->withoutField('login_failure,password,salt')
