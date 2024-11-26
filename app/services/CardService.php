@@ -193,6 +193,7 @@ class CardService
                 }elseif(!empty($params['transaction_limit']) && $params['transaction_limit_change_type'] == 'decrease'){
                     $param['transaction_limit'] = $totalTransactionLimit - $params['transaction_limit'];
                 }
+                if(empty($params['transaction_limit']) && !empty($totalTransactionLimit)) $param['transaction_limit'] = $totalTransactionLimit;
                 if(empty($params['max_on_percent']) && !empty($perTransaction)) $param['max_on_percent'] = $perTransaction;
                 if(empty($params['max_on_daily']) && !empty($maxOnDaily)) $param['max_on_daily'] = $maxOnDaily;
             }else{
