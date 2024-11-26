@@ -223,14 +223,19 @@ class Bm extends Backend
 
                 if(empty($checkList) && $demandType != 3) throw new \Exception("请填写或需要操作的BM");
 
-                $bmList = DB::table('ba_bm')->where('account_id',$accountId)->whereIn('bm',$checkList)->where([['dispose_type','<>','1']])->column('bm');
+                //TODO... 只要是未完成，注意失败的，可以不可以在提交
+                $bmList = DB::table('ba_bm')->where('account_id',$accountId)->whereIn('bm',$checkList)
+                ->where(function ($quant){
+                    $quant->whereOr([['status','=',0],['status','=',1]]);
+                })
+                ->where([['dispose_type','=',0]])->column('bm');
                 $error = [];
 
                 $dataList = [];
                 if(!empty($checkList)){
                     foreach($checkList as $v){
                         if(in_array($v,$bmList)){
-                            array_push($error,$v);
+                            array_push($error,[$v,'该BM需求在处理中,不需要重复提交!!!']);
                             continue;
                         } 
                         $dataList[] = [
