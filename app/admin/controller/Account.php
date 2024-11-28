@@ -268,6 +268,8 @@ class Account extends Backend
                 $ids = $data['ids'];
                 $accountId = $data['account_id']??0;
                 $status = $data['status'];
+                $accountrequestProposalStatus = $data['accountrequest_proposal_status']??2;
+                $timeZone = $data['time_zone']??'';
 
                 // foreach($ids as $k => $v){
                 //     $key = 'account_audit_'.$v['id'];
@@ -378,10 +380,17 @@ class Account extends Backend
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
                     $accountIds = array_column($ids,'account_id');
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>1,'account_id'=>'','update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
-                    DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['status'=>2,'affiliation_admin_id'=>null]);
+
+                    $AccountrequestProposalValue = [
+                        'status'=>$accountrequestProposalStatus,
+                        'affiliation_admin_id'=>null,
+                        'time_zone'=>$timeZone
+                    ];
+                    
+                    DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update($AccountrequestProposalValue);
+                    //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['status'=>2,'affiliation_admin_id'=>null]);
 
                     DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['status'=>2]);
-
                 }
                 //$this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
