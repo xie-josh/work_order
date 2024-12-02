@@ -98,7 +98,10 @@ class AccountrequestProposal extends Backend
 
                 if(empty($ids)) throw new \Exception("账户为空！");
 
+                $accountCount = $this->model->where('admin_id',$adminId)->count();
+
                 foreach($ids as $k =>$v){
+                    $accountCount++;
                     $dataList[] = [
                         'bm'=>$bm,
                         'affiliation_bm'=>$affiliationBm,
@@ -110,6 +113,7 @@ class AccountrequestProposal extends Backend
                         'is_cards'=>$isCards,
                         'name'=>$nameList[$k]??'',
                         'type'=>$type,
+                        'serial_number'=>$accountCount,
                         'create_time'=>time()
                     ];
                 }
