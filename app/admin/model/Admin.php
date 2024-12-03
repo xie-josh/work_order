@@ -82,4 +82,17 @@ class Admin extends Model
         $passwd = encrypt_password($newPassword, $salt);
         return $this->where(['id' => $uid])->update(['password' => $passwd, 'salt' => $salt]);
     }
+
+    public function setIsNameKeyAttr($value)
+    {
+        return json_encode($value);
+    }
+
+    public function getIsNameKeyAttr($value)
+    {
+        return json_decode($value,true);
+    }
+
+
+
 }

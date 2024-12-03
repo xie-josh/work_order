@@ -187,14 +187,22 @@ class AccountrequestProposal extends Backend
         $ids = $this->request->post('ids');
         if($ids) array_push($where,['accountrequest_proposal.id','in',$ids]);
         
-        $data = DB::table('ba_accountrequest_proposal')
+        // $data = DB::table('ba_accountrequest_proposal')
+        // ->alias('accountrequest_proposal')
+        // ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no')
+        // ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
+        // ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
+        // ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+        // ->where($where)->select()->toArray();
+
+
+        $data = $this->model
         ->alias('accountrequest_proposal')
         ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no')
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
         ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
         ->where($where)->select()->toArray();
-
 
         $resultAdmin = DB::table('ba_admin')->select()->toArray();
 
@@ -208,7 +216,7 @@ class AccountrequestProposal extends Backend
                 'bm'=>$v['bm'],
                 'time_zone'=>$v['time_zone'],
                 'account_id'=>$v['account_id'],
-                'account_name'=>$v['account_name'],
+                'account_name'=>$v['serial_name'],
                 'affiliation_bm'=>$v['affiliation_bm'],
                 'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
                 'account_bm'=> $v['account_bm'],

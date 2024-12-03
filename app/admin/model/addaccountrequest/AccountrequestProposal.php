@@ -53,10 +53,11 @@ class AccountrequestProposal extends Model
             $key[3] = $data['currency'];
 
             if(!empty($data['time_zone'])){
-                $timezone = $data['time_zone'];
-                preg_match('/[+-]?\d+/', $timezone, $matches);
-                $timezone = $matches[0]??'';
-                $key[4] = $timezone;
+                // $timezone = $data['time_zone'];
+                // preg_match('/[+-]?\d+/', $timezone, $matches);
+                // $timezone = $matches[0]??'';
+                // $key[4] = $timezone;
+                $key[4] = $this->extractTime($data['time_zone']);
             }
 
             if(!empty($data['allocate_time'])) $key[5] = $data['allocate_time'];
@@ -78,6 +79,15 @@ class AccountrequestProposal extends Model
             return '';
         }
     }
+
+    function extractTime($timezone) {
+        $parts = explode(' ', $timezone); 
+        $timePart = $parts[1] ?? '';
+        $timeParts = explode(':', $timePart);
+        return isset($timeParts[1]) && $timeParts[1] !== '00' ? $timeParts[0] . ':' . $timeParts[1] : $timeParts[0];
+    }
+    
+
 
     public function getSerialNameAttr2222($value,$data)
     {
