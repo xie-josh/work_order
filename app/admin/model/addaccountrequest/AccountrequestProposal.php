@@ -40,7 +40,7 @@ class AccountrequestProposal extends Model
 
         $adminKey = json_decode($admin['is_name_key'],true);
         
-        $key = [1,2,3,4,5,6,7];
+        $key = [];
         
         $account = DB::table('ba_account')->field('name,admin_id')->where('account_id',$data['account_id'])->find();
         if($admin['is_name'] == 2) return $account['name']??'';
