@@ -81,10 +81,8 @@ class AccountrequestProposal extends Model
     }
 
     function extractTime($timezone) {
-        $parts = explode(' ', $timezone); 
-        $timePart = $parts[1] ?? '';
-        $timeParts = explode(':', $timePart);
-        return isset($timeParts[1]) && $timeParts[1] !== '00' ? $timeParts[0] . ':' . $timeParts[1] : $timeParts[0];
+        preg_match('/([+-]\d+)(?::(\d+))?/', $timezone, $matches);
+        return isset($matches[2]) && $matches[2] !== '00' ? $matches[1] . ':' . $matches[2] : $matches[1];
     }
     
 
