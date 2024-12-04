@@ -25,7 +25,7 @@ class Recharge extends Backend
     protected array|string $preExcludeFields = ['id', 'account_name', 'status', 'create_time', 'update_time'];
 
     protected string|array $quickSearchField = ['id'];
-    protected array $withJoinTable = ['accountrequestProposal'];
+    protected array $withJoinTable = ['accountrequestProposal','getRechargeAnnouncement'];
     protected array $noNeedPermission = ['edit'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -367,7 +367,7 @@ class Recharge extends Backend
             ->alias($alias)
             ->where($where)
             ->order($order)
-            ->paginate(3);
+            ->paginate(1);
 
         $this->success('', [
             'list'   => $res->items(),

@@ -23,7 +23,7 @@ class Bm extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['disposeStatus','index','getBmList'];
+    protected array $noNeedPermission = ['disposeStatus','index','getBmList','getBmAnnouncement'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -482,7 +482,7 @@ class Bm extends Backend
             ->alias($alias)
             ->where($where)
             ->order($order)
-            ->paginate(3);
+            ->paginate(1);
 
         $this->success('', [
             'list'   => $res->items(),
