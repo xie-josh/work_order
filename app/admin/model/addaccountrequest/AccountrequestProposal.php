@@ -81,12 +81,11 @@ class AccountrequestProposal extends Model
     }
 
     function extractTime($timezone) {
+        if($timezone == 'GMT 0:00') return '-0';
         preg_match('/([+-]\d+)(?::(\d+))?/', $timezone, $matches);
         return isset($matches[2]) && $matches[2] !== '00' ? $matches[1] . ':' . $matches[2] : $matches[1];
     }
     
-
-
     public function getSerialNameAttr2222($value,$data)
     {
         $admin = DB::table('ba_admin')->field('nickname,is_name')->where('id',$data['admin_id'])->find();

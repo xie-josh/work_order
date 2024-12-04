@@ -306,7 +306,10 @@ class Account extends Backend
                         if(!empty($accountrequestProposal['time_zone'])) $data['time_zone'] = $accountrequestProposal['time_zone'];
                         $this->model->where('id',$v['id'])->update($data);
                         $allocateTime = date('md',time());
-                        DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['status'=>1,'allocate_time'=>$allocateTime,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()]);
+
+                        $data = ['status'=>1,'allocate_time'=>$allocateTime,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()];
+                        if(empty($accountrequestProposal['time_zone']) && !empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
+                        DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update($data);
                         
                     //     $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('admin_id',$adminId)->where('status',0)->find();
                     //     if(empty($accountrequestProposal))  continue;//throw new \Exception("该渠道暂时没有账号可以分配");

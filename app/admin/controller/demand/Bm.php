@@ -454,6 +454,43 @@ class Bm extends Backend
         }
     }
 
+    public function getBmAnnouncement(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId != 2 && !$this->auth->isSuperAdmin()) {
+            $this->success('', [
+                'list'   => [],
+                'total'  => 0,
+            ]);
+        }
+
+        if($this->auth->getGroups())
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        array_push($where,['bm.demand_type','IN',[1,2]]);
+        array_push($where,['bm.status','IN',[0,1]]);
+        array_push($where,['bm.dispose_type','IN',[0]]);
+
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate(3);
+
+        $this->success('', [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
+
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
