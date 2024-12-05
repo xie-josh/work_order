@@ -5,6 +5,7 @@ namespace app\admin\controller\addaccountrequest;
 use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
+use think\facade\Cache;
 
 /**
  * 账户列管理
@@ -183,6 +184,7 @@ class AccountrequestProposal extends Backend
 
     public function Export()
     {
+        set_time_limit(300);
         $where = [];
         $ids = $this->request->post('ids');
         if($ids) array_push($where,['accountrequest_proposal.id','in',$ids]);
@@ -195,14 +197,17 @@ class AccountrequestProposal extends Backend
         // ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
         // ->where($where)->select()->toArray();
 
+        $batchSize = 400;
+        $processedCount = 0;
 
-        $data = $this->model
+        $query = $this->model
         ->alias('accountrequest_proposal')
         ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no')
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
         ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
-        ->where($where)->select()->toArray();
+        ->where($where);
+        $total = $query->count(); 
 
         $resultAdmin = DB::table('ba_admin')->select()->toArray();
 
@@ -210,21 +215,6 @@ class AccountrequestProposal extends Backend
 
         $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户'];
 
-        $dataList = [];
-        foreach($data as $v){
-            $dataList[] = [
-                'bm'=>$v['bm'],
-                'time_zone'=>$v['time_zone'],
-                'account_id'=>$v['account_id'],
-                'account_name'=>$v['serial_name'],
-                'affiliation_bm'=>$v['affiliation_bm'],
-                'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
-                'account_bm'=> $v['account_bm'],
-                'status'=> $statusValue[$v['status']]??'未知的状态',
-                'nickname'=>$v['nickname'],
-                'card_no'=>$v['card_no']
-            ];  
-        }
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
@@ -246,12 +236,45 @@ class AccountrequestProposal extends Backend
         $excel  = new \Vtiful\Kernel\Excel($config);
 
         $name = $folders['name'].'.xlsx';
-        $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
-            ->header($header)
-            ->data($dataList)
-            ->output();
         
-        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+        
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $dataList=[];
+            foreach($data as $v){
+                $dataList[] = [
+                    'bm'=>$v['bm'],
+                    'time_zone'=>$v['time_zone'],
+                    'account_id'=>$v['account_id'],
+                    'account_name'=>$v['serial_name'],
+                    'affiliation_bm'=>$v['affiliation_bm'],
+                    'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
+                    'account_bm'=> $v['account_bm'],
+                    'status'=> $statusValue[$v['status']]??'未知的状态',
+                    'nickname'=>$v['nickname'],
+                    'card_no'=>$v['card_no']
+                ];  
+                $processedCount++;
+            }
+            $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set('export_progress', $progress, 300);
+            // 刷新缓冲区
+            //ob_flush();
+            //flush();
+        }   
+        $excel->output();
+        Cache::store('redis')->delete('export_progress');
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);        
+    }
+
+    public function getExportProgress()
+    {
+        $progress = Cache::store('redis')->get('export_progress', 0); // 获取进度
+        return $this->success('',['progress' => $progress]);
     }
 
 
