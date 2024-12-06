@@ -101,7 +101,10 @@ class AccountrequestProposal extends Backend
 
                 $accountCount = $this->model->where('admin_id',$adminId)->count();
 
+                $accountList = $this->model->whereIn('account_id',$ids)->column('account_id');
+
                 foreach($ids as $k =>$v){
+                    if(in_array($v,$accountList)) continue;
                     $accountCount++;
                     $dataList[] = [
                         'bm'=>$bm,

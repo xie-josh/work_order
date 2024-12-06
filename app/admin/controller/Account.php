@@ -25,7 +25,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export'];
+    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -750,9 +750,9 @@ class Account extends Backend
     public function export()
     {
         $where = [];
-        
+        set_time_limit(300);
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-        array_push($this->withJoinTable,'accountrequestProposal');
+        // array_push($this->withJoinTable,'accountrequestProposal');
         // $res = $this->model
         // ->withJoin($this->withJoinTable, $this->withJoinType)
         // ->alias($alias)
@@ -762,37 +762,27 @@ class Account extends Backend
         // ->select();
         //$data = $res->toArray();
 
-        $data = DB::table(table: 'ba_account')
-        //$this->model 
+        //DB::table(table: 'ba_account')
+
+        $batchSize = 400;
+        $processedCount = 0;
+        $redisKey = 'export_progress'.'_'.$this->auth->id;
+        
+        $query =  $this->model
         ->alias('account')
-        ->field('account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.bm accountrequest_proposal_bm,admin.nickname')
-        ->leftJoin('ba_admin admin','admin.id = account.admin_id')
-        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id = account.account_id')
-        ->order('id','desc')
-        ->where($where)
-        ->select()
-        ->toArray();
+        ->field('id,admin_id,name,account_id,time_zone,bm,open_money,dispose_status,status,create_time,update_time')        
+        ->withJoin(['accountrequestProposal'], 'LEFT')
+        ->order('account.id','desc')
+        ->where($where);
+
+        $total = $query->count(); 
+
+        $resultAdmin = DB::table('ba_admin')->select()->toArray();
+
+        $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
         $statusValue = [0=>'待审核',1=>'审核通过',2=>'审核拒绝',3=>'分配账户',4=>'完成',5=>'开户失败'];
         $disposeStatusValue = [0=>'待处理',1=>'处理完成',2=>'已提交',3=>'提交异常',4=>'处理异常'];
-
-        $dataList = [];
-        foreach($data as $v){
-            $dataList[] = [
-                $v['id'],
-                $v['accountrequest_proposal_bm']??'',
-                $v['nickname']??'',
-                $v['name'],
-                $v['account_id'],
-                $v['time_zone'],
-                $v['bm'],
-                $v['open_money'],
-                $disposeStatusValue[$v['dispose_status']],
-                $statusValue[$v['status']],
-                $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
-                $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
-            ];  
-        }
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
@@ -816,12 +806,45 @@ class Account extends Backend
         $excel  = new \Vtiful\Kernel\Excel($config);
 
         $name = $folders['name'].'.xlsx';
-        $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
+            $dataList=[];
+            foreach($data as $v){
+                $dataList[] = [
+                    $v['id'],
+                    ($v['accountrequestProposal']['bm'])??'',
+                    ($adminList[$v['admin_id']])??'',
+                    isset($v['accountrequestProposal'])?$v['accountrequestProposal']['serial_name']:$v['name'],
+                    //$v['name'],
+                    $v['account_id'],
+                    $v['time_zone'],
+                    $v['bm'],
+                    $v['open_money'],
+                    $disposeStatusValue[$v['dispose_status']],
+                    $statusValue[$v['status']],
+                    $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
+                    $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
+                ];  
+                $processedCount++;
+            }
+            $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
             ->header($header)
-            ->data($dataList)
-            ->output();
-        
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+
         $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+    public function getExportProgress()
+    {
+        $progress = Cache::store('redis')->get('export_progress'.'_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
     }
 
 
