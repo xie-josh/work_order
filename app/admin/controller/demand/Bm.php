@@ -23,7 +23,7 @@ class Bm extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['disposeStatus','index','getBmList','getBmAnnouncement'];
+    protected array $noNeedPermission = ['disposeStatus','index','getBmList','getBmAnnouncement','progressList'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -353,11 +353,32 @@ class Bm extends Backend
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray(); 
 
+                $progressData = [];
+                $commentValue = '';
                 foreach($ids as $v){
-                    if($status == 1)$disposeStatus  = 2;
-                    else if($status == 2) $disposeStatus = 3;
-                    else if($status == 3) $disposeStatus = 1;
+                    switch ($status) {
+                        case '1':
+                            $disposeStatus  = 2;
+                            $commentValue = '已提交:'.$comment;
+                            break;
+                        case '2':
+                            $disposeStatus = 3;
+                            $commentValue = '提交异常:'.$comment;
+                            break;
+                        case '3':
+                            $disposeStatus = 1;
+                            $commentValue = '处理完成:'.$comment;
+                            break;
+                        default:
+                            break;
+                    }
                     DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>$disposeStatus]);
+
+                    $progressData[] = [
+                        'bm_id'=>$v['id'],
+                        'comment'=>$commentValue,
+                        'create_time'=>time()
+                    ];
                 }
 
                 $bmData = [];
@@ -368,6 +389,8 @@ class Bm extends Backend
                 }
                 $result = $this->model->whereIn('id',array_column($ids,'id'))->update($bmData);
                 
+                DB::table('ba_bm_progress')->insertAll($progressData);
+
                 $result = true;
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -427,11 +450,22 @@ class Bm extends Backend
                 $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray(); 
 
                 $accountIds = [];
+                $progressData = [];
+                $commentValue = '';
                 foreach($ids as $v){
                     $accountIds[] = $v['account_id'];
                     if($v['demand_type'] == 2 && $status == 1){
                         $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
                     }
+                    
+                    if($status == 1) $commentValue = '处理完成:'.$comment;
+                    else if($status == 2) $commentValue = '处理异常:'.$comment;
+
+                    $progressData[] = [
+                        'bm_id'=>$v['id'],
+                        'comment'=>$commentValue,
+                        'create_time'=>time()
+                    ];
                 }
                 
                 $this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'comment'=>$comment,'update_time'=>time()]);
@@ -439,6 +473,8 @@ class Bm extends Backend
                 if($status == 1)$disposeStatus  = 1;
                 else $disposeStatus = 4;
                 DB::table('ba_account')->whereIn('account_id',$accountIds)->where('dispose_status',2)->update(['dispose_status'=>$disposeStatus]);
+
+                DB::table('ba_bm_progress')->insertAll($progressData);
 
                 $result = true;
                 $this->model->commit();
@@ -453,6 +489,62 @@ class Bm extends Backend
             }
         }
     }
+
+    public function progress(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            $this->model->startTrans();
+            try {
+                $ids = $data['ids'];
+                $status = $data['status'];
+                $comment = $data['comment']??'';
+
+                if(empty($comment)) throw new \Exception("评论必填！");
+
+                $ids = $this->model->whereIn('id',$ids)->select()->toArray();
+
+                $progressData = [];
+                $commentValue = '';
+                foreach($ids as $v){
+                    if($status == 1)$commentValue = '提交跟进中:'.$comment;
+                    else if($status == 2) $commentValue = '处理跟进中:'.$comment;
+                    $progressData[] = [
+                        'bm_id'=>$v['id'],
+                        'comment'=>$commentValue,
+                        'create_time'=>time()
+                    ];
+                }
+                DB::table('ba_bm_progress')->insertAll($progressData);
+                $this->model->whereIn('id',array_column($ids,'id'))->update(['comment'=>$comment,'update_time'=>time()]);
+
+                $result = true;
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
+    public function progressList()
+    {
+        $id = $this->request->get('id');
+        try {
+            $result = DB::table('ba_bm_progress')->where('bm_id',$id)->order('id','desc')->select()->toArray();
+        } catch (Throwable $th) {
+            $this->error($th->getMessage());
+        }
+        return $this->success('',['list'=>$result]);
+    }
+
+    
 
     public function getBmAnnouncement(): void
     {
@@ -475,12 +567,19 @@ class Bm extends Backend
         array_push($where,['bm.demand_type','IN',[1,2]]);
         array_push($where,['bm.status','IN',[0,1]]);
         array_push($where,['bm.dispose_type','IN',[0]]);
+        // $whereOr = [];
+        //array_push($whereOr,['bm.update_time','<',(time() - 3600)]);
+        //array_push($whereOr,['bm.update_time', 'null', null]);
 
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
+            ->where(function ($query){
+                $query->where('bm.update_time', 'null', null)
+                ->whereOr('bm.update_time', '<', (time() - 3600));
+            })
             ->order($order)
             ->paginate(1);
 
