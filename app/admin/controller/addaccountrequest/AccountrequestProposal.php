@@ -200,7 +200,7 @@ class AccountrequestProposal extends Backend
         // ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
         // ->where($where)->select()->toArray();
 
-        $batchSize = 400;
+        $batchSize = 2000;
         $processedCount = 0;
 
         $query = $this->model
@@ -242,14 +242,14 @@ class AccountrequestProposal extends Backend
         
         
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
-            $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];
             foreach($data as $v){
                 $dataList[] = [
                     'bm'=>$v['bm'],
                     'time_zone'=>$v['time_zone'],
                     'account_id'=>$v['account_id'],
-                    'account_name'=>$v['serial_name'],
+                    'account_name'=>$v['serial_name_2'],
                     'affiliation_bm'=>$v['affiliation_bm'],
                     'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
                     'account_bm'=> $v['account_bm'],

@@ -36,6 +36,7 @@ class AccountrequestProposal extends Model
 
     public function getSerialNameAttr($value,$data)
     {
+        return $data['serial_name_2'];
         $admin = DB::table('ba_admin')->field('nickname,is_name,is_name_key')->where('id',$data['admin_id'])->find();
 
         $adminKey = json_decode($admin['is_name_key'],true);
@@ -44,7 +45,7 @@ class AccountrequestProposal extends Model
         
         $account = DB::table('ba_account')->field('name,admin_id,time_zone,currency')->where('account_id',$data['account_id'])->find();
         if($admin['is_name'] == 2) return $account['name']??'';
-
+        
         if($data['status'] != 0 && !empty($account)){
             //渠道 + 序号 + 币种 + 时区 + 时间[分配生成] + 申请用户[分配生成] + 用户自定义
             $accountAdminNickname = DB::table('ba_admin')->where('id',$account['admin_id'])->value('nickname');

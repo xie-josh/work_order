@@ -769,14 +769,15 @@ class Account extends Backend
 
         //DB::table(table: 'ba_account')
 
-        $batchSize = 400;
+        $batchSize = 2000;
         $processedCount = 0;
         $redisKey = 'export_progress'.'_'.$this->auth->id;
         
         $query =  $this->model
         ->alias('account')
-        ->field('id,admin_id,name,account_id,time_zone,bm,open_money,dispose_status,status,create_time,update_time')        
-        ->withJoin(['accountrequestProposal'], 'LEFT')
+        ->field('account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name_2')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        //->withJoin(['accountrequestProposal'], 'LEFT')
         ->order('account.id','desc')
         ->where($where);
 
@@ -820,7 +821,7 @@ class Account extends Backend
                     $v['id'],
                     ($v['accountrequestProposal']['bm'])??'',
                     ($adminList[$v['admin_id']])??'',
-                    isset($v['accountrequestProposal'])?$v['accountrequestProposal']['serial_name']:$v['name'],
+                    $v['accountrequest_proposal_id']?$v['serial_name_2']:$v['name'],
                     //$v['name'],
                     $v['account_id'],
                     $v['time_zone'],
