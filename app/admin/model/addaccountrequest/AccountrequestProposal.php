@@ -42,7 +42,7 @@ class AccountrequestProposal extends Model
         
         $key = [];
         
-        $account = DB::table('ba_account')->field('name,admin_id')->where('account_id',$data['account_id'])->find();
+        $account = DB::table('ba_account')->field('name,admin_id,time_zone,currency')->where('account_id',$data['account_id'])->find();
         if($admin['is_name'] == 2) return $account['name']??'';
 
         if($data['status'] != 0 && !empty($account)){
@@ -50,13 +50,18 @@ class AccountrequestProposal extends Model
             $accountAdminNickname = DB::table('ba_admin')->where('id',$account['admin_id'])->value('nickname');
             $key[1] = $admin['nickname'];
             $key[2] = str_pad($data['serial_number']??0, 4, '0', STR_PAD_LEFT);
+
+            if($data['currency'] == '其他')$data['currency'] = $account['currency'];
             $key[3] = $data['currency'];
 
+            if(empty($data['time_zone'])) $data['time_zone'] = $account['time_zone'];
+            
             if(!empty($data['time_zone'])){
                 // $timezone = $data['time_zone'];
                 // preg_match('/[+-]?\d+/', $timezone, $matches);
                 // $timezone = $matches[0]??'';
                 // $key[4] = $timezone;
+                
                 $key[4] = $this->extractTime($data['time_zone']);
             }
 

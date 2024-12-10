@@ -279,10 +279,8 @@ class Account extends Backend
                 // }
 
                 if($status == 1){
-
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
-                    
                 }elseif($status == 2){
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     foreach($ids as $v){
@@ -307,7 +305,9 @@ class Account extends Backend
                         $this->model->where('id',$v['id'])->update($data);
                         $allocateTime = date('md',time());
 
-                        $data = ['status'=>1,'allocate_time'=>$allocateTime,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time()];
+                        $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
+
+                        $data = ['status'=>1,'allocate_time'=>$allocateTime,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time(),'serial_name_2'=>$getSerialName,'currency'=>$v['currency']];
                         if(empty($accountrequestProposal['time_zone']) && !empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
                         DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update($data);
                         
@@ -552,7 +552,12 @@ class Account extends Backend
                     
                     if(!empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
                     DB::table('ba_account')->where('id',$resultAccount['id'])->update($data);
-                    DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->update(['status'=>1,'affiliation_admin_id'=>$resultAccount['admin_id'],'update_time'=>time()]);
+                    $allocateTime = date('md',time());
+
+                    $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($v);
+                    $data = ['status'=>1,'affiliation_admin_id'=>$resultAccount['admin_id'],'allocate_time'=>$allocateTime,'update_time'=>time(),'serial_name_2'=>$getSerialName,'currency'=>$resultAccount['currency']];
+                    if(empty($v['time_zone']) && !empty($resultAccount['time_zone'])) $data['time_zone'] = $resultAccount['time_zone'];
+                    DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->update($data);
                 }
 
                 if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);

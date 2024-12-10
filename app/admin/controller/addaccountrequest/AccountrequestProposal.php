@@ -187,7 +187,7 @@ class AccountrequestProposal extends Backend
 
     public function Export()
     {
-        set_time_limit(300);
+        set_time_limit(600);
         $where = [];
         $ids = $this->request->post('ids');
         if($ids) array_push($where,['accountrequest_proposal.id','in',$ids]);
