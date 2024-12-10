@@ -27,6 +27,16 @@ class CardTransactionsTask extends Command
             ->where('card_account.status',1)
             ->select()->toArray();
 
+        // $result = DB::table('ba_cards')
+        //     ->alias('cards')
+        //     ->field('cards.id,cards.account_id,cards.card_id,card_platform.platform')
+        //     ->leftJoin('ba_card_account card_account','card_account.id=cards.account_id')
+        //     ->leftJoin('ba_card_platform card_platform','card_platform.id=card_account.card_platform_id')
+        //     ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=cards.id')
+        //     ->where('cards.account_id',3)
+        //     ->where('cards_info.is_2',0)
+        //     ->select()->toArray();
+
         foreach($result as  $v){
             $jobHandlerClassName = 'app\job\CardTransactions';
             $jobQueueName = 'CardTransactions';

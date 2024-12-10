@@ -333,9 +333,11 @@ class Airwallex extends Backend implements CardInterface
             'Authorization'=>'Bearer '.$this->token
         ];
         $param = [
+            // 'from_created_at'=>'2024-07-09T11:05:00+0000',
+            // 'to_created_at'=>'2024-12-01T11:05:00+0000',
             'card_id'=>$params['card_id'],
-            'pageIndex'=>$params['page_index']??1,
-            'pageSize'=>$params['page_size']??200,
+            'page_num'=>$params['page_index']??0,
+            'page_size'=>$params['page_size']??200,
         ];
         $result = $this->curlHttp($url,$method,$header,$param);
         if(isset($result['items'])){
@@ -389,9 +391,9 @@ class Airwallex extends Backend implements CardInterface
             $data = [
                 'data' => $dataList,
                 'total' => '',
-                'pageSize' => $param['pageSize'],
-                'pageIndex' => $param['pageIndex'],
-                'numbers' => '',
+                'pageSize' => $param['page_size'],
+                'pageIndex' => $param['page_num'],
+                'numbers' => count($dataList),
             ];
             return $this->returnSucceed($data);
         }else{

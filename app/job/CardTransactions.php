@@ -227,4 +227,79 @@ class CardTransactions
             return true;
         }
     }
+
+    public function test($param)
+    {
+        $accountId = $param['account_id'];
+        $cardsId = $param['id'];
+        $cardId = $param['card_id'];
+        
+        $pageIndex = 0;
+        $pageSize = 200;
+        $is_ = true;
+        while($is_){
+            try {
+                Db::startTrans();
+                $param = [
+                    'page_index'=>$pageIndex,
+                    'page_size'=>$pageSize,
+                    'card_id'=>$cardId
+                ];
+                $transactions = (new CardService($accountId))->transactionDetail($param);
+                //dd($transactions,$param);
+                if(empty($transactions['data'])){
+                    DB::table('ba_cards_info')->where('cards_id',$cardsId)->update(['is_2'=>1]);
+                    //DB::table('ba_cards')->where('id',$cardsId)->update(['is_transactions'=>1]);
+                    $is_ = false;
+                    Db::commit();
+                    return 1;
+                    //continue;
+                }
+
+                $transactionsList = $transactions['data']??'';                      
+                $list = $transactionsList['data']??'';
+                if(empty($list)){
+                    DB::table('ba_cards_info')->where('cards_id',$cardsId)->update(['is_2'=>1]);
+                    Db::commit();
+                    return 1;
+                }
+
+                $transactionsIds = array_column($list,'transaction_id');
+
+                $resultListIds = DB::table('ba_test')->where('account_id',$accountId)->whereIn('transaction_id',$transactionsIds)->column('transaction_id');
+
+                                    
+                $dataList = [];            
+                foreach($list as $v){
+
+                    if(in_array($v['transaction_id'],$resultListIds)) continue;
+
+                    $dataList[] = [
+                        'account_id'=>$accountId,
+                        'cards_id'=> $cardsId,
+                        'transaction_id'=>$v['transaction_id']??'',
+                        'text'=>json_encode($v)
+                    ];
+                }
+                //dd($dataList);
+                DB::table('ba_test')->insertAll($dataList);
+                DB::table('ba_cards_info')->where('cards_id',$cardsId)->update(['is_2'=>1]);
+    
+                $pageIndex ++;
+                if($pageSize > $transactionsList['numbers']){
+                    $is_ = false;
+                } 
+                //echo $pageIndex;
+                Db::commit();
+            } catch (\Throwable $th) {
+                Db::rollback();
+                $logs = '错误:('.$th->getLine().')'.json_encode($th->getMessage());
+                $is_ = false;
+                DB::table('ba_cards_info')->where('cards_id',$cardsId)->update(['is_2'=>$logs]);
+            }
+            return true;
+        }
+    }
+
+
 }
