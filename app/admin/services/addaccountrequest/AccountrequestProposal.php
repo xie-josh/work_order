@@ -39,7 +39,7 @@ class AccountrequestProposal
         $key[3] = $params['currency'];
 
 
-        if(empty($params['time_zone'])  && !empty($account['time_zone'])) $params['currency'] = $account['time_zone'];
+        if(empty($params['time_zone'])  && !empty($account['time_zone'])) $params['time_zone'] = $account['time_zone'];
         if(!empty($params['time_zone'])) $key[4] = $this->extractTime($params['time_zone']);
         
         if(!empty($params['allocate_time'])) $key[5] = $params['allocate_time'];
