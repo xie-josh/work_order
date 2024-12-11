@@ -307,6 +307,7 @@ class Account extends Backend
 
                         $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
 
+
                         $data = ['status'=>1,'allocate_time'=>$allocateTime,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time(),'serial_name_2'=>$getSerialName,'currency'=>$v['currency']];
                         if(empty($accountrequestProposal['time_zone']) && !empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
                         DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update($data);
@@ -775,7 +776,7 @@ class Account extends Backend
         
         $query =  $this->model
         ->alias('account')
-        ->field('account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name_2')
+        ->field('account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name_2,accountrequest_proposal.bm accountrequest_proposal_bm')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         //->withJoin(['accountrequestProposal'], 'LEFT')
         ->order('account.id','desc')
@@ -819,7 +820,8 @@ class Account extends Backend
             foreach($data as $v){
                 $dataList[] = [
                     $v['id'],
-                    ($v['accountrequestProposal']['bm'])??'',
+                    $v['accountrequest_proposal_id']?$v['accountrequest_proposal_bm']:'',
+                    //($v['accountrequestProposal']['bm'])??'',
                     ($adminList[$v['admin_id']])??'',
                     $v['accountrequest_proposal_id']?$v['serial_name_2']:$v['name'],
                     //$v['name'],
