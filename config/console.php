@@ -10,5 +10,6 @@ return [
         'AccountTask' => 'app\command\AccountTask',
         'CardTransactionsTask' => 'app\command\CardTransactionsTask',
         'LampayCardListTask' => 'app\command\LampayCardListTask',
+        'FbAccountUpdateTask' => 'app\command\FbAccountUpdateTask',
     ],
 ];
