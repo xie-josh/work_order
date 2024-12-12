@@ -370,7 +370,7 @@ class Account extends Backend
                             }
                         }
                     }
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time(),'open_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
 
 
                 }elseif($status == 5){

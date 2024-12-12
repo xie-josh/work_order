@@ -48,6 +48,50 @@ class FacebookService
         }
     }
 
+    public function insights($params)
+    {
+        try {
+            $accountId = $params['account_id'];
+            $token = $params['token'];
+            $businessId = $params['business_id'];
+
+            if(empty($businessId)) throw new \Exception("未找到管理BM");
+            
+            $param = [
+                'fields'=> 'account_name,account_id,spend',
+                'level'=> 'account',
+                'time_range'=> ["since"=>"2024-12-01","until"=>"2024-12-13"],
+                'time_increment'=> '1',
+                //'date_preset'=>'last_7d',
+                //'limit'=>2550
+            ];
+            $url = "https://graph.facebook.com/v21.0/act_{$accountId}/insights";
+            $method = 'get';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            if(isset($result['data'])){
+                $data = [
+                    'data' => $result['data'],
+                    //'pageSize' => 2550,
+                    //'pageIndex' => 1,
+                    'total' => count($result['data']),
+                    // 'numbers' => $result['numbers'],
+    
+                ];
+                return $this->returnSucceed($data);
+            }else{
+                DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
+                return $this->returnError($result['msg']);
+            }
+        } catch (\Throwable $th) {
+            DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$th->getMessage()]);
+            return $this->returnError($result['msg']);
+        }
+    }
+
 
     public function curlHttp(string $url,string $method='GET',array $header = ['Accept' => 'application/json'],array $data=[])
     {

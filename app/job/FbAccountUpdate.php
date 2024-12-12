@@ -39,12 +39,18 @@ class FbAccountUpdate
 
             $cardList = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.account_id,cards_info.card_no,cards_info.card_status,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.cards_id')
+            ->field('accountrequest_proposal.close_time,accountrequest_proposal.account_id,cards_info.card_no,cards_info.card_status,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.cards_id')
             ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
             ->whereIn('accountrequest_proposal.account_id',$accountIds)
             ->select()->toArray();
 
+            $accountrequestProposalClose = [];
+            $accountrequestProposalCloseIs = [];
             foreach($cardList as $v){
+                $closeTime = $v['close_time']??'';
+                if(empty($closeTime)) $accountrequestProposalClose[] = $v['account_id'];
+                if(!empty($closeTime) || strtotime($closeTime . ' +3 days') < time()) $accountrequestProposalCloseIs[] = $v['account_id'];
+
                 if(empty($v['card_status']) || $v['card_status'] != 'normal') continue;
 
                 $result = (new CardService($v['cards_account_id']))->cardFreeze(['card_id'=>$v['card_id']]);
@@ -59,11 +65,17 @@ class FbAccountUpdate
                     ]);
                 }
             }
+            DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
+            DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
             DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
         }
         return true;        
+    }
+
+    public function accountInsights(){
+
     }
 }
