@@ -121,7 +121,7 @@ class Recharge extends Backend
 
                     DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
                 }elseif(in_array($data['type'],[3,4])){
-                    $recharge = $this->model->where('account_id',$data['account_id'])->whereIn('type',[3,4])->order('id','desc')->find();
+                    $recharge = $this->model->where('account_id',$data['account_id'])->where('status',1)->whereIn('type',[3,4])->order('id','desc')->find();
 
                     if(!empty($recharge['id'])){
                         $where = [
