@@ -776,7 +776,7 @@ class Account extends Backend
         
         $query =  $this->model
         ->alias('account')
-        ->field('account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name_2,accountrequest_proposal.bm accountrequest_proposal_bm')
+        ->field('account.open_time,account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name_2,accountrequest_proposal.bm accountrequest_proposal_bm')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         //->withJoin(['accountrequestProposal'], 'LEFT')
         ->order('account.id','desc')
@@ -804,7 +804,8 @@ class Account extends Backend
             'BM绑定',
             '开户状态',
             '创建时间',
-            '修改时间'
+            '修改时间',
+            '开户时间'
         ];
 
         $config = [
@@ -833,6 +834,7 @@ class Account extends Backend
                     $statusValue[$v['status']],
                     $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
                     $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
+                    $v['open_time']?date('Y-m-d H:i',$v['open_time']):'',
                 ];  
                 $processedCount++;
             }
