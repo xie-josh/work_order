@@ -49,7 +49,7 @@ class FbAccountUpdate
             foreach($cardList as $v){
                 $closeTime = $v['close_time']??'';
                 if(empty($closeTime)) $accountrequestProposalClose[] = $v['account_id'];
-                if(!empty($closeTime) || strtotime($closeTime . ' +3 days') < time()) $accountrequestProposalCloseIs[] = $v['account_id'];
+                if(!empty($closeTime) && strtotime($closeTime . ' +3 days') < time()) $accountrequestProposalCloseIs[] = $v['account_id'];
 
                 if(empty($v['card_status']) || $v['card_status'] != 'normal') continue;
 
