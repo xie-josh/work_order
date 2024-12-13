@@ -54,13 +54,15 @@ class FacebookService
             $accountId = $params['account_id'];
             $token = $params['token'];
             $businessId = $params['business_id'];
+            $startTime = $params['stort_time']??date('Y-m-01');
+            $stopTime = $params['stop_time']??date('Y-m-t');
 
             if(empty($businessId)) throw new \Exception("未找到管理BM");
             
             $param = [
                 'fields'=> 'account_name,account_id,spend',
                 'level'=> 'account',
-                'time_range'=> ["since"=>"2024-12-01","until"=>"2024-12-13"],
+                'time_range'=> ["since"=>$startTime,"until"=>$stopTime],
                 'time_increment'=> '1',
                 //'date_preset'=>'last_7d',
                 //'limit'=>2550
