@@ -67,6 +67,7 @@ class FbAccountUpdate
             }
             DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
             DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
+            DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>2]);
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
