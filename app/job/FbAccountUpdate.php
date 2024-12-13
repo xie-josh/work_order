@@ -13,9 +13,18 @@ class FbAccountUpdate
         //php think queue:listen --queue FbAccountUpdate
         sleep(1);
 
-        $this->accountUpdate($data);
-        
-        $job->delete();
+        try {
+            $this->accountUpdate($data);
+            $job->delete();
+        } catch (\Throwable $th) {
+
+            if ($job->attempts() >= 3) {
+                $job->delete();
+            }
+        }
+        if ($job->attempts() >= 3) {
+            $job->delete();
+        }
     }
 
     public function accountUpdate($params)

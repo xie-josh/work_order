@@ -12,9 +12,18 @@ class FbAccountConsumption
         //php think queue:listen --queue FbAccountConsumption
         sleep(1);
 
-        $this->accountConsumption($data);
-        
-        $job->delete();
+        try {
+            $this->accountConsumption($data);
+            $job->delete();
+        } catch (\Throwable $th) {
+
+            if ($job->attempts() >= 3) {
+                $job->delete();
+            }
+        }
+        if ($job->attempts() >= 3) {
+            $job->delete();
+        }
     }
 
     public function accountConsumption($params)
