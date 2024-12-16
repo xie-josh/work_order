@@ -369,10 +369,29 @@ class Recharge extends Backend
             ->order($order)
             ->paginate(1);
 
+        $list = $res->items();
+        $listTotal = $res->total();
+
+        $where = [];
+        array_push($where,['recharge.type','IN',[2]]);
+        array_push($where,['recharge.status','=',0]);
+
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate(1);
+
+        $deductionList = $res->items();
+        $deductionListtotal = $res->total();
+
         $this->success('', [
-            'list'   => $res->items(),
-            'total'  => $res->total(),
-            'remark' => get_route_remark(),
+            'list'   =>$list,
+            'deduction_list'=>$deductionList,
+            'total'=>$listTotal,
+            'deduction_total'=>$deductionListtotal,
         ]);
     }
 

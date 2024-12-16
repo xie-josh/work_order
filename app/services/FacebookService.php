@@ -15,12 +15,28 @@ class FacebookService
         try {
             $businessId = $params['business_id'];
             $token = $params['token'];
+            $accountStatus = $params['account_status']??'';
             if(empty($businessId)) throw new \Exception("未找到管理BM");
             
             $param = [
                 'fields'=>'id,name,account_status,amount_spent,currency,created_time',
                 'limit'=>2550
             ];
+            if($accountStatus == 1){
+                $param['filtering'][] =  [
+                    "field"=> "account_status",
+                    "operator"=> "EQUAL",
+                    "value"=> 1
+                ];
+            }else if($accountStatus == 2){
+                $param['filtering'][] =  [
+                    "field"=> "account_status",
+                    "operator"=> "NOT_EQUAL",
+                    "value"=> 1
+                ];
+            }
+
+
             $url = "https://graph.facebook.com/v21.0/{$businessId}/client_ad_accounts";
             $method = 'get';
             $header = [
