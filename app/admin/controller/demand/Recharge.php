@@ -9,6 +9,7 @@ use Throwable;
 use app\admin\model\card\CardsModel;
 use app\services\CardService;
 use think\facade\Cache;
+use think\facade\Queue;
 
 /**
  * 充值需求
@@ -339,6 +340,140 @@ class Recharge extends Backend
                 $this->error(__('No rows updated'));
             }
         }
+    }
+
+    public function accountSpendDelete()
+    {
+        // sleep(5);
+        // $this->success(__('Update successful'));
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            //DB::startTrans();
+            try {
+                $id = $data['id'];
+
+                $result = (new \app\admin\services\demand\Recharge())->spendDelete(['id'=>$id]);
+                if($result['code'] != 1) throw new \Exception($result['msg']);
+
+                $result = true;
+                //DB::commit();
+            } catch (Throwable $e) {
+                //DB::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
+
+    public function accountSpendDelete222()
+    {
+        $this->success(__('Update successful'));
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            DB::startTrans();
+            try {
+                $id = $data['id'];
+
+                $key = 'recharge_audit_'.$id;
+                $redisValue = Cache::store('redis')->get($key);
+                if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+                Cache::store('redis')->set($key, '1', 180);
+
+                $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[3,4]]])->find();
+                if(empty($result)) throw new \Exception("未找到需要或需要已经处理！"); 
+
+                //====================
+
+                $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+                ->alias('accountrequest_proposal')
+                ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token')
+                ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+                ->where('fb_bm_token.status',1)
+                ->whereNotNull('fb_bm_token.token')
+                ->where('accountrequest_proposal.account_id',$result['account_id'])
+                ->find();
+                //dd($accountrequestProposal);
+
+                if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
+                
+                $FacebookService = new \app\services\FacebookService();
+                $result1 = $FacebookService->adAccounts($accountrequestProposal);
+                $result2 = $FacebookService->adAccountsDelete($accountrequestProposal);
+                $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
+                if($result1['code'] != 1) throw new \Exception($result1['msg']);
+                if($result2['code'] != 1) throw new \Exception("FB删除限额错误，请联系管理员！");
+                if($result3['code'] != 1) throw new \Exception("FB重置限额错误，请联系管理员！");
+                
+                $money = $result1['data']['balance_amount'];
+                $fbBoney = $result1['data']['spend_cap'];
+
+                //$resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$result['account_id'])->find();
+                $currency = $accountrequestProposal['currency'];
+
+                $currencyNumber =  '';
+                if(!empty($this->currencyRate[$currency])){
+                    $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
+                }else{
+                    $currencyNumber = (string)$money;
+                }
+
+                $data = [
+                    'fb_money'=>$fbBoney,
+                    'number'=>$currencyNumber,
+                    'status'=>1,
+                ];
+                $this->model->where('id',$result['id'])->update($data);
+                DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
+                DB::table('ba_admin')->where('id',$result['admin_id'])->dec('used_money',$currencyNumber)->update();
+
+                if($accountrequestProposal['is_cards'] != 2) {
+                    $cards = DB::table('ba_cards_info')->where('cards_id',$accountrequestProposal['cards_id']??0)->find();
+                    if(empty($cards)) {
+                        //TODO...
+                        // if($resultProposal['is_cards'] != 2) throw new \Exception("未找到分配的卡");
+                        throw new \Exception("未找到分配的卡");
+                    }else{
+                        $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                    }
+                }
+                
+                //=============
+
+                Cache::store('redis')->delete($key);
+                $result = true;
+                DB::commit();
+            } catch (Throwable $e) {
+                dd($e->getMessage());
+                DB::rollback();
+                Cache::store('redis')->delete($key);
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+    public function accountSpendDeleteAll()
+    {
+        $result = [];
+
+         foreach($result as  $v){
+             $jobHandlerClassName = 'app\job\AccountSpendDelete';
+             $jobQueueName = 'AccountSpendDelete';
+             Queue::later(1, $jobHandlerClassName, $v, $jobQueueName);        
+         }
+
     }
 
     public function getRechargeAnnouncement(): void
