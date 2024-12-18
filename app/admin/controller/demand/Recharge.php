@@ -27,7 +27,7 @@ class Recharge extends Backend
 
     protected string|array $quickSearchField = ['id'];
     protected array $withJoinTable = ['accountrequestProposal'];
-    protected array $noNeedPermission = ['edit','getRechargeAnnouncement','accountSpendDelete'];
+    protected array $noNeedPermission = ['edit','getRechargeAnnouncement','accountSpendDelete','accountSpendUp'];
 
     protected bool|string|int $dataLimit = 'parent';
 
