@@ -10,6 +10,8 @@ interface CardInterface
     public function cardUnfreeze($params):array;
     public function transactionDetail($params):array;
     public function cardGetLimits($params):array;
+    public function cardCreate($params):array;
     public function test($params):array;
+    
     
 }

@@ -9,6 +9,7 @@ use app\admin\model\card\CardsModel;
 use think\facade\Db;
 use app\services\CardService;
 use think\facade\Cache;
+use think\facade\Queue;
 
 class Cards extends Backend{
      /**
@@ -56,6 +57,18 @@ class Cards extends Backend{
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
+    }
+
+
+    public function cradCreate()
+    {
+        $number = 1;     
+
+        for ($i=0; $i < $number; $i++) { 
+            $jobHandlerClassName = 'app\job\CardCreate';
+            $jobQueueName = 'CardCreate';
+            Queue::later(1, $jobHandlerClassName, ['platform'=>'airwallex','account_id'=>3], $jobQueueName);        
+        }
     }
 
 

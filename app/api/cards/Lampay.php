@@ -61,6 +61,9 @@ class Lampay extends Backend implements CardInterface
         }
     }
 
+    public function cardCreate($params):array{return $this->returnSucceed();}
+    
+
     public function cardList($params):array{
         $url = "$this->url/web/api/list";
         $method = 'GET';

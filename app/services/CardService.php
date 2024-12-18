@@ -31,6 +31,15 @@ class CardService
         $this->accountId = $cardAccountId;
     }
 
+    public function cardCreate($params)
+    {
+        try {
+            return $this->apiClient->cardCreate($params);
+        } catch (\Throwable $th) {
+            $logs = '错误(service):'.json_encode($th->getMessage());
+            return ['code'=>0,'msg'=>$logs];
+        }
+    }
        
     public function cardList($params)
     {

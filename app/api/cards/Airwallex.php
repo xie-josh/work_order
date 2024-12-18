@@ -62,9 +62,61 @@ class Airwallex extends Backend implements CardInterface
         }
     }
 
-    public function request($endpoint, $method = 'GET', $data = [])
+    public function cardCreate($params):array
     {
-        // 实现 Platform A 的 API 请求逻辑
+
+        $nickname = $params['nickname']??date('ymd');
+        $transactionLimit = $params['transaction_limit']??2;
+        $maxOnPercent = $params['max_on_percent']??901;
+        $cardholder_id = 'fbeb6261-20ff-431b-9021-7864f0c0272f';
+
+        $UUID = $this->getUUID();
+        $param = [
+            'authorization_controls'=>[
+                'allowed_transaction_count'=>'MULTIPLE',
+                'transaction_limits'=>[
+                    "currency"=> "USD",
+                    'limits'=>[
+                        [
+                            'interval'=>'ALL_TIME',
+                            'amount'=>$transactionLimit
+                        ],
+                        [
+                            'interval'=>'PER_TRANSACTION',
+                            'amount'=>$maxOnPercent
+                        ]
+                    ]
+                ],
+            ],
+            'cardholder_id'=>$cardholder_id,
+            'created_by'=>'建江',
+            "form_factor"=>"VIRTUAL",
+            //"issue_to"=>"ORGANISATION",
+            'is_personalized'=>false,            
+            'program'=>[
+                'purpose'    =>'COMMERCIAL',
+            ],
+            //'type'=>'DEFERRED_DEBIT',
+            //'purpose'=>'MARKETING_EXPENSES',
+            'nick_name'=>$nickname,
+            'request_id'=>$UUID
+        ];
+        $url = "$this->url/api/v1/issuing/cards/create";
+        $method = 'POST';
+    
+
+        $header = [
+            'Content-Type'=>'application/json',
+            'Authorization'=>'Bearer '.$this->token
+        ];
+        $result = $this->curlHttp($url,$method,$header,$param);
+        dd($result);
+
+        if($result['msg'] == 'succeed'){           
+            return $this->returnSucceed();
+        }else{
+            return $this->returnError($result['msg']);
+        }
     }
 
     /**
