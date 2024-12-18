@@ -140,9 +140,9 @@ class FacebookService
                 //冻卡异常
                 //添加FB操作日志记录，记录所有操作失败的原因与参数
                 
-                if(empty($result['spend_cap'])) throw new \Exception("错误: 未限制额度！");
+                //if(empty($result['spend_cap'])) throw new \Exception("错误: 未限制额度！");
                 
-                $balanceAmount = ($result['spend_cap'] - $result['amount_spent']) / 100;
+                $balanceAmount = $result['spend_cap'] == 0 ? 0 : (($result['spend_cap'] - $result['amount_spent']) / 100);
                 $data = [
                     "spend_cap" => $result['spend_cap'] == 0 ? 0 : $result['spend_cap'] / 100,
                     "amount_spent" => $result['amount_spent'] == 0 ? 0 : $result['amount_spent'] / 100,

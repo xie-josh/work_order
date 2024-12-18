@@ -359,6 +359,34 @@ class Recharge extends Backend
         }
     }
 
+    public function accountSpendUp()
+    {
+        // sleep(5);
+        // $this->success(__('Update successful'));
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            //DB::startTrans();
+            try {
+                $id = $data['id'];
+
+                $result = (new \app\admin\services\demand\Recharge())->spendUp(['id'=>$id]);
+                if($result['code'] != 1) throw new \Exception($result['msg']);
+
+                $result = true;
+                //DB::commit();
+            } catch (Throwable $e) {
+                //DB::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
     public function accountSpendDelete()
     {
         // sleep(5);
