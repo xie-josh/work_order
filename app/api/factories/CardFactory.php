@@ -5,6 +5,7 @@ use app\api\cards\Photonpay;
 use app\api\interfaces\CardInterface;
 use app\api\cards\Lampay;
 use app\api\cards\Airwallex;
+use app\api\cards\AirwallexUs;
 
 class CardFactory
 {
@@ -18,6 +19,8 @@ class CardFactory
                 return new Lampay($cardAccount);
             case 'airwallex':
                 return new airwallex($cardAccount);
+            case 'airwallexUs':
+                return new airwallexUs($cardAccount);
             default:
                 return throw new \Exception("账户不可使用!");
         }
