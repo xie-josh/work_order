@@ -145,6 +145,7 @@ class Recharge
             $fbBoney = $result1['data']['spend_cap'];
 
             $currencyNumber =  '';
+            $spendCap = $fbBoney;
             if(!empty($this->currencyRate[$currency])){
                 $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
                 $spendCap = bcdiv((string)$fbBoney, $this->currencyRate[$currency],2);
