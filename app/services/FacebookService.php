@@ -16,11 +16,15 @@ class FacebookService
             $businessId = $params['business_id'];
             $token = $params['token'];
             $accountStatus = $params['account_status']??'';
+            $type = $params['type']??'';
+            $before = $params['before']??'';
+            $after = $params['after']??'';
+
             if(empty($businessId)) throw new \Exception("未找到管理BM");
             
             $param = [
                 'fields'=>'id,name,account_status,amount_spent,currency,created_time',
-                'limit'=>2550
+                'limit'=>500
             ];
             if($accountStatus == 1){
                 $param['filtering'][] =  [
@@ -36,8 +40,12 @@ class FacebookService
                 ];
             }
 
+            if(!empty($before)) $param['before'] = $before;
+            if(!empty($after)) $param['after'] = $after;
 
-            $url = "https://graph.facebook.com/v21.0/{$businessId}/client_ad_accounts";
+            $n = 'client';
+            if($type == 2) $n = 'owned';
+            $url = "https://graph.facebook.com/v21.0/{$businessId}/{$n}_ad_accounts";
             $method = 'get';
             $header = [
                 'Content-Type'=>'application/json',
@@ -47,9 +55,10 @@ class FacebookService
             if(isset($result['data'])){
                 $data = [
                     'data' => $result['data'],
-                    'pageSize' => 2550,
+                    'pageSize' => $param['limit'],
                     'pageIndex' => 1,
                     'total' => count($result['data']),
+                    'after'=>$result['paging']['cursors']['after']??''
                     // 'numbers' => $result['numbers'],
     
                 ];

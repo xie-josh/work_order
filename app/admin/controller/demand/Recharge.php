@@ -27,7 +27,7 @@ class Recharge extends Backend
 
     protected string|array $quickSearchField = ['id'];
     protected array $withJoinTable = ['accountrequestProposal'];
-    protected array $noNeedPermission = ['edit','getRechargeAnnouncement'];
+    protected array $noNeedPermission = ['edit','getRechargeAnnouncement','accountSpendDelete'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -69,13 +69,30 @@ class Recharge extends Backend
             ->order($order)
             ->paginate($limit);
 
-        $res->visible(['account'=>['money']]);
-
-        $this->success('', [
-            'list'   => $res->items(),
-            'total'  => $res->total(),
-            'remark' => get_route_remark(),
-        ]);
+            $result = $res->toArray();
+            $dataList = [];
+            if(!empty($result['data'])) {
+                $dataList = $result['data'];
+    
+                foreach($dataList as &$v){
+                    if(isset($v['accountrequestProposal']) && !in_array($v['accountrequestProposal']['bm_token_id'],[1,6,29,30,31,32])) $v['accountrequestProposal']['bm_token_id'] = null;
+    
+                }
+            }
+    
+            $this->success('', [
+                'list'   => $dataList,
+                'total'  => $res->total(),
+                'remark' => get_route_remark(),
+            ]);
+    
+            // $res->visible(['account'=>['money']]);
+    
+            // $this->success('', [
+            //     'list'   => $res->items(),
+            //     'total'  => $res->total(),
+            //     'remark' => get_route_remark(),
+            // ]);
     }
 
 

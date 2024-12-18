@@ -45,29 +45,33 @@ class Recharge
             ->find();
 
             if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
+            $currency = $accountrequestProposal['currency'];
+
+            $accountMoney = DB::table('ba_account')->where('account_id',$accountrequestProposal['account_id'])->value('money');
             
             $FacebookService = new \app\services\FacebookService();
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
             if($result1['code'] != 1) throw new \Exception($result1['msg']);
+
+
+            $money = $result1['data']['balance_amount'];
+            $fbBoney = $result1['data']['spend_cap'];
+
+            $currencyNumber =  '';
+            if(!empty($this->currencyRate[$currency])){
+                $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
+                $spendCap = bcdiv((string)$fbBoney, $this->currencyRate[$currency],2);
+            }else{
+                $currencyNumber = (string)$money;
+            }
+            if($spendCap != $accountMoney) throw new \Exception("FB总限额与系统充值匹配错误！");
+
             $result2 = $FacebookService->adAccountsDelete($accountrequestProposal);
             if($result2['code'] != 1) throw new \Exception("FB删除限额错误，请联系管理员！");
             $accountrequestProposal['spend'] = 0.01;
             $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
             if($result3['code'] != 1) throw new \Exception("FB重置限额错误，请联系管理员！");
             
-            $money = $result1['data']['balance_amount'];
-            $fbBoney = $result1['data']['spend_cap'];
-
-            //$resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$result['account_id'])->find();
-            $currency = $accountrequestProposal['currency'];
-
-            $currencyNumber =  '';
-            if(!empty($this->currencyRate[$currency])){
-                $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
-            }else{
-                $currencyNumber = (string)$money;
-            }
-
             $data = [
                 'fb_money'=>$fbBoney,
                 'number'=>$currencyNumber,
