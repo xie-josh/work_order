@@ -47,7 +47,6 @@ class Recharge
             if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
             $currency = $accountrequestProposal['currency'];            
 
-            DB::table('ba_account')->where('account_id',$result['account_id'])->inc('money',$result['number'])->update(['update_time'=>time()]);
             $FacebookService = new \app\services\FacebookService();
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
             if($result1['code'] != 1) throw new \Exception($result1['msg']);
@@ -81,7 +80,8 @@ class Recharge
                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                 }
             }
-            
+
+            DB::table('ba_account')->where('account_id',$result['account_id'])->inc('money',$result['number'])->update(['update_time'=>time()]);
             $data = [
                 'status'=>1,
             ];
