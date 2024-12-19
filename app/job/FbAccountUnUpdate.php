@@ -82,7 +82,10 @@ class FbAccountUnUpdate
         } catch (\Throwable $th) {
             $logs = '错误info_cardUnfreeze_('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
-            DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
+            DB::table('ba_fb_logs')->insert(
+                ['log_id'=>$id??'','type'=>'job_FbAccountUnUpdate','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
+            );
+            //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
         }
         return true;   
     }

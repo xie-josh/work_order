@@ -64,11 +64,13 @@ class FacebookService
                 ];
                 return $this->returnSucceed($data);
             }else{
-                DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
+                $this->log('FB_list',$result['msg']??'',$params,$businessId);
+                //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
                 return $this->returnError($result['msg']);
             }
         } catch (\Throwable $th) {
-            DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$th->getMessage()]);
+            $this->log('FB_list',$th->getMessage(),$params,$businessId);
+            //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$th->getMessage()]);
             return $this->returnError($result['msg']);
         }
     }
@@ -110,11 +112,13 @@ class FacebookService
                 ];
                 return $this->returnSucceed($data);
             }else{
-                DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
+                $this->log('FB_insights',$result['msg']??'',$params,$accountId);
+                //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
                 return $this->returnError($result['msg']);
             }
         } catch (\Throwable $th) {
-            DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$th->getMessage()]);
+            $this->log('FB_insights',$th->getMessage(),$params,$accountId);
+            //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$th->getMessage()]);
             return $this->returnError($th->getMessage()); 
         }
     }
@@ -154,11 +158,11 @@ class FacebookService
                 ];
                 return $this->returnSucceed($data);
             }else{
-                $this->log('adAccounts',$result['msg']??'',$params);
+                $this->log('FB_adAccounts',$result['msg']??'',$params,$accountId);
                 return $this->returnError($result['msg']??'');
             }
         } catch (\Throwable $th) {
-            $this->log('adAccounts',$th->getMessage(),$params);
+            $this->log('FB_adAccounts',$th->getMessage(),$params,$accountId);
             return $this->returnError($th->getMessage()); 
         }
     }
@@ -181,11 +185,11 @@ class FacebookService
             if(isset($result['success']) && $result['success']){                
                 return $this->returnSucceed([]);
             }else{
-                $this->log('adAccountsDelete',$result['msg']??'',$params);
+                $this->log('FB_adAccountsDelete',$result['msg']??'',$params,$accountId);
                 return $this->returnError($result['msg']??'');
             }
         } catch (\Throwable $th) {
-            $this->log('adAccountsDelete',$th->getMessage(),$params);
+            $this->log('FB_adAccountsDelete',$th->getMessage(),$params,$accountId);
             return $this->returnError($th->getMessage()); 
         }
     }
@@ -209,11 +213,11 @@ class FacebookService
             if(isset($result['success']) && $result['success']){         
                 return $this->returnSucceed([]);
             }else{
-                $this->log('adAccountsLimit',$result['msg']??'',$params);
+                $this->log('FB_adAccountsLimit',$result['msg']??'',$params,$accountId);
                 return $this->returnError($result['msg']??'');
             }
         } catch (\Throwable $th) {
-            $this->log('adAccountsLimit',$th->getMessage(),$params);
+            $this->log('FB_adAccountsLimit',$th->getMessage(),$params,$accountId);
             return $this->returnError($th->getMessage()); 
         }
     }
@@ -270,10 +274,10 @@ class FacebookService
         ];
     }
 
-    public function log(String $type='error',String $msg = 'Error',Array $params = [])
+    public function log(String $type='error',String $msg = 'Error',Array $params = [],String $logId='')
     {
         DB::table('ba_fb_logs')->insert(
-            ['type'=>$type,'data'=>json_encode($params),'logs'=>$msg,'create_time'=>date('Y-m-d H:i:s',time())]
+            ['log_id'=>$logId,'type'=>$type,'data'=>json_encode($params),'logs'=>$msg,'create_time'=>date('Y-m-d H:i:s',time())]
         );
         return true;
     }
