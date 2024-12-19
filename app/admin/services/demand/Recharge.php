@@ -164,10 +164,12 @@ class Recharge
             $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
             if($result3['code'] != 1) throw new \Exception("FB重置限额错误，请联系管理员！");
             
+            $type = $fbAccountStatus == 2?3:4;
             $data = [
                 'fb_money'=>$fbBoney,
                 'number'=>$currencyNumber,
                 'status'=>1,
+                'type'=>$type
             ];
             $this->model->where('id',$result['id'])->update($data);
             DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
