@@ -29,6 +29,9 @@ class Recharge
             $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[1,2]]])->find();
             if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
 
+            $accountIs_ = DB::table('ba_account')->where('account_id',$result['account_id'])->value('is_');
+            if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+
             $key = 'recharge_spendUp_'.$id;
             $redis = Cache::store('redis')->handler(); 
             
