@@ -35,8 +35,9 @@ class AccountrequestProposal
         $key[1] = $admin['nickname'];
         $key[2] = str_pad($params['serial_number']??0, 4, '0', STR_PAD_LEFT);
 
-        if((empty($params['currency']) || $params['currency'] == '其他') && $account['currency']) $params['currency'] = $account['currency'];
-        $key[3] = $params['currency'];
+        //if((empty($params['currency']) || $params['currency'] == '其他') && $account['currency']) $params['currency'] = $account['currency'];
+        //$params['currency'] = $account['currency'];
+        $key[3] = $account['currency'];
 
 
         if(empty($params['time_zone'])  && !empty($account['time_zone'])) $params['time_zone'] = $account['time_zone'];
