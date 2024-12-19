@@ -33,7 +33,8 @@ class FbAccountConsumption
             $businessId = $params['business_id'];
 
             $result = (new \app\services\FacebookService())->insights($params);
-
+            
+            DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
             $accountConsumption = $result['data']['data']??[];
             if(empty($accountConsumption)) return true;
 
@@ -50,8 +51,7 @@ class FbAccountConsumption
                     'create_time'=>time(),
                 ];
             }
-            DB::table('ba_account_consumption')->insertAll($data);
-            DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
+            DB::table('ba_account_consumption')->insertAll($data);            
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
