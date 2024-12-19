@@ -35,6 +35,7 @@ class FbAccountUpdate
 
             $_is = true;
             while ($_is) {
+                $params['account_status'] = 2;
                 $result = (new \app\services\FacebookService())->list($params);
                 
                 $params['after'] = $result['data']['after']??'';  
