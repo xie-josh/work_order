@@ -125,7 +125,7 @@ class FacebookService
             $accountId = $params['account_id']??'439626741939329';
             
             $param = [
-                'fields'=> 'spend_cap,amount_spent,balance,currency',
+                'fields'=> 'spend_cap,amount_spent,balance,currency,account_status',
             ];
             $url = "https://graph.facebook.com/v21.0/act_".$accountId;
             $method = 'get';
@@ -149,6 +149,7 @@ class FacebookService
                     'balance_amount'=>$balanceAmount,
                     "balance" => $result['balance'],
                     "currency" => $result['currency'],
+                    "account_status" => $result['account_status'],
                     "id" => $accountId,
                 ];
                 return $this->returnSucceed($data);

@@ -144,7 +144,7 @@ class Recharge
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
             if($result1['code'] != 1) throw new \Exception($result1['msg']);
 
-
+            $fbAccountStatus = $result1['data']['account_status'];
             $money = $result1['data']['balance_amount'];
             $fbBoney = $result1['data']['spend_cap'];
 

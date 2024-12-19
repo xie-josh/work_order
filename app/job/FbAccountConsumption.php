@@ -51,6 +51,7 @@ class FbAccountConsumption
                 ];
             }
             DB::table('ba_account_consumption')->insertAll($data);
+            DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
