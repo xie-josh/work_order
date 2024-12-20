@@ -54,26 +54,31 @@ class Consumption extends Backend
         $query =  $this->model
         ->alias('account_consumption')        
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
+        ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
+        ->leftJoin('ba_admin admin','admin.id=account.admin_id')
         ->where($where);
 
         if($isCount == 1){
-            $query->field('accountrequest_proposal.serial_name_2,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
+            $query->field('admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.account_status,accountrequest_proposal.serial_name_2,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
             $query->group('account_id');
         }else{
-            $query->field('accountrequest_proposal.serial_name_2,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
+            $query->field('admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.account_status,accountrequest_proposal.serial_name_2,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
         }
 
-        $total = $query->count(); 
+        $total = $query->count();
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
-            '管理BM',
-            '归属BM',
-            '账户名称',
             '账户ID',
+            '账户名称',
+            '账户状态',
+            '币种',
             '消耗',
             '开始时间',
             '结束时间',
+            '归属用户',
+            '管理BM',
+            '归属BM'            
         ];
 
         $config = [
@@ -88,13 +93,16 @@ class Consumption extends Backend
             $dataList=[];
             foreach($data as $v){
                 $dataList[] = [
-                    $v['bm'],
-                    $v['affiliation_bm'],
-                    $v['serial_name_2'],
                     $v['account_id'],
+                    $v['serial_name_2'],
+                    $v['account_status'],
+                    $v['currency'],
                     $v['spend'],
                     $v['date_start'],
                     $v['date_stop'],
+                    $v['nickname'],
+                    $v['bm'],
+                    $v['affiliation_bm'],
                 ];  
                 $processedCount++;
             }
