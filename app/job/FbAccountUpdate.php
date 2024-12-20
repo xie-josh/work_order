@@ -47,11 +47,13 @@ class FbAccountUpdate
                 } 
 
                 $accountList = [];
+                $currencyAccountList = [];
                 foreach($result['data']['data'] as $item)
                 {            
                     if($item['account_status'] != 2) continue;
                     $item['id'] = str_replace('act_', '', $item['id']);
                     $accountList[] = $item;
+                    $currencyAccountList[$item['currency']][] = $item['id'];
                 }
 
                 $accountIds = array_column($accountList,'id');
@@ -83,6 +85,9 @@ class FbAccountUpdate
                             'create_time'=>date('Y-m-d H:i:s',time())
                         ]);
                     }
+                }
+                foreach($currencyAccountList as $k => $v){
+                    DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->where('status',1)->update(['currency'=>$k]);
                 }
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);

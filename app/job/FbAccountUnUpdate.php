@@ -47,10 +47,12 @@ class FbAccountUnUpdate
                 } 
 
                 $accountList = [];
+                $currencyAccountList = [];
                 foreach($result['data']['data'] as $item)
                 {            
                     $item['id'] = str_replace('act_', '', $item['id']);
                     $accountList[] = $item;
+                    $currencyAccountList[$item['currency']][] = $item['id'];
                 }
 
                 $accountIds = array_column($accountList,'id');
@@ -75,11 +77,12 @@ class FbAccountUnUpdate
                             'create_time'=>date('Y-m-d H:i:s',time())
                         ]);
                     }
-                }        
+                }
+                foreach($currencyAccountList as $k => $v){
+                    DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->where('status',1)->update(['currency'=>$k]);
+                }
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>1,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1]);
             }
-
-            
         } catch (\Throwable $th) {
             $logs = '错误info_cardUnfreeze_('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;

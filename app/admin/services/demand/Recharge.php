@@ -29,8 +29,8 @@ class Recharge
             $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[1,2]]])->find();
             if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
 
-            $accountIs_ = DB::table('ba_account')->where('account_id',$result['account_id'])->value('is_');
-            if($accountIs_ != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+            $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();
+            if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
             $key = 'recharge_spendUp_'.$id;
             $redis = Cache::store('redis')->handler(); 
@@ -53,16 +53,22 @@ class Recharge
             $FacebookService = new \app\services\FacebookService();
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
             if($result1['code'] != 1) throw new \Exception($result1['msg']);
-            if($result1['data']['account_status'] != 1) throw new \Exception('FB账户异常，请确认账户状态！');
+            if($result1['data']['account_status'] != 1) throw new \Exception('FB账户异常，请确认账户状态[已经封户或状态异常]！');
 
             $spendCap = $result1['data']['spend_cap'];
+            $spendCapUs = $result1['data']['spend_cap'];
 
             $fbNumber = $result['number'];
-
+            $accountMoney = $account['money'];
             if(!empty($this->currencyRate[$currency])){
                 $fbNumber = bcmul((string)$fbNumber, $this->currencyRate[$currency],2);
+                $spendCapUs = bcdiv((string)$spendCapUs, $this->currencyRate[$currency],2);
             }            
             
+            if($spendCapUs != $accountMoney) throw new \Exception("FB总限额与系统充值匹配错误！");
+
+            if($spendCap == 0.01) $spendCap = 0;
+
             $spendCap = bcadd((string)$spendCap,(string)$fbNumber,2);
 
             $accountrequestProposal['spend'] = $spendCap;
