@@ -75,7 +75,7 @@ class Recharge extends Backend
                 $dataList = $result['data'];
     
                 foreach($dataList as &$v){
-                    if(isset($v['accountrequestProposal']) && !in_array($v['accountrequestProposal']['bm_token_id'],[1,6,29,30,31,32])) $v['accountrequestProposal']['bm_token_id'] = null;
+                    //if(isset($v['accountrequestProposal']) && !in_array($v['accountrequestProposal']['bm_token_id'],[1,6,29,30,31,32])) $v['accountrequestProposal']['bm_token_id'] = null;
     
                 }
             }
