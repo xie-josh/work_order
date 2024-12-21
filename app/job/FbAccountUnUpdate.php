@@ -67,16 +67,16 @@ class FbAccountUnUpdate
                 foreach($cardList as $v){
                     if(empty($v['card_status']) || $v['card_status'] != 'frozen') continue;
                     //$result = (new CardService($v['cards_account_id']))->cardUnfreeze(['card_id'=>$v['card_id']]);
-                    if(isset($result['data']['cardStatus'])){
-                        //DB::table('ba_cards_info')->where('cards_id',$v['cards_id'])->update(['card_status'=>$result['data']['cardStatus']]);
-                    }else{
-                        DB::table('ba_cards_logs')->insert([
-                            'type'=>'FB_cardUnfreeze',
-                            'data'=>json_encode($v),
-                            'logs'=>$result['msg']??'',
-                            'create_time'=>date('Y-m-d H:i:s',time())
-                        ]);
-                    }
+                    // if(isset($result['data']['cardStatus'])){
+                    //     DB::table('ba_cards_info')->where('cards_id',$v['cards_id'])->update(['card_status'=>$result['data']['cardStatus']]);
+                    // }else{
+                    //     DB::table('ba_cards_logs')->insert([
+                    //         'type'=>'FB_cardUnfreeze',
+                    //         'data'=>json_encode($v),
+                    //         'logs'=>$result['msg']??'',
+                    //         'create_time'=>date('Y-m-d H:i:s',time())
+                    //     ]);
+                    // }
                 }
                 foreach($currencyAccountList as $k => $v){
                     DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->where('status',1)->update(['currency'=>$k]);
