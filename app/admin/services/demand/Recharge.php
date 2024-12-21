@@ -65,6 +65,9 @@ class Recharge
                 $spendCapUs = bcdiv((string)$spendCapUs, $this->currencyRate[$currency],2);
             }            
             
+            if($spendCapUs == 0.01) $spendCapUs = 0;
+            if(empty($accountMoney)) $accountMoney = 0;
+
             if($spendCapUs != $accountMoney) throw new \Exception("FB总限额与系统充值匹配错误！");
 
             if($spendCap == 0.01) $spendCap = 0;
