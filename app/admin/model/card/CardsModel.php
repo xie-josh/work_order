@@ -34,6 +34,14 @@ class CardsModel extends Model
             
             $infoData = $cardInfo['data'];
             $data = [];
+            $data['nickname'] = '';
+            $data['max_on_daily'] = 0;
+            $data['max_on_monthly'] = 0;
+            $data['max_on_percent'] = 0;
+            $data['total_transaction_limit'] = 0;
+            $data['transaction_limit_type'] = 'unlimited';
+            $data['available_transaction_limit'] = 0;
+
             if(!empty($infoData['nickname'])) $data['nickname'] = $infoData['nickname'];
             if(!empty($infoData['maxOnDaily'])) $data['max_on_daily'] = $infoData['maxOnDaily'];
             if(!empty($infoData['maxOnMonthly'])) $data['max_on_monthly'] = $infoData['maxOnMonthly'];
