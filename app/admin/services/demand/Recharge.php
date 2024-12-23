@@ -91,10 +91,15 @@ class Recharge
                 }else{
                     $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+
+                    if($cards['card_status'] != 'normal'){
+                        $resultCards = (new \app\services\CardService($cards['account_id']))->cardUnfreeze(['card_id'=>$cards['card_id']]);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    }
                 }
             }
 
-            DB::table('ba_account')->where('account_id',$result['account_id'])->inc('money',$result['number'])->update(['update_time'=>time()]);
+            DB::table('ba_account')->where('account_id',$result['account_id'])->inc('money',$result['number'])->update(['update_time'=>time(),'is_'=>1]);
             $data = [
                 'status'=>1,
             ];
@@ -106,7 +111,7 @@ class Recharge
             if(!empty($key)) Cache::store('redis')->delete($key);
             if(!empty($id)){
                 DB::table('ba_fb_logs')->insert(
-                    ['type'=>'services_error_spend_up','data'=>json_encode($result),'logs'=>$th->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
+                    ['log_id'=>$id,'type'=>'services_error_spend_up','data'=>json_encode($result),'logs'=>$th->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
                 );
                 $result = $this->model->where('id',$id)->update(['comment'=>$th->getMessage()]);
             } 
@@ -188,6 +193,13 @@ class Recharge
                 if(empty($cards)) {
                     throw new \Exception("未找到分配的卡");
                 }else{
+                    $param = [
+                        'transaction_limit_type'=>'limited',
+                        'transaction_limit_change_type'=>'decrease',
+                        'transaction_limit'=>($currencyNumber-1),
+                    ];
+                    $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                     $resultCards = (new \app\services\CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                     if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
@@ -202,7 +214,7 @@ class Recharge
             
             if(!empty($id)){
                 DB::table('ba_fb_logs')->insert(
-                    ['type'=>'services_error_spend_delete','data'=>json_encode($result),'logs'=>$e->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
+                    ['log_id'=>$id,'type'=>'services_error_spend_delete','data'=>json_encode($result),'logs'=>$e->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
                 );
                 $result = $this->model->where('id',$id)->update(['comment'=>$e->getMessage()]);
             }
