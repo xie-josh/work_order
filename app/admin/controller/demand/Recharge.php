@@ -42,6 +42,10 @@ class Recharge extends Backend
 
     public function index(): void
     {
+
+
+        $wk = ['439626741939329','863634902310780'];
+
         if ($this->request->param('select')) {
             $this->select();
         }
@@ -75,8 +79,14 @@ class Recharge extends Backend
                 $dataList = $result['data'];
     
                 foreach($dataList as &$v){
+                    if(in_array($v['account_id'],$wk)){
+                        $v['wk_type'] = 1;
+                        $v['wk_comment'] = "注意，注意，注意：该账户需要您自己去卡平台调整限额！！！！！！！";
+                    }else{
+                        $v['wk_type'] = 0;
+                        $v['wk_comment'] = "";
+                    }
                     //if(isset($v['accountrequestProposal']) && !in_array($v['accountrequestProposal']['bm_token_id'],[1,6,29,30,31,32])) $v['accountrequestProposal']['bm_token_id'] = null;
-    
                 }
             }
     
