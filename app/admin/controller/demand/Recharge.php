@@ -44,7 +44,7 @@ class Recharge extends Backend
     {
 
 
-        $wk = ['439626741939329','863634902310780'];
+        $wk = ["892242653056734","461318416658911","2921648691322809","1265928217885934","962776852424573","504312115949702","853138556761084","892242653056754","1122938412573726","1123149686096977","1336792117484393","1570376253587684","1040551764751168","963158512394727","2597409480648395","1305172040636754","1685132338702809","1133348695052050","946805647346563","1210136360083435","1617436735872060","589544290426800","1340471990476712","589544290426800","1089833312634878","577295041663421","598814442610715","1098064201969527","626433189708376","1641170173424136","609977298128629","566007792710252"];
 
         if ($this->request->param('select')) {
             $this->select();
@@ -172,8 +172,10 @@ class Recharge extends Backend
                 if(in_array($data['type'],[3,4])) $data['number'] = 0;
 
                 $result = $this->model->save($data);
-                $id = $this->model->id;
-                $this->rechargeJob($id);
+                if ($this->model->id) {
+                    $id = $this->model->id;
+                    $this->rechargeJob($id);
+                }
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -589,8 +591,10 @@ class Recharge extends Backend
 
     public function rechargeJob($id)
     {
-        $result = $this->model->where('id',$id)->find();
-        if($result($result['type'],[3,4])) $this->addDeleteJob($id);
+        // $this->model = new \app\admin\model\Demand\Recharge();
+        //$result = $this->model->where('recharge.id',$id)->withJoin(['accountrequestProposal'], $this->withJoinType)->find();
+        $result = DB::table('ba_recharge')->where('recharge.id',$id)->alias('recharge')->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=recharge.account_id')->field('accountrequest_proposal.bm_token_id,recharge.type')->find();
+        if(!empty($result['bm_token_id']) && in_array($result['type'],[3,4])) $this->addDeleteJob($id);
         return true;
     }
 
@@ -599,13 +603,15 @@ class Recharge extends Backend
         $jobHandlerClassName = 'app\job\AccountSpendUp';
         $jobQueueName = 'AccountSpendUp';
         Queue::later(1, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        return true;
     }
 
     public function addDeleteJob($id)
     {
         $jobHandlerClassName = 'app\job\AccountSpendDelete';
         $jobQueueName = 'AccountSpendDelete';
-        Queue::later(1, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        Queue::later(3600, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        return true;
     }
 
     /**
