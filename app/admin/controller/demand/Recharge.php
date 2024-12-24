@@ -172,6 +172,8 @@ class Recharge extends Backend
                 if(in_array($data['type'],[3,4])) $data['number'] = 0;
 
                 $result = $this->model->save($data);
+                $id = $this->model->id;
+                $this->rechargeJob($id);
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -585,6 +587,26 @@ class Recharge extends Backend
         ]);
     }
 
+    public function rechargeJob($id)
+    {
+        $result = $this->model->where('id',$id)->find();
+        if($result($result['type'],[3,4])) $this->addDeleteJob($id);
+        return true;
+    }
+
+    public function addUpJob($id)
+    {
+        $jobHandlerClassName = 'app\job\AccountSpendUp';
+        $jobQueueName = 'AccountSpendUp';
+        Queue::later(1, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+    }
+
+    public function addDeleteJob($id)
+    {
+        $jobHandlerClassName = 'app\job\AccountSpendDelete';
+        $jobQueueName = 'AccountSpendDelete';
+        Queue::later(1, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+    }
 
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
