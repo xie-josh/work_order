@@ -6,6 +6,7 @@ use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
 use think\facade\Cache;
+use think\facade\Queue;
 
 /**
  * 账户列管理
@@ -103,6 +104,12 @@ class AccountrequestProposal extends Backend
 
                 $accountList = $this->model->whereIn('account_id',$ids)->column('account_id');
 
+                $bmTokenResult = DB::table('ba_fb_bm_token')->where('id',$bm)->find();
+                if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
+                
+                $bm = $bmTokenResult['name'];
+                $bmTokenId = $bmTokenResult['id'];
+
                 foreach($ids as $k =>$v){
                     if(in_array($v,$accountList)) continue;
                     $accountCount++;
@@ -120,6 +127,7 @@ class AccountrequestProposal extends Backend
                         'serial_number'=>$accountCount,
                         'create_time'=>time()
                     ];
+                    $this->assignedUsersJob($v,$bmTokenId);
                 }
                 Db::table('ba_accountrequest_proposal')->insertAll($dataList);
 
@@ -289,6 +297,15 @@ class AccountrequestProposal extends Backend
         $this->success('', [
             'row' => $row
         ]);
+    }
+
+
+    public function assignedUsersJob($accountId,$bmTokenId)
+    {
+        $jobHandlerClassName = 'app\job\AccountAssignedUsers';
+        $jobQueueName = 'AccountAssignedUsers';
+        Queue::later(1, $jobHandlerClassName, ['account_id'=>$accountId,'bm_token_id'=>$bmTokenId], $jobQueueName);
+        return true;
     }
 
     /**

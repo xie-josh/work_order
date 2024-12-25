@@ -222,6 +222,35 @@ class FacebookService
         }
     }
 
+    public function assignedUsers($params){
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id'];
+            $userId = $params['user_id'];
+            
+            $param = [
+                'tasks'=> ['MANAGE','ADVERTISE','ANALYZE'],
+                'user'=>$userId,
+            ];
+            $url = "https://graph.facebook.com/v21.0/act_{$accountId}/assigned_users";
+            $method = 'POST';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            if(isset($result['success']) && $result['success']){         
+                return $this->returnSucceed([]);
+            }else{
+                $this->log('FB_assignedUsers',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_assignedUsers',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+
 
     public function curlHttp(string $url,string $method='GET',array $header = ['Accept' => 'application/json'],array $data=[])
     {

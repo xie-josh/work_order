@@ -579,11 +579,22 @@ class Recharge extends Backend
         $deductionList = $res->items();
         $deductionListtotal = $res->total();
 
+        
+        $result = (new \app\admin\services\card\Cards())->accountSingle();
+        $realTimeBalance = $result['data']['row']['realTimeBalance']??0;
+        
+        $deductionListtotal = 0;
+        if($realTimeBalance < 5000){
+            $deductionListtotal = 1;
+        }
+
         $this->success('', [
             'list'   =>$list,
             'deduction_list'=>$deductionList,
+            'balance'=>$realTimeBalance,
             'total'=>$listTotal,
             'deduction_total'=>$deductionListtotal,
+            'balance_total'=>$deductionListtotal,
         ]);
     }
 
