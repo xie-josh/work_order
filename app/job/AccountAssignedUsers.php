@@ -21,8 +21,6 @@ class AccountAssignedUsers
                 $params['account_id'] = $accountId;
                 (new \app\services\FacebookService())->assignedUsers($params);
             }
-
-            (new \app\services\FacebookService())->assignedUsers($params);
             $job->delete();
         } catch (\Throwable $th) {
 
