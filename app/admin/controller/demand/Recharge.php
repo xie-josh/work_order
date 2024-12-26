@@ -603,7 +603,11 @@ class Recharge extends Backend
         // $this->model = new \app\admin\model\Demand\Recharge();
         //$result = $this->model->where('recharge.id',$id)->withJoin(['accountrequestProposal'], $this->withJoinType)->find();
         $result = DB::table('ba_recharge')->where('recharge.id',$id)->alias('recharge')->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=recharge.account_id')->field('accountrequest_proposal.bm_token_id,recharge.type')->find();
-        if(!empty($result['bm_token_id']) && in_array($result['type'],[3,4])) $this->addDeleteJob($id);
+        if(!empty($result['bm_token_id']) && in_array($result['type'],[3,4])){
+            $this->addDeleteJob($id);
+        }else if(!empty($result['bm_token_id']) && in_array($result['type'],[1])){
+            $this->addUpJob($id);
+        }
         return true;
     }
 
