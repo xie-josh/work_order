@@ -17,7 +17,7 @@ class AccountAssignedUsers
             $accountId = $data['account_id'];
             $bmTokenId = $data['bm_token_id'];
             $params = DB::table('ba_fb_bm_token')->where('status',1)->where('id',$bmTokenId)->find();
-            if(empty($params) || empty($params['user_id'])) return true;
+            if(empty($params) || empty($params['user_id'])) $job->delete();
             $params['account_id'] = $accountId;
 
             (new \app\services\FacebookService())->assignedUsers($params);
