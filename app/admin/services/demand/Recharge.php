@@ -26,7 +26,7 @@ class Recharge
             
             $id = $params['id']??0;
 
-            $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[1,2]]])->find();
+            $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[1]]])->find();
             if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
 
             $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();

@@ -111,6 +111,7 @@ class Recharge extends Backend
             if (!$data) {
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
+            $wk = DB::table('ba_wk_account')->column('account_id');
 
             $data = $this->excludeFields($data);
             if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
@@ -170,7 +171,8 @@ class Recharge extends Backend
                 if(in_array($data['type'],[3,4])) $data['number'] = 0;
 
                 $result = $this->model->save($data);
-                if ($this->model->id) {
+
+                if ($this->model->id && !in_array($data['account_id'],$wk)) {
                     $id = $this->model->id;
                     $this->rechargeJob($id);
                 }

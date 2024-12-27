@@ -74,6 +74,7 @@ class FbAccountUpdate
 
                     if(empty($v['card_status']) || $v['card_status'] != 'normal') continue;
 
+                    if($v['cards_account_id'] == 2) return true;
                     $result = (new CardService($v['cards_account_id']))->cardFreeze(['card_id'=>$v['card_id']]);
                     if(isset($result['data']['cardStatus'])){
                         DB::table('ba_cards_info')->where('cards_id',$v['cards_id'])->update(['card_status'=>$result['data']['cardStatus']]);
