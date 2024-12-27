@@ -31,25 +31,43 @@ class FbAccountConsumption
         try {
             $accountId = $params['account_id'];
             $businessId = $params['business_id'];
+            $params['stort_time'] = date('Y-m-01');
+            $params['stop_time'] = date('Y-m-d',time());
+
+            $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
 
             $result = (new \app\services\FacebookService())->insights($params);
             
             DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
             $accountConsumption = $result['data']['data']??[];
-            if(empty($accountConsumption)) return true;
+            //if(empty($accountConsumption)) return true;
+            $accountConsumption = array_column($accountConsumption,null,'date_start');
 
             $dateStartList = array_column($accountConsumption,'date_start');
             DB::table('ba_account_consumption')->where('account_id',$accountId)->whereIn('date_start',$dateStartList)->delete();
 
             $data = [];
-            foreach($accountConsumption as $v){
-                $data[] = [
-                    'account_id'=>$v['account_id'],
-                    'spend'=>$v['spend'],
-                    'date_start'=>$v['date_start'],
-                    'date_stop'=>$v['date_stop'],
-                    'create_time'=>time(),
-                ];
+
+
+            foreach($sSTimeList as $v){
+                $consumption = $accountConsumption[$v]??[];
+                if(empty($consumption)){
+                    $data[] = [
+                        'account_id'=>$accountId,
+                        'spend'=>0,
+                        'date_start'=>$v,
+                        'date_stop'=>$v,
+                        'create_time'=>time(),
+                    ];
+                }else{
+                    $data[] = [
+                        'account_id'=>$accountId,
+                        'spend'=>$consumption['spend'],
+                        'date_start'=>$consumption['date_start'],
+                        'date_stop'=>$consumption['date_stop'],
+                        'create_time'=>time(),
+                    ];
+                }
             }
             DB::table('ba_account_consumption')->insertAll($data);            
         } catch (\Throwable $th) {
@@ -61,5 +79,16 @@ class FbAccountConsumption
             //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
         }
         return true;        
+    }
+
+    
+    function generateTimeArray($startDate, $endDate) {
+        $startTimestamp = strtotime($startDate);
+        $endTimestamp = strtotime($endDate);
+        $timeArray = [];
+        for ($currentTimestamp = $startTimestamp; $currentTimestamp <= $endTimestamp; $currentTimestamp += 86400) {
+            $timeArray[] = date('Y-m-d', $currentTimestamp);
+        }
+        return $timeArray;
     }
 }
