@@ -92,7 +92,7 @@ class FacebookService
                 'time_range'=> ["since"=>$startTime,"until"=>$stopTime],
                 'time_increment'=> '1',
                 //'date_preset'=>'last_7d',
-                //'limit'=>2550
+                'limit'=>100
             ];
             $url = "https://graph.facebook.com/v21.0/act_{$accountId}/insights";
             $method = 'get';
