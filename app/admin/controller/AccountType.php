@@ -19,7 +19,7 @@ class AccountType extends Backend
 
     // 排除字段
     protected string|array $preExcludeFields = [];
-
+    protected array $noNeedPermission = ['index'];
     protected string|array $quickSearchField = [];
 
     public function initialize(): void

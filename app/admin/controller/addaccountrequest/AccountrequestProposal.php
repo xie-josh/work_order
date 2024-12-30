@@ -63,6 +63,9 @@ class AccountrequestProposal extends Backend
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
+
+        if($limit == 999) $limit = 2500;
+
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -257,7 +260,7 @@ class AccountrequestProposal extends Backend
                     'bm'=>$v['bm'],
                     'time_zone'=>$v['time_zone'],
                     'account_id'=>$v['account_id'],
-                    'account_name'=>$v['serial_name_2'],
+                    'account_name'=>$v['serial_name'],
                     'affiliation_bm'=>$v['affiliation_bm'],
                     'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
                     'account_bm'=> $v['account_bm'],
