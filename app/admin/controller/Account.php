@@ -74,7 +74,8 @@ class Account extends Backend
         if($status == 1){
             array_push($where,['account.status','in',[1,3,4,5]]);
         }elseif($status == 3){
-            array_push($where,['account.status','in',[3,4]]);
+            //array_push($where,['account.status','in',[3,4]]);
+            array_push($where,['account.status','in',[4]]);
         }
 
         $res = $this->model
@@ -87,6 +88,9 @@ class Account extends Backend
         $dataList = $res->toArray()['data'];
         if($dataList){
             
+            $resultTypeList = DB::table('ba_account_type')->select()->toArray();
+            $typeList = array_column($resultTypeList,'name','id');
+
             $bmList = [];
             if($status == 3){
                 $accountIds = array_column($dataList,'account_id');
@@ -102,6 +106,9 @@ class Account extends Backend
             }
             
             foreach($dataList as &$v){
+                $v['account_type_name'] = '';
+                if($v['status'] != 4 && $status != 1) $v['account_id'] = '';
+                if(!empty($typeList[$v['account_type']])) $v['account_type_name'] = $typeList[$v['account_type']];
                 $v['bm_list'] = $bmList[$v['account_id']]??[];
                 $v['admin'] = [
                     'username'=>$v['admin']['username'],
@@ -292,6 +299,12 @@ class Account extends Backend
 
                     foreach($ids as $v){
                         $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->where('status',0)->find();
+                        if(empty($accountrequestProposal)) throw new \Exception("请选择分配的账户！");
+
+                        if(!empty($v['account_type'])){
+                            $accountTypeList = DB::table('ba_association_account_type')->whereIn('admin_id',$accountrequestProposal['admin_id'])->column('account_type_id');
+                            if(!in_array($v['account_type'],$accountTypeList)) throw new \Exception("账户类型错误，请联系管理员！");
+                        }
 
                         $data = [
                             'account_admin_id'=>$accountrequestProposal['admin_id'],
@@ -515,6 +528,9 @@ class Account extends Backend
                 $ids = $data['ids'];
                 $accountrequestProposalId = $data['admin_id'];
                 $accountIds = $data['account_ids'];
+
+
+                $associationAccountTypeList = DB::table('ba_association_account_type')->where('admin_id',$accountrequestProposalId)->column('account_type_id');
                 
                 if(empty($accountIds)){
                     $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->where('status',0)->select()->toArray();
@@ -529,6 +545,8 @@ class Account extends Backend
                 {
                     $resultAccount = $resultAccountList[$k]??[];
                     if(empty($resultAccount)) continue;
+                    
+                    if(!empty($associationAccountTypeList) && !empty($resultAccount['account_type']) && !in_array($resultAccount['account_type'],$associationAccountTypeList)) continue;
 
                     $data = [
                         'account_admin_id'=>$v['admin_id'],
@@ -750,6 +768,45 @@ class Account extends Backend
         $nickname = (string)$nickname;
         if(in_array($nickname[0],[1,4]) && strlen($nickname) >= 16) $nickname = substr($nickname,0,15);
         return $nickname;
+    }
+
+
+    public function errAccount()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            Db::startTrans();
+            try {             
+                $accountList = $data['account_list'];
+                $accountStatus = $data['account_status'];
+
+                if(empty($accountList) || empty($accountStatus)) throw new \Exception("Error Processing Request");
+                
+                foreach ($accountList as $value) {
+                    $accountId = $value;
+                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>0,'dispose_status'=>0,'open_money'=>0]);
+                    DB::table('ba_bm')->where('account_id',$accountId)->delete();
+                    DB::table('ba_recharge')->where('account_id',$accountId)->delete();
+                }
+
+                DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountList)->update(
+                    ['status'=>$accountStatus,'affiliation_admin_id'=>'']
+                ); 
+
+                //dd($accountList,$accountStatus);
+                $result = true;
+                Db::commit();
+            } catch (Throwable $e) {
+                Db::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
     }
 
 
