@@ -200,7 +200,7 @@ class Recharge extends Backend
         if (!$row) {
             $this->error(__('Record not found'));
         }
-
+        $this->error('编辑功能已经禁用,请找客服！');
         if($row['status'] != 0 && $row['type'] == 1) $this->error('该状态不可编辑');
         
 
