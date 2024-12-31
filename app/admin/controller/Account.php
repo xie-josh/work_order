@@ -303,7 +303,7 @@ class Account extends Backend
 
                         if(!empty($v['account_type'])){
                             $accountTypeList = DB::table('ba_association_account_type')->whereIn('admin_id',$accountrequestProposal['admin_id'])->column('account_type_id');
-                            if(!in_array($v['account_type'],$accountTypeList)) throw new \Exception("账户类型错误，请联系管理员！");
+                            if(!empty($accountTypeList) && !in_array($v['account_type'],$accountTypeList)) throw new \Exception("账户类型错误，请联系管理员！");
                         }
 
                         $data = [
@@ -779,9 +779,9 @@ class Account extends Backend
             Db::startTrans();
             try {             
                 $accountList = $data['account_list'];
-                $accountStatus = $data['account_status'];
+                $accountStatus = $data['account_status']??0;
 
-                if(empty($accountList) || empty($accountStatus)) throw new \Exception("Error Processing Request");
+                if(empty($accountList)) throw new \Exception("Error Processing Request");
                 
                 foreach ($accountList as $value) {
                     $accountId = $value;
