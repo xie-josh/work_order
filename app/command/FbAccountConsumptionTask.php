@@ -22,11 +22,11 @@ class FbAccountConsumptionTask extends Command
 
         $result = DB::table('ba_accountrequest_proposal')
         ->alias('accountrequest_proposal')
-        ->field('accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token')
+        ->field('accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
         ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
         ->where('fb_bm_token.status',1)
         ->where('accountrequest_proposal.pull_status',1)
-        ->whereNotIn('accountrequest_proposal.status',[0])
+        ->whereNotIn('accountrequest_proposal.status',[0,99])
         ->whereNotNull('fb_bm_token.token')
         ->select()->toArray();
 

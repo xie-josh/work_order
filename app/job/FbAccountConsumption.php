@@ -36,6 +36,11 @@ class FbAccountConsumption
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
 
+            if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
+            else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
+            
+            if(!empty($token)) $params['token'] = $token;
+            
             $result = (new \app\services\FacebookService())->insights($params);
             
             DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);

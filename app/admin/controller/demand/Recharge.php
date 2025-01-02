@@ -276,6 +276,9 @@ class Recharge extends Backend
                         $accountIs_ = DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->value('is_');
                         if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
+                        $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                        if(empty($resultProposal) || $resultProposal['status'] == 99) throw new \Exception("错误：账户未找到或账户已经终止使用！"); 
+
                         if($v['type'] == 1){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
 
@@ -283,8 +286,7 @@ class Recharge extends Backend
                                 'transaction_limit_type'=>'limited',
                                 'transaction_limit_change_type'=>'increase',
                                 'transaction_limit'=>$v['number'],
-                            ];
-                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
+                            ];                            
                             if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
@@ -303,7 +305,6 @@ class Recharge extends Backend
                                 'transaction_limit_change_type'=>'decrease',
                                 'transaction_limit'=>$v['number'],
                             ];
-                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
                             if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                             if(empty($cards)) {
@@ -315,7 +316,6 @@ class Recharge extends Backend
                             }
                         }elseif($v['type'] == 3 || $v['type'] == 4){
 
-                            $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
                             $currency = $resultProposal['currency'];
 
                             $currencyNumber =  '';
@@ -604,8 +604,12 @@ class Recharge extends Backend
     {
         // $this->model = new \app\admin\model\Demand\Recharge();
         //$result = $this->model->where('recharge.id',$id)->withJoin(['accountrequestProposal'], $this->withJoinType)->find();
-        $result = DB::table('ba_recharge')->where('recharge.id',$id)->alias('recharge')->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=recharge.account_id')->field('accountrequest_proposal.bm_token_id,recharge.type')->find();
-        if(!empty($result['bm_token_id']) && in_array($result['type'],[3,4])){
+        $result = DB::table('ba_recharge')->where('recharge.id',$id)->alias('recharge')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=recharge.account_id')
+        ->field('accountrequest_proposal.bm_token_id,recharge.type,accountrequest_proposal.status accountrequest_proposal_status')->find();
+        if(!empty($result) && $result['accountrequest_proposal_status'] == 99){
+            throw new \Exception("该账户已经终止使用不可操作，请联系管理员！");
+        }else if(!empty($result['bm_token_id']) && in_array($result['type'],[3,4])){
             $this->addDeleteJob($id);
         }else if(!empty($result['bm_token_id']) && in_array($result['type'],[1])){
             $this->addUpJob($id);
