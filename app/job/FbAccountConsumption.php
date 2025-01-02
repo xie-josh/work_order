@@ -31,7 +31,7 @@ class FbAccountConsumption
         try {
             $accountId = $params['account_id'];
             $businessId = $params['business_id'];
-            $params['stort_time'] = date('Y-m-01');
+            $params['stort_time'] = date('Y-m-d', strtotime('-30 days'));
             $params['stop_time'] = date('Y-m-d',time());
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
