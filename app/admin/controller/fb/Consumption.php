@@ -69,16 +69,16 @@ class Consumption extends Backend
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
-            '账户ID',
-            '账户名称',
             '账户状态',
-            '币种',
+            '账户名称',
+            '账户ID',
+            '货币',
             '消耗',
             '开始时间',
             '结束时间',
             '归属用户',
             '管理BM',
-            '归属BM'            
+            '归属BM'
         ];
 
         $config = [
@@ -88,14 +88,15 @@ class Consumption extends Backend
 
         $name = $folders['name'].'.xlsx';
 
+        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Active'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];
             foreach($data as $v){
                 $dataList[] = [
+                    $accountStatus[$v['account_status']]??'未找到状态',
+                    $v['serial_name'],                    
                     $v['account_id'],
-                    $v['serial_name'],
-                    $v['account_status'],
                     $v['currency'],
                     $v['spend'],
                     $v['date_start'],

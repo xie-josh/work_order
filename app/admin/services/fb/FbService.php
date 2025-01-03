@@ -12,5 +12,12 @@ class FbService
         (new FacebookService())->list([]);
     }
 
+    public function getPersonalbmToken($type=1)
+    {
+        $model = (new \app\admin\model\fb\PersonalBmTokenModel());
+        $result = $model->where('type',$type)->value('token');
+        return $result;
+    }
+
 
 }
