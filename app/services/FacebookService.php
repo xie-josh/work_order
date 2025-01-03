@@ -84,7 +84,7 @@ class FacebookService
             $startTime = $params['stort_time']??date('Y-m-01');
             $stopTime = $params['stop_time']??date('Y-m-t');
 
-            if(empty($businessId)) throw new \Exception("未找到管理BM");
+            //if(empty($businessId)) throw new \Exception("未找到管理BM");
             
             $param = [
                 'fields'=> 'account_name,account_id,spend',

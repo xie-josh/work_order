@@ -32,12 +32,16 @@ class FbAccountConsumption
             $accountId = $params['account_id'];
             $businessId = $params['business_id'];
             $params['stort_time'] = date('Y-m-d', strtotime('-30 days'));
+            // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = date('Y-m-d',time());
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
 
             if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
+
+            $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
+            if($params['type'] == 2) $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
             
             if(!empty($token)) $params['token'] = $token;
             
@@ -48,11 +52,9 @@ class FbAccountConsumption
             //if(empty($accountConsumption)) return true;
             $accountConsumption = array_column($accountConsumption,null,'date_start');
 
-            $dateStartList = array_column($accountConsumption,'date_start');
-            DB::table('ba_account_consumption')->where('account_id',$accountId)->whereIn('date_start',$dateStartList)->delete();
+            DB::table('ba_account_consumption')->where('account_id',$accountId)->whereIn('date_start',$sSTimeList)->delete();
 
             $data = [];
-
 
             foreach($sSTimeList as $v){
                 $consumption = $accountConsumption[$v]??[];
