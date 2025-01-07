@@ -10,7 +10,7 @@ class FbAccountConsumption
     public function fire(Job $job, $data)
     {
         //php think queue:listen --queue FbAccountConsumption
-        sleep(1);
+        //sleep(1);
 
         try {
             $this->accountConsumption($data);
@@ -30,7 +30,7 @@ class FbAccountConsumption
     {
         try {
             $accountId = $params['account_id'];
-            $businessId = $params['business_id'];
+            $businessId = $params['business_id']??'';
             $params['stort_time'] = date('Y-m-d', strtotime('-30 days'));
             // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = date('Y-m-d',time());

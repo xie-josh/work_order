@@ -40,7 +40,7 @@ class FbAccountUpdate
                     $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1);
                     $params['token'] = $token;
                 }else if($params['type'] == 2){
-                    $result = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
+                    $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
                     $params['token'] = $token;
                 }
                 $result = (new \app\services\FacebookService())->list($params);
