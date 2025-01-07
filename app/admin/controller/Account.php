@@ -933,18 +933,68 @@ class Account extends Backend
             $excel = new \Vtiful\Kernel\Excel($config);
 
             $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
+
+
+            $accountType = DB::table('ba_account_type')->select()->toArray();
+            $accountTypeList = array_column($accountType,'id','name');
+
+
+            $timeList = [
+                "-12"=>'GMT -12:00',
+                "-11"=>'GMT -11:00',
+                "-10"=>'GMT -10:00',
+                "-9"=>'GMT -9:00',
+                "-8"=>'GMT -8:00',
+                "-7"=>'GMT -7:00',
+                "-6"=>'GMT -6:00',
+                "-5"=>'GMT -5:00',
+                "-4"=>'GMT -4:00',
+                "-3"=>'GMT -3:00',
+                "-2"=>'GMT -2:00',
+                "-1"=>'GMT -1:00',
+                "0"=>'GMT 0:00',
+                "1"=>'GMT +1:00',
+                "2"=>'GMT +2:00',
+                "3"=>'GMT +3:00',
+                "4"=>'GMT +4:00',
+                "5"=>'GMT +5:00',
+                "5.5"=>'GMT +5:30',
+                "6"=>'GMT +6:00',
+                "7"=>'GMT +7:00',
+                "8"=>'GMT +8:00',
+                "9"=>'GMT +9:00',
+                "10"=>'GMT +10:00',
+                "11"=>'GMT +11:00',
+                "12"=>'GMT +12:00',
+            ];
+
+            unset($fileObject[0],$fileObject[1]);
+            $authAdminId = $this->auth->id;
+            if($this->auth->isSuperAdmin()){
+                $adminId = 0;
+            }else{
+                $adminId = $this->auth->id;
+            }
  
             $data = [];
             foreach($fileObject as $v){
-                if(empty($v[1]) || empty($v[2]) || empty($v[4])) continue;
-                if(empty($v[3])) $v[3] = 0;
+                $accountTypeId = $accountTypeList[$v[0]]??'';
+                $time = $timeList[$v[1]]??'';
+                $name = $v[2];
+                $bm = $v[3];
+                $money = $v[4];
+                $adminId = empty($adminId)?($v[5]??0):$adminId;
+                
+                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bm) || empty($money) || empty($adminId)) continue;
+
                 $data[] = [
-                    'name'=>$v[0],
-                    'time_zone'=>$v[2],
-                    'bm'=>$v[1],
-                    'money'=>$v[3],
-                    'admin_id'=>$v[4],
-                    'status'=>1,
+                    'name'=>$name,
+                    'time_zone'=>$time,
+                    'bm'=>$bm,
+                    'money'=>$money,
+                    'admin_id'=>$adminId,
+                    'status'=>$authAdminId==1?1:0,
+                    'account_type'=>$accountTypeId,
                     'create_time'=>time()
                 ];
             }
@@ -961,6 +1011,11 @@ class Account extends Backend
         } else {
             $this->error(__('No rows were added'));
         }
+    }
+
+    public function importTemplate()
+    {
+        $this->success('',['row'=>['path'=>'/storage/default/申请账户模板.xlsx']]);
     }
 
 
