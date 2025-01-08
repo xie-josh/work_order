@@ -27,7 +27,7 @@ class Recharge extends Backend
 
     protected string|array $quickSearchField = ['id'];
     protected array $withJoinTable = ['accountrequestProposal'];
-    protected array $noNeedPermission = ['edit','getRechargeAnnouncement','accountSpendDelete','accountSpendUp'];
+    protected array $noNeedPermission = ['edit','getRechargeAnnouncement','accountSpendDelete','accountSpendUp','export','getExportRecharge'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -633,6 +633,89 @@ class Recharge extends Backend
         return true;
     }
 
+
+    public function export()
+    {
+        $ids = $this->request->get('ids');
+        $where = [];
+        set_time_limit(300);
+        $batchSize = 2000;
+        $processedCount = 0;
+        $redisKey = 'export_recharge'.'_'.$this->auth->id;
+        
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        array_push($this->withJoinTable,'account');
+        //array_push($where,['recharge.id','IN',$ids]);
+
+        $query = DB::table('ba_recharge')
+        ->field('recharge.id,accountrequestProposal.bm,accountrequestProposal.serial_name,accountrequestProposal.account_id,recharge.type,recharge.number,recharge.status,recharge.create_time,recharge.update_time')
+        ->alias('recharge')
+        ->leftJoin('ba_accountrequest_proposal accountrequestProposal','accountrequestProposal.account_id=recharge.account_id')
+        ->leftJoin('ba_account account','account.account_id=recharge.account_id')
+        ->where($where);
+
+        $total = $query->count();
+
+        $type = [1=>'充值',2=>'扣款',3=>'封户清零',4=>'活跃清零'];
+        $status = [0=>'待处理',1=>'成功',2=>'失败'];
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            'ID',
+            'Bm',
+            '账户名称',
+            '账户ID',
+            '类型',
+            '金额',
+            '状态',
+            '创建时间',
+            '修改时间'
+        ];
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+
+        $name = $folders['name'].'.xlsx';
+        $excel->fileName($folders['name'].'.xlsx', 'sheet1');
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->order('id','desc')->limit($offset, $batchSize)->select()->toArray();
+           
+            $dataList=[];
+            foreach($data as $v){
+                $dataList[] = [
+                    $v['id'],
+                    $v['bm'],
+                    $v['serial_name'],
+                    $v['account_id'],
+                    $type[$v['type']]??'',
+                    $v['number'],
+                    $status[$v['status']]??'',
+                    $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
+                    $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
+                ];  
+                $processedCount++;
+            }
+            $excel->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+    public function getExportRecharge()
+    {
+        $progress = Cache::store('redis')->get('export_recharge'.'_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
+    }
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
