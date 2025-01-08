@@ -985,7 +985,7 @@ class Account extends Backend
                 $money = $v[4];
                 $adminId = empty($adminId)?($v[5]??0):$adminId;
                 
-                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bm) || empty($money) || empty($adminId)) continue;
+                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bm) || !is_numeric($money) || empty($adminId)) continue;
 
                 $data[] = [
                     'name'=>$name,
