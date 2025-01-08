@@ -46,6 +46,7 @@ class FbAccountConsumption
             if(!empty($token)) $params['token'] = $token;
             
             $result = (new \app\services\FacebookService())->insights($params);
+            if(empty($result) || $result['code'] == 0) return true;
             
             DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
             $accountConsumption = $result['data']['data']??[];

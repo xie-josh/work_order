@@ -44,6 +44,7 @@ class FbAccountUpdate
                     $params['token'] = $token;
                 }
                 $result = (new \app\services\FacebookService())->list($params);
+                if(empty($result) || $result['code'] == 0) return true;
                 
                 $params['after'] = $result['data']['after']??'';  
                 if(empty($params['after'])) $_is = false;
