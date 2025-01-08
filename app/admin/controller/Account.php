@@ -979,7 +979,7 @@ class Account extends Backend
             $data = [];
             foreach($fileObject as $v){
                 $accountTypeId = $accountTypeList[$v[0]]??'';
-                $time = $timeList[$v[1]]??'';
+                $time = $timeList[(String)$v[1]]??'';
                 $name = $v[2];
                 $bm = $v[3];
                 $money = $v[4];

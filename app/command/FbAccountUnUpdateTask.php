@@ -18,7 +18,7 @@ class FbAccountUnUpdateTask extends Command
     protected function execute(Input $input, Output $output)
     {
         //php think FbAccountUnUpdateTask
-        $result = DB::table('ba_fb_bm_token')->select()->toArray();
+        $result = DB::table('ba_fb_bm_token')->where('status',1)->select()->toArray();
         $result['account_status'] = 1;
         foreach($result as  $v){
             $jobHandlerClassName = 'app\job\FbAccountUnUpdate';
