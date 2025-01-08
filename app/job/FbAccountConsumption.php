@@ -4,6 +4,7 @@ namespace app\job;
 
 use think\queue\Job;
 use think\facade\Db;
+use app\services\CardService;
 
 class FbAccountConsumption
 {
@@ -46,7 +47,18 @@ class FbAccountConsumption
             if(!empty($token)) $params['token'] = $token;
             
             $result = (new \app\services\FacebookService())->insights($params);
-            if(empty($result) || $result['code'] == 0) return true;
+            if(empty($result) || $result['code'] == 0){
+                $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+                ->field('accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,cards_info.card_id,cards_info.account_id cards_account_id')
+                ->alias('accountrequest_proposal')
+                ->where('accountrequest_proposal.account_id',$accountId)
+                ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+                ->find();
+                if(!empty($accountrequestProposal) && $accountrequestProposal['is_cards'] == 0 && $accountrequestProposal['card_id']){
+                    $result = (new CardService($accountrequestProposal['cards_account_id']))->cardFreeze(['card_id'=>$accountrequestProposal['card_id']]);
+                }
+                return true;
+            }
             
             DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
             $accountConsumption = $result['data']['data']??[];
