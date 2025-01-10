@@ -82,7 +82,7 @@ class Account extends Backend
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
-            ->order($order)
+            ->order('id','desc')
             ->paginate($limit);
 
         $dataList = $res->toArray()['data'];

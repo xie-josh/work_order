@@ -91,8 +91,8 @@ class Admin extends Backend
         $adminIds = Db::table('ba_admin_group_access')->where('group_id',5)->column('uid');
         array_push($where,['id','in',$adminIds]);
         if(!empty($accountType)){
-            $adminList = DB::table('ba_association_account_type')->whereIn('account_type_id',$accountType)->column('admin_id');
-            array_push($where,['id','in',$adminList]);
+            // $adminList = DB::table('ba_association_account_type')->whereIn('account_type_id',$accountType)->column('admin_id');
+            // array_push($where,['id','in',$adminList]);
         }
 
         $res = $this->model

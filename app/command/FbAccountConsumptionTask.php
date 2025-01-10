@@ -24,18 +24,44 @@ class FbAccountConsumptionTask extends Command
         ->alias('accountrequest_proposal')
         ->field('accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
         ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
-        ->where('fb_bm_token.status',1)
-        ->where('accountrequest_proposal.pull_status',1)
         ->whereNotIn('accountrequest_proposal.status',[0,99])
-        ->whereNotNull('fb_bm_token.token')
         ->select()->toArray();
 
         foreach($result as  $v){
             $jobHandlerClassName = 'app\job\FbAccountConsumption';
             $jobQueueName = 'FbAccountConsumption';
-            Queue::later(1, $jobHandlerClassName, $v, $jobQueueName);        
+            Queue::later(1, $jobHandlerClassName, $v, $jobQueueName);
         }
         // 在这里编写你的定时任务逻辑
         $output->writeln('FbAccountConsumptionTask: Scheduled task executed!');
     }
+
+
+    // protected function execute(Input $input, Output $output)
+    // {
+    //     //php think FbAccountConsumptionTask
+    //     //$result = DB::table('ba_fb_bm_token')->where('status',1)->select()->toArray();
+
+    //     $result = DB::table('ba_accountrequest_proposal')
+    //     ->alias('accountrequest_proposal')
+    //     ->field('accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
+    //     ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+    //     ->whereNotIn('accountrequest_proposal.status',[0,99])
+    //     ->select()->toArray();
+
+    //     $queues = [
+    //         'FbAccountConsumption',
+    //         'FbAccountConsumption1',
+    //         'FbAccountConsumption2',
+    //         'FbAccountConsumption3',
+    //     ];
+
+    //     foreach($result as $k => $v){
+    //         $jobHandlerClassName = 'app\job\FbAccountConsumption';
+    //         $jobQueueName = $queues[$k % 4];
+    //         Queue::later(1, $jobHandlerClassName, $v, $jobQueueName);        
+    //     }
+    //     // 在这里编写你的定时任务逻辑
+    //     $output->writeln('FbAccountConsumptionTask: Scheduled task executed!');
+    // }
 }

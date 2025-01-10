@@ -297,7 +297,6 @@ class CardTransactions
                 $is_ = false;
                 DB::table('ba_cards_info')->where('cards_id',$cardsId)->update(['is_2'=>$logs]);
             }
-            return true;
         }
     }
 

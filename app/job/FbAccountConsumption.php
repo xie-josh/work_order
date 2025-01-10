@@ -38,8 +38,8 @@ class FbAccountConsumption
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
 
-            if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
-            else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
+            // if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
+            // else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
 
             $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             if($params['type'] == 2) $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
