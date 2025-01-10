@@ -586,7 +586,7 @@ class Recharge extends Backend
         $realTimeBalance = $result['data']['row']['realTimeBalance']??0;
         
         $deductionListtotal = 0;
-        if($realTimeBalance < 5000){
+        if($realTimeBalance < 10000){
             $deductionListtotal = 1;
         }
 
