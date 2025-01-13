@@ -277,7 +277,7 @@ class Recharge extends Backend
                         if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
                         $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
-                        if((empty($resultProposal) || $resultProposal['status'] == 99) && !in_array($resultProposal['type'],[3,4]) ) throw new \Exception("错误：账户未找到或账户已经终止使用！"); 
+                        if((empty($resultProposal) || $resultProposal['status'] == 99) && !in_array($type,[3,4]) ) throw new \Exception("错误：账户未找到或账户已经终止使用！"); 
 
                         if($v['type'] == 1){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->update(['update_time'=>time()]);
