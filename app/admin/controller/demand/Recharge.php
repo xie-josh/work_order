@@ -607,7 +607,7 @@ class Recharge extends Backend
         $result = DB::table('ba_recharge')->where('recharge.id',$id)->alias('recharge')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=recharge.account_id')
         ->field('accountrequest_proposal.bm_token_id,recharge.type,accountrequest_proposal.status accountrequest_proposal_status')->find();
-        if(!empty($result) && $result['accountrequest_proposal_status'] == 99){
+        if(!empty($result) && $result['accountrequest_proposal_status'] == 99 && !in_array($result['type'],[3,4])){
             throw new \Exception("该账户已经终止使用不可操作，请联系管理员！");
         }else if(!empty($result['bm_token_id']) && in_array($result['type'],[3,4])){
             $this->addDeleteJob($id);
