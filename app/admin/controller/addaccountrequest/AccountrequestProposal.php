@@ -26,7 +26,7 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['Export','getAccountrequestProposal'];
+    protected array $noNeedPermission = ['Export','getAccountrequestProposal','getExportProgress'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -128,6 +128,7 @@ class AccountrequestProposal extends Backend
                         'name'=>$nameList[$k]??'',
                         'type'=>$type,
                         'serial_number'=>$accountCount,
+                        'bm_token_id'=>$bmTokenResult['id'],
                         'create_time'=>time()
                     ];
                     $this->assignedUsersJob($v,$bmTokenId);
