@@ -42,6 +42,16 @@ class AccountrequestProposal extends Backend
      */
     public function index(): void
     {
+
+        $type = $this->request->param('type');
+        if($type == 2) $result = $this->userIndex3();
+        else if($type == 3) $result = $this->userIndex3();
+        else $result = $this->adminIndex();
+        $this->success('', $result);
+    }
+
+    public function adminIndex()
+    {
         // 如果是 select 则转发到 select 方法，若未重写该方法，其实还是继续执行 index
         if ($this->request->param('select')) {
             $this->select();
@@ -74,13 +84,160 @@ class AccountrequestProposal extends Backend
             ->paginate($limit);
         $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no']]);
 
-        $this->success('', [
+        return [
             'list'   => $res->items(),
             'total'  => $res->total(),
             'remark' => get_route_remark(),
-        ]);
+        ];
+    }
+    public function userIndex3()
+    {
+        $this->withJoinTable = [];
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId == 2) {
+            $this->dataLimit = false;
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        array_push($where,['account.account_id','<>','']);
+
+        $res = DB::table('ba_account')
+        ->alias('account')
+        ->field('account.*,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->leftJoin('ba_admin admin','admin.id=account.admin_id')
+        ->order($order)
+        ->where($where)
+        ->paginate($limit);
+
+
+        $result = $res->toArray();
+        $dataList = [];
+        if(!empty($result['data'])) {
+            $dataList = $result['data'];
+            $accountListIds = array_column($dataList,'account_id');
+
+            // 余额：
+            //     1.fb余额(（总充值 + 首充） - 总扣款 - 总消费账单 - 总清零)
+                
+            // 花费：
+            //     1.fb花费（总消费账单）
+
+            $recharge = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->where('type',1)->where('status',1)->group('account_id')->select()->toArray();
+            $recharge1 = DB::table('ba_account')->field('open_money,account_id')->whereIn('account_id',$accountListIds)->select()->toArray();
+            $recharge2 = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->where('type',2)->where('status',1)->group('account_id')->select()->toArray();
+            $recharge3 = DB::table('ba_account_consumption')->field('spend,account_id')->whereIn('account_id',$accountListIds)->select()->toArray();
+            $recharge4 = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->whereIn('type',[3,4])->where('status',1)->group('account_id')->select()->toArray();
+
+            $recharge = array_column($recharge,'number','account_id');
+            $recharge1 = array_column($recharge1,'open_money','account_id');
+            $recharge2 = array_column($recharge2,'number','account_id');
+            $recharge3 = array_column($recharge3,'spend','account_id');
+            $recharge4 = array_column($recharge4,'number','account_id');
+
+            //dd($recharge,$recharge1,$recharge2,$recharge3,$recharge4);
+
+            foreach($dataList as &$v){
+                $totalRecharge = $recharge[$v['account_id']]??0;
+                $firshflush = $recharge1[$v['account_id']]??0;
+                $totalDeductions = $recharge2[$v['account_id']]??0;
+                $totalConsumption = $recharge3[$v['account_id']]??0;
+                $totalReset = $recharge4[$v['account_id']]??0;
+
+                $fbBalance = ($totalRecharge + $firshflush) - $totalDeductions - $totalConsumption - $totalReset;
+                $fbSpand = $totalDeductions;
+                $v['fb_balance'] = $fbBalance;
+                $v['fb_spand'] = $fbSpand;
+            }
+        }
+
+
+
+        // $res = $this->model
+        //     ->withJoin($this->withJoinTable, $this->withJoinType)
+        //     ->alias($alias)
+        //     ->where($where)
+        //     ->order($order)
+        //     ->paginate($limit);
+        // $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no']]);
+
+        return [
+            'list'   => $dataList,
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ];
     }
 
+    public function userIndex()
+    {
+        $this->withJoinTable = [];
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId == 2) {
+            $this->dataLimit = false;
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        array_push($where,['account.account_id','<>','']);
+
+        $res = DB::table('ba_account')
+        ->alias('account')
+        ->field('account.*,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->leftJoin('ba_admin admin','admin.id=account.admin_id')
+        ->order($order)
+        ->where($where)
+        ->paginate($limit);
+
+
+        // $result = $res->toArray();
+        // $dataList = [];
+        // if(!empty($result['data'])) {
+        //     $dataList = $result['data'];
+        //     $accountListIds = array_column($dataList,'account_id');
+
+        //     // 余额：
+        //     //     1.fb余额(总充值 - 总扣款 - 总消费账单 - 总清零)
+                
+        //     // 花费：
+        //     //     1.fb花费（总消费账单）
+
+        //     $recharge = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->where('type',1)->where('status',1)->group('account_id')->select()->toArray();
+        //     DB::table('ba_account')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->select()->toArray();
+        //     dd($recharge);
+
+
+
+        //     foreach($dataList as &$v){
+                
+        //     }
+        // }
+
+
+
+        // $res = $this->model
+        //     ->withJoin($this->withJoinTable, $this->withJoinType)
+        //     ->alias($alias)
+        //     ->where($where)
+        //     ->order($order)
+        //     ->paginate($limit);
+        // $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no']]);
+
+        return [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ];
+    }
 
     public function audit(): void
     {
