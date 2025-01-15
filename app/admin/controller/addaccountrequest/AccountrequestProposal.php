@@ -105,10 +105,11 @@ class AccountrequestProposal extends Backend
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
         array_push($where,['account.account_id','<>','']);
+        array_push($where,['account.status','in',[4]]);
 
         $res = DB::table('ba_account')
         ->alias('account')
-        ->field('account.*,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname')
+        ->field('account.*,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin','admin.id=account.admin_id')
         ->order($order)
@@ -131,7 +132,7 @@ class AccountrequestProposal extends Backend
             $recharge = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->where('type',1)->where('status',1)->group('account_id')->select()->toArray();
             $recharge1 = DB::table('ba_account')->field('open_money,account_id')->whereIn('account_id',$accountListIds)->select()->toArray();
             $recharge2 = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->where('type',2)->where('status',1)->group('account_id')->select()->toArray();
-            $recharge3 = DB::table('ba_account_consumption')->field('spend,account_id')->whereIn('account_id',$accountListIds)->select()->toArray();
+            $recharge3 = DB::table('ba_account_consumption')->field('sum(spend) spend,account_id')->whereIn('account_id',$accountListIds)->group('account_id')->select()->toArray();
             $recharge4 = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->whereIn('type',[3,4])->where('status',1)->group('account_id')->select()->toArray();
 
             $recharge = array_column($recharge,'number','account_id');
@@ -150,7 +151,7 @@ class AccountrequestProposal extends Backend
                 $totalReset = $recharge4[$v['account_id']]??0;
 
                 $fbBalance = ($totalRecharge + $firshflush) - $totalDeductions - $totalConsumption - $totalReset;
-                $fbSpand = $totalDeductions;
+                $fbSpand = $totalConsumption;
                 $v['fb_balance'] = $fbBalance;
                 $v['fb_spand'] = $fbSpand;
             }
