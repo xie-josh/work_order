@@ -355,7 +355,7 @@ class Account extends Backend
                         if(empty($v['name']) && !empty($resultProposal['name'])) $accountData['name'] = $resultProposal['name'];
                         if(empty($v['bm'])) $accountData['dispose_status'] = 1;
                         if(!empty($accountData)) $this->model->where('id',$v['id'])->update($accountData);
-
+                        DB::table('ba_bm')->where('account_id',$v['account_id'])->update(['account_is'=>1]);
 
                         if($v['money'] > 0){
                             $this->model->whereIn('id',$v['id'])->update(['open_money'=>$v['money']]);
@@ -393,7 +393,7 @@ class Account extends Backend
                         DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>5,'money'=>0,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
-                    DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['dispose_type'=>2]);
+                    DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['dispose_type'=>2,'status'=>2]);
                 }elseif($status == 6){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
                     $accountIds = array_column($ids,'account_id');
