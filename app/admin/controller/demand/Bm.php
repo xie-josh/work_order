@@ -139,6 +139,10 @@ class Bm extends Backend
             array_push($where,['bm.dispose_type','=',0]);
         }elseif($disposeType == 3){
             array_push($where,['bm.status','=',0]);
+            array_push($where,['bm.demand_type','<>',4]);
+        }elseif($disposeType == 4){
+            array_push($where,['bm.status','=',0]);
+            array_push($where,['bm.demand_type','=',4]);
         }
         
         $res = $this->model
