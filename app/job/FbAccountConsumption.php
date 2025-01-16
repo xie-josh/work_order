@@ -41,8 +41,11 @@ class FbAccountConsumption
             // if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             // else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
 
-            $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
-            if($params['type'] == 2) $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
+            // $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
+            // if($params['type'] == 2) $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
+
+            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1);
+            if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
             
             if(!empty($token)) $params['token'] = $token;
             
@@ -54,7 +57,7 @@ class FbAccountConsumption
                 ->where('accountrequest_proposal.account_id',$accountId)
                 ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
                 ->find();
-                DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['account_status'=>0]);
+                DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['account_status'=>0,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 if(!empty($accountrequestProposal) && $accountrequestProposal['is_cards'] == 0 && $accountrequestProposal['card_id']){
                     $result = (new CardService($accountrequestProposal['cards_account_id']))->cardFreeze(['card_id'=>$accountrequestProposal['card_id']]);
                 }

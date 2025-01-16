@@ -194,8 +194,8 @@ class Account extends Backend
             $this->error(__('Record not found'));
         }
 
-        if($row['status'] != 0){
-            $this->error('已经审核不可在修改');
+        if(!$this->auth->isSuperAdmin() && $row['status'] != 0){
+            $this->error('已经审核不可在修改！');
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();

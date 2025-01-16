@@ -89,7 +89,7 @@ class FbAccountUnUpdate
                 foreach($currencyAccountList as $k => $v){
                     DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->where('status',1)->update(['currency'=>$k]);
                 }
-                DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>1,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1]);
+                DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>1,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
             }
         } catch (\Throwable $th) {
             $logs = '错误info_cardUnfreeze_('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
