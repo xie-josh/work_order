@@ -31,7 +31,7 @@ class Recharge extends Backend
 
     protected bool|string|int $dataLimit = 'parent';
 
-    protected $currencyRate = ["EUR"=>"0.84"];
+    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940"];
 
     public function initialize(): void
     {

@@ -14,7 +14,7 @@ class Account extends Model
     protected $name = 'account';
 
     protected $append = ['uuid','currency_number','currency_open_money'];
-    protected $currencyRate = ["EUR"=>"0.84"];
+    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940"];
 
     protected $ud  = 'KH';
 
