@@ -35,23 +35,29 @@ class FbLogs extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
-        array_push($where,['fb_logs_model.type','=','FB_insights']);
-        array_push($where,['fb_logs_model.create_time','>',date('Y-m-d',strtotime('-30 days'))]);
-        // array_push($where,['accountrequest_proposal.processing_status','=',0]);
+        array_push($where,['accountrequest_proposal.processing_status','=',0]);
+        //dd($where);
 
-        $res = $this->model
+        $res = DB::table('ba_fb_logs')
             ->field('fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,fb_logs_model.logs,admin.nickname,account.open_money,fb_logs_model.create_time')
-            //->withJoin($this->withJoinTable, $this->withJoinType)
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
             ->alias($alias)
             ->where($where)
+            ->where('fb_logs_model.id','in',function($query){
+                $query->table('ba_fb_logs')->field('MAX(id) as max_id')->where([
+                    ['type','=','FB_insights'],
+                    ['create_time','>',date('Y-m-d',strtotime('-30 days'))],
+                    //['logs','NOT LIKE','%Application request limit reached%'],
+                ])->group('log_id');
+            })
             ->order('fb_logs_model.id','desc')
-            ->group('fb_logs_model.log_id') 
+            ->group('fb_logs_model.create_time','desc')
             ->paginate($limit);
 
         $dataList = $res->toArray()['data'];
+
         if($dataList)
         {
             $accountListIds = array_column($dataList,'account_id');
@@ -79,9 +85,15 @@ class FbLogs extends Backend
 
                 $v['total_recharge_amount'] = ($totalRecharge + $openAmount) - $totalDeductions;
                 $v['total_reset'] = $totalReset;
+
+                $v['accountrequest_proposal']['account_id'] = $v['account_id'];
+                $v['accountrequest_proposal']['bm'] = $v['bm'];
+                $v['accountrequest_proposal']['status'] = $v['status'];
+                $v['accountrequest_proposal']['serial_name'] = $v['serial_name'];
+                $v['admin']['nickname'] = $v['nickname'];
+
             }
         }
-
         $this->success('', [
             'list'   => $dataList,
             'total'  => $res->total(),

@@ -67,6 +67,7 @@ class AccountrequestProposal extends Backend
         //dd($this->request->get());
         array_push($this->withJoinTable,'affiliationAdmin');
         array_push($this->withJoinTable,'cards');
+        array_push($this->withJoinTable,'account');
 
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
@@ -84,7 +85,7 @@ class AccountrequestProposal extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
-        $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no']]);
+        $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no'],'account'=>['id','is_']]);
 
         return [
             'list'   => $res->items(),
@@ -160,8 +161,8 @@ class AccountrequestProposal extends Backend
 
                 $fbBalance = ($totalRecharge + $firshflush) - $totalDeductions - $currencyNumber - $totalReset;
                 $fbSpand = $currencyNumber;
-                $v['fb_balance'] = $fbBalance;
-                $v['fb_spand'] = $fbSpand;
+                $v['fb_balance'] = bcadd((string)$fbBalance,'0',2);
+                $v['fb_spand'] = bcadd((string)$fbSpand,'0',2);
             }
         }
 
