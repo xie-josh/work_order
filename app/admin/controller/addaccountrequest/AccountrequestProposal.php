@@ -30,6 +30,8 @@ class AccountrequestProposal extends Backend
 
     protected bool|string|int $dataLimit = 'parent';
 
+    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940"];
+
     public function initialize(): void
     {
         parent::initialize();
@@ -150,8 +152,14 @@ class AccountrequestProposal extends Backend
                 $totalConsumption = $recharge3[$v['account_id']]??0;
                 $totalReset = $recharge4[$v['account_id']]??0;
 
-                $fbBalance = ($totalRecharge + $firshflush) - $totalDeductions - $totalConsumption - $totalReset;
-                $fbSpand = $totalConsumption;
+                if(!empty($this->currencyRate[$v['currency']])){
+                    $currencyNumber = bcdiv((string)$totalConsumption, $this->currencyRate[$v['currency']],2);
+                }else{
+                    $currencyNumber = (string)$totalConsumption;
+                }
+
+                $fbBalance = ($totalRecharge + $firshflush) - $totalDeductions - $currencyNumber - $totalReset;
+                $fbSpand = $currencyNumber;
                 $v['fb_balance'] = $fbBalance;
                 $v['fb_spand'] = $fbSpand;
             }
