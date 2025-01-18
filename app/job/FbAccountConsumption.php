@@ -5,6 +5,7 @@ namespace app\job;
 use think\queue\Job;
 use think\facade\Db;
 use app\services\CardService;
+use think\facade\Queue;
 
 class FbAccountConsumption
 {
@@ -50,6 +51,12 @@ class FbAccountConsumption
             if(!empty($token)) $params['token'] = $token;
             
             $result = (new \app\services\FacebookService())->insights($params);
+            if(!empty($result) && $result['code'] == 4){
+                $jobHandlerClassName = 'app\job\FbAccountConsumption';
+                $jobQueueName = 'FbAccountConsumption';
+                Queue::later(3600, $jobHandlerClassName, $params, $jobQueueName);
+                return true;
+            }
             if(empty($result) || $result['code'] == 0){
                 $accountrequestProposal = DB::table('ba_accountrequest_proposal')
                 ->field('accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,cards_info.card_id,cards_info.account_id cards_account_id')

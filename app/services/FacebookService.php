@@ -112,6 +112,14 @@ class FacebookService
                 ];
                 return $this->returnSucceed($data);
             }else{
+                $error = json_decode($result['msg']??'',true);
+                $code = $error['error']['code']??0;
+
+                if($code == 4){
+                    $this->log('FB_abnormal',$result['msg']??'',$params,$accountId);
+                    return $this->returnAbnormal(4);
+                }
+                
                 $this->log('FB_insights',$result['msg']??'',$params,$accountId);
                 //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
                 return $this->returnError($result['msg']);
@@ -299,6 +307,15 @@ class FacebookService
         return [
             'code'=>1,
             'msg'=>'succeed',
+            'data'=>$data
+        ];
+    }
+
+    public function returnAbnormal(int $code = 0,Array $data = [])
+    {
+        return [
+            'code'=>$code,
+            'msg'=>'abnormal',
             'data'=>$data
         ];
     }
