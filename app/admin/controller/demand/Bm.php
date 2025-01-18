@@ -327,6 +327,11 @@ class Bm extends Backend
                         $validate->check($data);
                     }
                 }
+
+                $accountId = $data['account_id']??'';
+                $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
+                if(empty($account)) throw new \Exception("未找到该账户ID");
+
                 $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
