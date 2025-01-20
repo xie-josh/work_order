@@ -19,7 +19,7 @@ class CardTransactions
         }elseif($data['platform'] == 'lampay')
         {
             
-        }elseif($data['platform'] == 'airwallex'){
+        }elseif($data['platform'] == 'airwallex' || $data['platform'] == 'airwallexUs'){
             $this->airwallexCardTransactions($data);
         }
         $job->delete();
@@ -136,7 +136,7 @@ class CardTransactions
         $cardsId = $param['id'];
         $cardId = $param['card_id'];
         
-        $pageIndex = 1;
+        $pageIndex = 0;
         $pageSize = 200;
         $is_ = true;
         while($is_){

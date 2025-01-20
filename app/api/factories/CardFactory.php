@@ -20,7 +20,7 @@ class CardFactory
             case 'airwallex':
                 return new airwallex($cardAccount);
             case 'airwallexUs':
-                return new airwallexUs($cardAccount);
+                return new airwallex($cardAccount);
             default:
                 return throw new \Exception("账户不可使用!");
         }

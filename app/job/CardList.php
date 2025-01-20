@@ -18,7 +18,7 @@ class CardList
                 //$this->photonpayCardList($data);
             }elseif($data['platform'] == 'lampay'){
                 $this->lampayCardList($data);
-            }elseif($data['platform'] == 'airwallex'){
+            }elseif($data['platform'] == 'airwallex' || $data['platform'] == 'airwallexUs'){
                 $this->airwallexCardList($data);
             }
             $job->delete();

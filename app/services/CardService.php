@@ -160,7 +160,7 @@ class CardService
                     $param['transaction_limit'] = (int)$param['transaction_limit'];
                     if($param['transaction_limit'] < 1) throw new \Exception('限额不能小于1');
                 }
-            }elseif($this->platform == 'airwallex'){
+            }elseif($this->platform == 'airwallex' || $this->platform == 'airwallexUs'){
                 
             }else{
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
@@ -190,7 +190,7 @@ class CardService
                     $param['transaction_limit'] = (int)$param['transaction_limit'];
                     if($param['transaction_limit'] < 1) throw new \Exception('限额不能小于1');
                 }
-            }elseif($this->platform == 'airwallex'){
+            }elseif($this->platform == 'airwallex' || $this->platform == 'airwallexUs'){
                 $cardInfo = $this->cardGetLimits(['card_id'=>$params['card_id']]);
                 if($cardInfo['code'] != 1) throw new \Exception($cardInfo['msg']);
                 $totalTransactionLimit = $cardInfo['data']['limits']['ALL_TIME_AMOUNT']??0;

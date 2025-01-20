@@ -18,7 +18,7 @@ class CardInfo
             $this->photonpayCardInfo($data);
         }elseif($data['platform'] == 'lampay'){
             $this->lampayCardInfo($data);
-        }elseif($data['platform'] == 'airwallex'){
+        }elseif($data['platform'] == 'airwallex' || $data['platform'] == 'airwallexUs'){
             $this->airwallexCardInfo($data);
         }
         
@@ -191,8 +191,8 @@ class CardInfo
                 'member_id'=>$result['memberId'],
                 'matrix_account'=>$result['matrixAccount'],
                 'email'=>$result['email'],
-                'expiration_date'=>'',
-                'cvv'=>'',
+                'expiration_date'=>$result['expirationDate'],
+                'cvv'=>$result['cvv'],
                 'first_name'=>$result['firstName'],
                 'last_name'=>$result['lastName'],
                 'mask_card_no'=>$result['maskCardNo'],
