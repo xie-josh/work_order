@@ -24,7 +24,7 @@ class FbAccountConsumptionTask extends Command
         ->alias('accountrequest_proposal')
         ->field('accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
         ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
-        ->whereNotIn('accountrequest_proposal.status',[0,99])
+        ->whereNotIn('accountrequest_proposal.status',[0,99,5])
         ->select()->toArray();
 
         foreach($result as  $v){
