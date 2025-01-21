@@ -590,28 +590,42 @@ class AccountrequestProposal extends Backend
 
     function bmList()
     {  
+
         $accountId = $this->request->param('account_id');
 
-        $accountrequestProposal = DB::table('ba_accountrequest_proposal')
-        ->alias('accountrequest_proposal')
-        ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
-        ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
-        ->where('fb_bm_token.status',1)
-        ->whereNotNull('fb_bm_token.token')
-        ->where('accountrequest_proposal.account_id',$accountId)
-        ->find();
+        $resultBm = DB::table('ba_bm')->where('status',1)
+        ->whereIn('account_id',$accountId)
+        ->whereIn('demand_type',[1,4])
+        ->where('dispose_type',1)
+        ->where('new_status',1)
+        ->column('bm');
+
+        $this->success('',['row'=>$resultBm]);
+
+        //dd($resultBm);
+
+        // $accountId = $this->request->param('account_id');
+
+        // $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+        // ->alias('accountrequest_proposal')
+        // ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
+        // ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+        // ->where('fb_bm_token.status',1)
+        // ->whereNotNull('fb_bm_token.token')
+        // ->where('accountrequest_proposal.account_id',$accountId)
+        // ->find();
 
         
         
-        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1);
-        if($accountrequestProposal['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
+        // $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1);
+        // if($accountrequestProposal['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
         
-        if(!empty($token)) $params['token'] = $token;
+        // if(!empty($token)) $params['token'] = $token;
         
-        //$result = (new \app\services\FacebookService())->businessesList($accountrequestProposal);
-        $result = (new \app\services\FacebookService())->businessesAdaccountsList($accountrequestProposal);
-        dd($accountrequestProposal);
-        if(empty($result) || $result['code'] == 0) throw new \Exception("消耗查询异常！");
+        // //$result = (new \app\services\FacebookService())->businessesList($accountrequestProposal);
+        // $result = (new \app\services\FacebookService())->businessesAdaccountsList($accountrequestProposal);
+        // dd($accountrequestProposal);
+        // if(empty($result) || $result['code'] == 0) throw new \Exception("消耗查询异常！");
 
     }
 
