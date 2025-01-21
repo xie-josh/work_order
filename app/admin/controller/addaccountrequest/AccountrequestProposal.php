@@ -479,6 +479,142 @@ class AccountrequestProposal extends Backend
         return true;
     }
 
+    public function accountRefresh()
+    {
+        $accountId = $this->request->param('account_id');
+        $result = false;
+        try {
+            //实时刷新状态与消耗
+            $where = [
+                ['account_id','=',$accountId]
+            ];
+            if(!$this->auth->isSuperAdmin()) array_push($where,['admin_id','=',$this->auth->id]);
+            $accountResult = DB::table('ba_account')->where($where)->find();
+
+            if(empty($accountResult)) throw new \Exception("未找到账户!");
+
+
+            $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+            ->alias('accountrequest_proposal')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
+            ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+            ->where('fb_bm_token.status',1)
+            ->whereNotIn('accountrequest_proposal.status',[0,99])
+            ->whereNotNull('fb_bm_token.token')
+            ->where('accountrequest_proposal.account_id',$accountId)
+            ->find();
+
+            if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
+            $currency = $accountrequestProposal['currency'];    
+
+            $FacebookService = new \app\services\FacebookService();
+            $result1 = $FacebookService->adAccounts($accountrequestProposal);
+            if($result1['code'] != 1 || empty($result1['data']['account_status'])) throw new \Exception($result1['msg']);
+
+            DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountId)->update(['account_status'=>$result1['data']['account_status'],'pull_account_status'=>date('Y-m-d H:i',time())]);
+            $this->accountConsumption($accountrequestProposal);
+
+            $result = true;
+        } catch (Throwable $th) {
+            $this->error($th->getMessage());
+        }
+
+        if ($result !== false) {
+            $this->success(__('Update successful'));
+        } else {
+            $this->error(__('No rows updated'));
+        }
+    }
+
+
+    public function accountConsumption($params)
+    {
+        $accountId = $params['account_id'];
+        $businessId = $params['business_id']??'';
+        $params['stort_time'] = date('Y-m-d', strtotime('-30 days'));
+        $params['stop_time'] = date('Y-m-d',time());
+
+        $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
+
+        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1);
+        if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
+        
+        if(!empty($token)) $params['token'] = $token;
+        
+        $result = (new \app\services\FacebookService())->insights($params);
+        if(empty($result) || $result['code'] == 0) throw new \Exception("消耗查询异常！");
+        
+        DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
+        $accountConsumption = $result['data']['data']??[];
+        $accountConsumption = array_column($accountConsumption,null,'date_start');
+
+        DB::table('ba_account_consumption')->where('account_id',$accountId)->whereIn('date_start',$sSTimeList)->delete();
+
+        $data = [];
+
+        foreach($sSTimeList as $v){
+            $consumption = $accountConsumption[$v]??[];
+            if(empty($consumption)){
+                $data[] = [
+                    'account_id'=>$accountId,
+                    'spend'=>0,
+                    'date_start'=>$v,
+                    'date_stop'=>$v,
+                    'create_time'=>time(),
+                ];
+            }else{
+                $data[] = [
+                    'account_id'=>$accountId,
+                    'spend'=>$consumption['spend'],
+                    'date_start'=>$consumption['date_start'],
+                    'date_stop'=>$consumption['date_stop'],
+                    'create_time'=>time(),
+                ];
+            }
+        }
+        DB::table('ba_account_consumption')->insertAll($data);
+        return true;
+    }
+
+
+    function generateTimeArray($startDate, $endDate) {
+        $startTimestamp = strtotime($startDate);
+        $endTimestamp = strtotime($endDate);
+        $timeArray = [];
+        for ($currentTimestamp = $startTimestamp; $currentTimestamp <= $endTimestamp; $currentTimestamp += 86400) {
+            $timeArray[] = date('Y-m-d', $currentTimestamp);
+        }
+        return $timeArray;
+    }
+
+
+    function bmList()
+    {  
+        $accountId = $this->request->param('account_id');
+
+        $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+        ->alias('accountrequest_proposal')
+        ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
+        ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+        ->where('fb_bm_token.status',1)
+        ->whereNotNull('fb_bm_token.token')
+        ->where('accountrequest_proposal.account_id',$accountId)
+        ->find();
+
+        
+        
+        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1);
+        if($accountrequestProposal['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
+        
+        if(!empty($token)) $params['token'] = $token;
+        
+        //$result = (new \app\services\FacebookService())->businessesList($accountrequestProposal);
+        $result = (new \app\services\FacebookService())->businessesAdaccountsList($accountrequestProposal);
+        dd($accountrequestProposal);
+        if(empty($result) || $result['code'] == 0) throw new \Exception("消耗查询异常！");
+
+    }
+
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */

@@ -169,6 +169,7 @@ class Recharge
             }else{
                 $currencyNumber = (string)$money;
             }
+            if($spendCap == 0.01) $spendCap = 0;
             if($spendCap != $accountMoney) throw new \Exception("FB总限额与系统充值匹配错误！");
 
             $result2 = $FacebookService->adAccountsDelete($accountrequestProposal);
