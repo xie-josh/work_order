@@ -100,10 +100,11 @@ class FbAccountUpdate
                     $where = [
                         ['accountrequest_proposal.account_id','IN',$v],
                         ['accountrequest_proposal.status','=',1],
+                        ['account.status','=',4],
                     ];
                     DB::table('ba_accountrequest_proposal')
                     ->alias('accountrequest_proposal')
-                    ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->whereNotNull('account.open_time')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
+                    ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
                 }
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
