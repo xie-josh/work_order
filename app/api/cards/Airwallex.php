@@ -454,6 +454,62 @@ class Airwallex extends Backend implements CardInterface
     }
 
 
+    public function createCard($params)
+    {
+        $param = [];
+        $url = "$this->url/api/v1/issuing/cardholders";
+        $method = 'GET';
+
+        // $cardholder_id = 'ff5f1eb4-2e06-4b7b-9f5e-dbe04adbd77e';
+
+        // $param = [
+        //     'authorization_controls'=>[
+        //         'allowed_transaction_count'=>'MULTIPLE',
+        //         'transaction_limits'=>[
+        //             "currency"=> "USD",
+        //             'limits'=>[
+        //                 [
+        //                     'interval'=>'ALL_TIME',
+        //                     'amount'=>2
+        //                 ],
+        //                 [
+        //                     'interval'=>'PER_TRANSACTION',
+        //                     'amount'=>5000
+        //                 ]
+        //             ]
+        //         ],
+        //     ],
+        //     'cardholder_id'=>$cardholder_id,
+        //     'created_by'=>'建江',
+        //     "form_factor"=>"VIRTUAL",
+        //     'is_personalized'=>false,
+        //     'program'=>[
+        //         'purpose'    =>'COMMERCIAL'
+        //     ],
+        //     //"issue_to"=>"ORGANISATION",
+        //     //'purpose'=>'MARKETING_EXPENSES',
+        //     'nick_name'=>'250120',
+        //     'request_id'=>$UUID
+        // ];
+        // $url = "$this->url/api/v1/issuing/cards/create";
+        // $method = 'POST';
+
+
+        $header = [
+            'Content-Type'=>'application/json',
+            'Authorization'=>'Bearer '.$this->token
+        ];
+        $result = $this->curlHttp($url,$method,$header,$param);
+        dd($result);
+
+        if($result['msg'] == 'succeed'){           
+            return $this->returnSucceed();
+        }else{
+            return $this->returnError($result['msg']);
+        }
+    }
+
+
 
     public function sign($params = [])
     {
@@ -476,20 +532,20 @@ class Airwallex extends Backend implements CardInterface
 
 
         //模拟消费
-        $param = [
-            'card_id'=>'48b973bd-9ba1-4057-9b43-9b8697ad2d2d',
-            'transaction_amount'=>'20',
-            'transaction_currency'=>'HKD'
-        ];
-        $url = "$this->url/api/v1/simulation/issuing/create";
-        $method = 'POST';
-
-
-        //  $param = [
-        //     'card_id'=>'f28426d7-06a8-47f0-9e62-481dbe3da85f',
+        // $param = [
+        //     'card_id'=>'48b973bd-9ba1-4057-9b43-9b8697ad2d2d',
+        //     'transaction_amount'=>'20',
+        //     'transaction_currency'=>'HKD'
         // ];
-        // $url = "$this->url/api/v1/issuing/authorizations";
-        // $method = 'GET';
+        // $url = "$this->url/api/v1/simulation/issuing/create";
+        // $method = 'POST';
+
+
+         $param = [
+            'card_id'=>'f28426d7-06a8-47f0-9e62-481dbe3da85f',
+        ];
+        $url = "$this->url/api/v1/issuing/authorizations";
+        $method = 'GET';
 
 
         $header = [
