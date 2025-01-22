@@ -47,15 +47,14 @@ class FbLogs extends Backend
             ->where($where)
             ->where('fb_logs_model.id','in',function($query){
                 $query->table('ba_fb_logs')->field('MAX(id) as max_id')->where([
-                    ['type','=','FB_insights'],
+                    ['type','IN',['FB_insights','FB_accountStatus']],
                     ['create_time','>',date('Y-m-d',strtotime('-30 days'))],
                     //['logs','NOT LIKE','%Application request limit reached%'],
                 ])->group('log_id');
             })
             ->order('fb_logs_model.id','desc')
-            ->group('fb_logs_model.create_time','desc')
             ->paginate($limit);
-
+            
         $dataList = $res->toArray()['data'];
 
         if($dataList)
