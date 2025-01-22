@@ -68,14 +68,26 @@ class FbAccountUpdate
 
                 $cardList = DB::table('ba_accountrequest_proposal')
                 ->alias('accountrequest_proposal')
-                ->field('accountrequest_proposal.close_time,accountrequest_proposal.account_id,cards_info.card_no,cards_info.card_status,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.cards_id')
+                ->field('accountrequest_proposal.close_time,accountrequest_proposal.account_id,cards_info.card_no,cards_info.card_status,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.cards_id,accountrequest_proposal.account_status')
                 ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
                 ->whereIn('accountrequest_proposal.account_id',$accountIds)
                 ->select()->toArray();
 
                 $accountrequestProposalClose = [];
                 $accountrequestProposalCloseIs = [];
+                $errorList = [];
                 foreach($cardList as $v){
+
+                    if($v['account_status'] != '2'){
+                        $errorList[] = [
+                            'log_id'=>$v['account_id'],
+                            'type'=>'FB_accountStatus',
+                            'data'=>'',
+                            'logs'=>'账户状态发生变更【封户/冻卡】',
+                            'create_time'=>date('Y-m-d H:i:s',time())
+                        ];
+                    }
+
                     $closeTime = $v['close_time']??'';
                     if(empty($closeTime)) $accountrequestProposalClose[] = $v['account_id'];
                     if(!empty($closeTime) && strtotime($closeTime . ' +3 days') < time()) $accountrequestProposalCloseIs[] = $v['account_id'];
@@ -109,6 +121,7 @@ class FbAccountUpdate
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>2,'bm_token_id'=>$id,'pull_account_status'=>date('Y-m-d H:i',time())]);
+                DB::table('ba_fb_logs')->insertAll($errorList);
             }
 
             
