@@ -121,6 +121,7 @@ class FbAccountUpdate
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>2,'bm_token_id'=>$id,'pull_account_status'=>date('Y-m-d H:i',time())]);
+                DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where([['account_status','<>','2']])->update(['processing_status'=>0]);
                 DB::table('ba_fb_logs')->insertAll($errorList);
             }
 
