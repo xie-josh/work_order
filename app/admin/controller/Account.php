@@ -976,14 +976,47 @@ class Account extends Backend
             }else{
                 $adminId = $this->auth->id;
             }
+
+            /**
+             * 1.计算总开户数量
+             * 2.计算总金额
+             * 
+             * 
+             * 
+             */
+            $column = '0';
+            $filteredArray = array_filter($fileObject, function($row) use ($column) {
+                return !empty($row[$column]);
+            });
+
+
+            $countNumber = count($filteredArray);
+            if($countNumber < 1) throw new \Exception("Error Processing Request");
+            
+
+            //dd($fileObject,$filteredArray);
+            // $countAmout = array_sum(array_column($fileObject, '4'));
+
+            $admin = Db::table('ba_admin')->where('id',$this->auth->id)->find();
+            $accountNumber = $admin['account_number'];
+            // $isAccount = $admin['is_account'];
+            // $usableMoney = ($admin['money'] - $admin['used_money']);
+            // if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
+            // if($usableMoney <= 0 || $usableMoney < $countAmout) throw new \Exception("余额不足,请联系管理员！");
+
+
+            $time = date('Y-m-d',time());
+            $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
+            if($accountNumber <= ($countNumber + $openAccountNumber)) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
  
             $data = [];
-            foreach($fileObject as $v){
+            foreach($filteredArray as $v){
                 $accountTypeId = $accountTypeList[$v[0]]??'';
                 $time = $timeList[(String)$v[1]]??'';
                 $name = $v[2];
                 $bm = $v[3];
-                $money = $v[4];
+                //$money = $v[4];
+                $money = 0;
                 $adminId = empty($adminId)?($v[5]??0):$adminId;
                 
                 if(empty($accountTypeId) || empty($time) || empty($name) || empty($bm) || !is_numeric($money) || empty($adminId)) continue;
@@ -999,12 +1032,12 @@ class Account extends Backend
                     'create_time'=>time()
                 ];
             }
-
             DB::table('ba_account')->insertAll($data);
             $result = true;
-            $fileObject->closeSheet();  
+            //$fileObject->closeSheet();  
             //code...
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
+            $this->error($th->getMessage());
             //throw $th;
         }
         if ($result !== false) {
