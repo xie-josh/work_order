@@ -1007,7 +1007,7 @@ class Account extends Backend
 
             $time = date('Y-m-d',time());
             $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
-            if($accountNumber <= ($countNumber + $openAccountNumber)) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
+            if($accountNumber < ($countNumber + $openAccountNumber) && $this->auth->id != 1) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
  
             $data = [];
             foreach($filteredArray as $v){

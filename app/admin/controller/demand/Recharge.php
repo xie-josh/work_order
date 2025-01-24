@@ -583,7 +583,7 @@ class Recharge extends Backend
 
         
         $result = (new \app\admin\services\card\Cards())->accountSingle();
-        $realTimeBalance = $result['data']['row']['realTimeBalance']??0;
+        $realTimeBalance = $result['data']['row']['realTimeBalance']??'未查询到！';
         
         $deductionListtotal = 0;
         if($realTimeBalance < 10000){

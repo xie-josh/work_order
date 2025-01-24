@@ -57,7 +57,7 @@ class Admin extends Backend
         // }
         
         $res = $this->model
-            ->field('*,(money - used_money) usableMoney')
+            ->field('*,ROUND((money - used_money),2) usableMoney')
             ->withoutField('login_failure,password,salt')
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)

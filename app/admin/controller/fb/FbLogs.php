@@ -107,7 +107,7 @@ class FbLogs extends Backend
             $result = false;
             $this->model->startTrans();
             try {
-                $accountId = $data['account_id']??'';
+                $accountId = $data['account_id']??[];
                 $status = $data['status']??'';
                 $processingStatus = $data['processing_status']??1;
                 $processingAmount = $data['processing_amount']??0;
@@ -124,7 +124,7 @@ class FbLogs extends Backend
                 if(isset($status)) $dataList['status'] = $status;
                 if(isset($comment)) $dataList['comment'] = $comment;
                 
-                $result = DB::table('ba_accountrequest_proposal')->where('processing_status',0)->where('account_id',$accountId)->update($dataList);
+                $result = DB::table('ba_accountrequest_proposal')->where('processing_status',0)->whereIn('account_id',$accountId)->update($dataList);
                 $this->model->commit();
             } catch (\Throwable $e) {
                 $this->model->rollback();
