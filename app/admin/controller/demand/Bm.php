@@ -245,6 +245,8 @@ class Bm extends Backend
                             array_push($error,[$v,'该BM需求在处理中,不需要重复提交!!!']);
                             continue;
                         } 
+                        if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v > 0)) throw new \Exception("BM不能包含中文");
+
                         $dataList[] = [
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,

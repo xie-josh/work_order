@@ -39,7 +39,7 @@ class FbLogs extends Backend
         //dd($where);
 
         $res = DB::table('ba_fb_logs')
-            ->field('fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,fb_logs_model.logs,admin.nickname,account.open_money,fb_logs_model.create_time')
+            ->field('fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,fb_logs_model.logs,admin.nickname,account.open_money,fb_logs_model.create_time')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
