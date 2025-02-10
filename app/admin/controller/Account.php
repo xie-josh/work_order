@@ -25,7 +25,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress'];
+    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress','importTemplate'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
