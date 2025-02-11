@@ -57,7 +57,13 @@ class FbAccountConsumption
                 Queue::later(3600, $jobHandlerClassName, $params, $jobQueueName);
                 return true;
             }
+
             if(empty($result) || $result['code'] == 0){
+                DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['account_status'=>0,'processing_status'=>0,'pull_account_status'=>date('Y-m-d H:i',time())]);
+                return true;
+            }
+            
+            if(empty($result) || $result['code'] == 5){
                 $accountrequestProposal = DB::table('ba_accountrequest_proposal')
                 ->field('accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,cards_info.card_id,cards_info.account_id cards_account_id')
                 ->alias('accountrequest_proposal')
