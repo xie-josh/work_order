@@ -496,7 +496,7 @@ class AccountrequestProposal extends Backend
 
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
+            ->field('accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotIn('accountrequest_proposal.status',[0,99])
@@ -536,8 +536,8 @@ class AccountrequestProposal extends Backend
 
         $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
 
-        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1);
-        if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2);
+        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,'',$params['id']);
+        if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,'',$params['id']);
         
         if(!empty($token)) $params['token'] = $token;
         
