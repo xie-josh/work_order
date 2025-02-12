@@ -167,6 +167,10 @@ class Account extends Backend
                 DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
 
                 $data['admin_id'] = $this->auth->id;
+
+                if($data['bm_type'] == 1) $data['email'] = '';
+                if($data['bm_type'] == 2) $data['bm'] = '';
+
                 // $data['account_id'] = $this->generateUniqueNumber();
                 $result = $this->model->save($data);
                 $this->model->commit();
@@ -223,6 +227,10 @@ class Account extends Backend
                         $validate->check($data);
                     }
                 }
+                
+                if($data['bm_type'] == 1) $data['email'] = '';
+                if($data['bm_type'] == 2) $data['bm'] = '';
+
                 $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
