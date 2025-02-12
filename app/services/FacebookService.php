@@ -119,13 +119,18 @@ class FacebookService
                     $this->log('FB_abnormal',$result['msg']??'',$params,$accountId);
                     return $this->returnAbnormal(4);
                 }
+
+                if($code == 200){
+                    $this->log('FB_insights',$result['msg']??'',$params,$accountId);
+                    return $this->returnAbnormal(5);
+                }
                 
-                $this->log('FB_insights',$result['msg']??'',$params,$accountId);
+                $this->log('FB_abnormal',$result['msg']??'',$params,$accountId);
                 //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
                 return $this->returnError($result['msg']);
             }
         } catch (\Throwable $th) {
-            $this->log('FB_insights',$th->getMessage(),$params,$accountId);
+            $this->log('FB_abnormal',$th->getMessage(),$params,$accountId);
             //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$th->getMessage()]);
             return $this->returnError($th->getMessage()); 
         }
@@ -247,6 +252,73 @@ class FacebookService
                 'Authorization'=>"Bearer {$token}",
             ];
             $result = $this->curlHttp($url,$method,$header,$param);
+            if(isset($result['success']) && $result['success']){         
+                return $this->returnSucceed([]);
+            }else{
+                $this->log('FB_assignedUsers',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_assignedUsers',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+
+    public function businessesList($params){
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id'];
+            
+            $param = [
+                'fields'=> 'business,account_id',
+            ];
+            $url = "https://graph.facebook.com/v21.0/act_{$accountId}";
+            $method = 'GET';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            dd($result);
+            if(isset($result['success']) && $result['success']){         
+                return $this->returnSucceed([]);
+            }else{
+                $this->log('FB_assignedUsers',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_assignedUsers',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+
+
+    public function businessesAdaccountsList($params){
+
+        // ^ array:3 [
+        //     "business" => array:2 [
+        //       "id" => "750517456175427"
+        //       "name" => "miemirates"
+        //     ]
+        //     "account_id" => "9628116697204069"
+        //     "id" => "act_9628116697204069"
+        //   ]
+
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id'];
+            
+            $param = [
+                //'fields'=> 'business,account_id',
+            ];
+            $url = "https://graph.facebook.com/v21.0/750517456175427/adaccounts";
+            $method = 'GET';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            dd($result);
             if(isset($result['success']) && $result['success']){         
                 return $this->returnSucceed([]);
             }else{
