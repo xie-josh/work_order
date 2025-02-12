@@ -245,7 +245,7 @@ class Bm extends Backend
                             array_push($error,[$v,'该BM需求在处理中,不需要重复提交!!!']);
                             continue;
                         } 
-                        if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v > 0)) throw new \Exception("BM不能包含中文");
+                        if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v) > 0) throw new \Exception("BM不能包含中文");
 
                         $dataList[] = [
                             'demand_type'=>$demandType,
@@ -333,6 +333,8 @@ class Bm extends Backend
                 $accountId = $data['account_id']??'';
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
+
+                if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $data['bm']) > 0) throw new \Exception("BM不能包含中文");
 
                 $result = $row->save($data);
                 $this->model->commit();
