@@ -5,6 +5,7 @@ namespace app\job;
 use think\queue\Job;
 use app\services\CardService;
 use think\facade\Db;
+set_time_limit(600);
 
 class FbAccountUpdate
 {
@@ -34,15 +35,15 @@ class FbAccountUpdate
             $id = $params['id'];
 
             $_is = true;
+            if($params['type'] == 1){
+                $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,$id);
+                $params['token'] = $token;
+            }else if($params['type'] == 2){
+                $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,$id);
+                $params['token'] = $token;
+            }
             while ($_is) {
                 $params['account_status'] = 2;
-                if($params['type'] == 1){
-                    $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,$id);
-                    $params['token'] = $token;
-                }else if($params['type'] == 2){
-                    $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,$id);
-                    $params['token'] = $token;
-                }
                 $result = (new \app\services\FacebookService())->list($params);
                 if(empty($result) || $result['code'] == 0) return true;
                 
