@@ -12,7 +12,7 @@ class FbAccountUpdate
     public function fire(Job $job, $data)
     {
         //php think queue:listen --queue FbAccountUpdate
-        sleep(1);
+        //sleep(1);
 
         try {
             $this->accountUpdate($data);
@@ -93,9 +93,8 @@ class FbAccountUpdate
                     if(empty($closeTime)) $accountrequestProposalClose[] = $v['account_id'];
                     if(!empty($closeTime) && strtotime($closeTime . ' +3 days') < time()) $accountrequestProposalCloseIs[] = $v['account_id'];
 
-                    if(empty($v['card_status']) || $v['card_status'] != 'normal') continue;
+                    if(empty($v['card_status']) || $v['card_status'] != 'normal' || $v['cards_account_id'] == 2) continue;
 
-                    if($v['cards_account_id'] == 2) return true;
                     $result = (new CardService($v['cards_account_id']))->cardFreeze(['card_id'=>$v['card_id']]);
                     if(isset($result['data']['cardStatus'])){
                         DB::table('ba_cards_info')->where('cards_id',$v['cards_id'])->update(['card_status'=>$result['data']['cardStatus']]);
