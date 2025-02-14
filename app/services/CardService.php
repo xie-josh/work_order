@@ -143,6 +143,7 @@ class CardService
                 $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
                 if($cardInfo['code'] != 1) throw new \Exception($cardInfo['msg']);
                 $totalTransactionLimit = $cardInfo['data']['totalTransactionLimit']??0;
+                $param['transaction_limit_type'] = 'limited';
                 if($totalTransactionLimit > $params['transaction_limit']){
                     $param['transaction_limit_change_type'] = 'decrease';
                     $param['transaction_limit'] = ($totalTransactionLimit - $params['transaction_limit']);
@@ -209,7 +210,7 @@ class CardService
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');
             }
-        }        
+        }      
         return $param;
     }
     

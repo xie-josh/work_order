@@ -20,45 +20,57 @@ class Photonpay extends Backend implements CardInterface
     function __construct($cardAccount)
     {
         //'https://x-api1.uat.photontech.cc'
-        $token = json_decode($cardAccount['token'],true);
+        // $token = json_decode($cardAccount['token'],true);
         $this->url = env('CARD.PHOTONPAY_RUL');
-        $this->appId = $token['appId'];
-        $this->appSecret = $token['appSecret'];
-        $this->accountId = $cardAccount['id'];
-        $this->privateKey = $cardAccount['private_key'];
-        $this->publicKey = $cardAccount['public_key'];
-        $this->platformKey = $cardAccount['platform_key'];
+        // $this->appId = $token['appId'];
+        // $this->appSecret = $token['appSecret'];
+        // $this->accountId = $cardAccount['id'];
+        // $this->privateKey = $cardAccount['private_key'];
+        // $this->publicKey = $cardAccount['public_key'];
+        // $this->platformKey = $cardAccount['platform_key'];
 
-        //dd($cardAccount['expires_in'],time());
+        // //dd($cardAccount['expires_in'],time());
 
-        if($cardAccount['expires_in'] < time())
-        {
-            $url = "$this->url/oauth2/token/accessToken";
-            $method = 'POST1';
-            $header = [
-                'Content-Type'=>'application/json',
-                'Authorization'=>'basic '.base64_encode($token['appId'].'/'.$token['appSecret'])
-            ];
-            $result = $this->curlHttp($url,$method,$header);
+        // if($cardAccount['expires_in'] < time())
+        // {
+        //     $url = "$this->url/oauth2/token/accessToken";
+        //     $method = 'POST1';
+        //     $header = [
+        //         'Content-Type'=>'application/json',
+        //         'Authorization'=>'basic '.base64_encode($token['appId'].'/'.$token['appSecret'])
+        //     ];
+        //     $result = $this->curlHttp($url,$method,$header);
 
-            if(empty($result) || empty($result['data']) || empty($result['data']['token'])){
-                $error = $this->returnError('账户授权错误');
-                DB::table('ba_card_account')->where('id',$this->accountId)->update(['status'=>0,'logs'=>json_encode($error)]);
-                throw new \Exception("Error Processing Request");
-            } 
-            $accessToken = $result['data'];
+        //     if(empty($result) || empty($result['data']) || empty($result['data']['token'])){
+        //         $error = $this->returnError('账户授权错误');
+        //         DB::table('ba_card_account')->where('id',$this->accountId)->update(['status'=>0,'logs'=>json_encode($error)]);
+        //         throw new \Exception("Error Processing Request");
+        //     } 
+        //     $accessToken = $result['data'];
 
-            $data = [
-                'expires_in'=>($accessToken['expiresIn'] / 1000 - 3600),
-                'access_token'=>$accessToken['token'],
-                'update_time'=>date("Y-m-d H:i:s",time()),
-            ];
-            DB::table('ba_card_account')->where('id',$this->accountId)->update($data);
+        //     $data = [
+        //         'expires_in'=>($accessToken['expiresIn'] / 1000 - 3600),
+        //         'access_token'=>$accessToken['token'],
+        //         'update_time'=>date("Y-m-d H:i:s",time()),
+        //     ];
+        //     DB::table('ba_card_account')->where('id',$this->accountId)->update($data);
             
-            $this->token  = $accessToken['token'];
-        }else{
-            $this->token  = $cardAccount['access_token'];
-        }
+        //     $this->token  = $accessToken['token'];
+        // }else{
+        //     $this->token  = $cardAccount['access_token'];
+        // }
+
+        $result = $this->curlHttp('http://8.218.77.200:10084/admin/Index/token?server=1','GET',[],['server'=>1,'type'=>'sdoijfon64651']);
+        if(empty($result['token']['access_token'])) throw new \Exception("账户授权错误");
+        $this->token = $result['token']['access_token'];
+        $this->privateKey = $result['token']['private_key'];
+    }
+
+    function cardCreate($params): array{
+        return [];
+    }
+    function cardGetLimits($params): array{
+        return [];
     }
 
     public function request($endpoint, $method = 'GET', $data = [])
@@ -83,7 +95,9 @@ class Photonpay extends Backend implements CardInterface
         $param = [
             'pageIndex'=>$params['page_index'],
             'pageSize'=>$params['page_size'],
-            'createdAtStart'=>$params['created_st_start']
+            'matrixAccount'=>0,
+            // 'memberId'=>'2024102145150870'
+            'createdAtStart'=>$params['from_updated_at']  
         ];
         $result = $this->curlHttp($url,$method,$header,$param);
         if($result['msg'] == 'succeed'){
@@ -116,10 +130,10 @@ class Photonpay extends Backend implements CardInterface
         if($result['msg'] == 'succeed'){
             $data = $result['data'];
             
-            //$cardVcc = $this->cardCvv(['card_id'=>$param['cardId']]);
-            //$data['cvv'] = $cardVcc['data']['cvv'];
-            $data['cvv'] = '';
-            $data['expirationDate'] = '';
+            $cardVcc = $this->cardCvv(['card_id'=>$param['cardId']]);
+            $data['cvv'] = $cardVcc['data']['cvv'];
+            // $data['cvv'] = '';
+            // $data['expirationDate'] = '';
             return $this->returnSucceed($data);
         }else{
             return $this->returnError($result['msg']);
@@ -157,6 +171,7 @@ class Photonpay extends Backend implements CardInterface
         if(!empty($params['max_on_daily'])) $param['maxOnDaily'] = $params['max_on_daily'];
         if(!empty($params['max_on_monthly'])) $param['maxOnMonthly'] = $params['max_on_monthly'];
         if(!empty($params['max_on_percent'])) $param['maxOnPercent'] = $params['max_on_percent'];
+        if(!empty($params['transaction_limit_type']) && $params['transaction_limit_type'] == 'unlimited') $param['transactionLimitType'] = $params['transaction_limit_type'];
         if(!empty($params['transaction_limit_type']) && !empty($params['transaction_limit_change_type']) && !empty($params['transaction_limit'])) {
             $param['transactionLimitType'] = $params['transaction_limit_type'];
             $param['transactionLimitChangeType'] = $params['transaction_limit_change_type'];
@@ -173,7 +188,6 @@ class Photonpay extends Backend implements CardInterface
             'X-PD-SIGN'=>$sign
         ];
         $result = $this->curlHttp($url,$method,$header,$param);
-
         if($result['msg'] == 'succeed'){           
             return $this->returnSucceed();
         }else{
@@ -215,7 +229,7 @@ class Photonpay extends Backend implements CardInterface
         $result = $this->curlHttp($url,$method,$header,$param);
 
         if($result['msg'] == 'succeed'){           
-            return $this->returnSucceed();
+            return $this->returnSucceed(['cardStatus'=>'frozen']);
         }else{
             DB::table('ba_cards_logs')->insert([
                 'type'=>'card_freeze',
@@ -253,7 +267,7 @@ class Photonpay extends Backend implements CardInterface
         $result = $this->curlHttp($url,$method,$header,$param);
 
         if($result['msg'] == 'succeed'){           
-            return $this->returnSucceed();
+            return $this->returnSucceed(['cardStatus'=>'normal']);
         }else{
             DB::table('ba_cards_logs')->insert([
                 'type'=>'card_unfreeze',
@@ -275,8 +289,8 @@ class Photonpay extends Backend implements CardInterface
         ];
         $param = [
             'cardId'=>$params['card_id'],
-            'pageIndex'=>$params['page_index'],
-            'pageSize'=>$params['page_size'],
+            'pageIndex'=>$params['page_index']??1,
+            'pageSize'=>$params['page_size']??200,
         ];
         $result = $this->curlHttp($url,$method,$header,$param);
         if($result['msg'] == 'succeed'){

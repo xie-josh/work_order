@@ -15,7 +15,7 @@ class CardList
             //php think queue:listen --queue CardList
             if($data['platform'] == 'photonpay')
             {
-                //$this->photonpayCardList($data);
+                $this->photonpayCardList($data);
             }elseif($data['platform'] == 'lampay'){
                 $this->lampayCardList($data);
             }elseif($data['platform'] == 'airwallex' || $data['platform'] == 'airwallexUs'){
@@ -68,12 +68,12 @@ class CardList
     {
         $accountId = $param['id'];
 
-        if(empty($param['pull_time'])){
-            $createdAtEnd = date('Y-m-d H:i:d', strtotime('-60 days'));
-        }else{
-            $createdAtEnd = $param['pull_time'];
-        }
-        $createdAtEnd = str_replace(' ', 'T', $createdAtEnd);
+        // if(empty($param['pull_time'])){
+        // }else{
+        //     $createdAtEnd = $param['pull_time'];
+        // }
+        $createdAtEnd = date('Y-m-d\TH:i:d', strtotime('-7 days'));
+        //$createdAtEnd = str_replace(' ', 'T', $createdAtEnd);
         
         $pageIndex = 1;
         $pageSize = 200;
@@ -86,7 +86,7 @@ class CardList
                 $param = [
                     'page_index'=>$pageIndex,
                     'page_size'=>$pageSize,
-                    'created_st_start'=>$createdAtEnd
+                    'from_updated_at'=>$createdAtEnd
                 ];
                 $cardList = (new CardService($accountId))->cardList($param);
 
