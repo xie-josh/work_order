@@ -15,7 +15,7 @@ class Recharge extends Model
     // 自动写入时间戳字段
     protected $autoWriteTimestamp = true;
     protected $append = ['uuid','currency_number'];
-    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940"];
+    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940","PEN"=>"3.6"];
     protected $ud  = 'CZ';
 
 
