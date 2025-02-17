@@ -27,11 +27,11 @@ class FacebookService
                 'limit'=>500
             ];
             if($accountStatus == 1){
-                $param['filtering'][] =  [
-                    "field"=> "account_status",
-                    "operator"=> "EQUAL",
-                    "value"=> 1
-                ];
+                // $param['filtering'][] =  [
+                //     "field"=> "account_status",
+                //     "operator"=> "NOT_EQUAL",
+                //     "value"=> 101
+                // ];
             }else if($accountStatus == 2){
                 $param['filtering'][] =  [
                     "field"=> "account_status",

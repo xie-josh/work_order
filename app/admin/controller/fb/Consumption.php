@@ -88,7 +88,7 @@ class Consumption extends Backend
 
         $name = $folders['name'].'.xlsx';
 
-        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Active'];
+        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Unsettled'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];

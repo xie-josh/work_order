@@ -409,7 +409,8 @@ class AccountrequestProposal extends Backend
             'account_bm',
             'status',
             'nickname',
-            'card_no'
+            'card_no',
+            'FB_account_status',
         ];
 
         $config = [
@@ -419,7 +420,7 @@ class AccountrequestProposal extends Backend
 
         $name = $folders['name'].'.xlsx';
         
-        
+        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Unsettled'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];
@@ -434,7 +435,8 @@ class AccountrequestProposal extends Backend
                     'account_bm'=> $v['account_bm'],
                     'status'=> $statusValue[$v['status']]??'未知的状态',
                     'nickname'=>$v['nickname'],
-                    'card_no'=>$v['card_no']
+                    'card_no'=>$v['card_no'],
+                    'FB_account_status'=>$accountStatus[$v['account_status']]??'未找到状态'
                 ];  
                 $processedCount++;
             }
