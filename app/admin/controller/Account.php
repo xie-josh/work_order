@@ -570,19 +570,46 @@ class Account extends Backend
                         'account_id'=>$v['account_id'],
                         'is_'=>1,
                         'update_time'=>time()
-                    ];
+                    ];                    
 
-                    if(!empty($v['bm'])){
-                        $bmDataList[] = [
-                            'account_name'=>$resultAccount['name'],
-                            'account_id'=>$v['account_id'],
-                            'bm'=>$resultAccount['bm'],
-                            'demand_type'=>4,
-                            'status'=>0,
-                            'dispose_type'=>0,
-                            'admin_id'=>$resultAccount['admin_id'],
-                            'create_time'=>time(),
-                        ];
+                    if(!empty($v['bm']) || !empty($v['email'])){
+                        
+                        if($resultAccount['bm_type'] == 3){
+                            $bmDataList[] = [
+                                'account_name'=>$resultAccount['name'],
+                                'account_id'=>$v['account_id'],
+                                'bm'=>$resultAccount['bm'],
+                                'bm_type'=>1,
+                                'demand_type'=>4,
+                                'status'=>0,
+                                'dispose_type'=>0,
+                                'admin_id'=>$resultAccount['admin_id'],
+                                'create_time'=>time(),
+                            ];
+                            $bmDataList[] = [
+                                'account_name'=>$resultAccount['name'],
+                                'account_id'=>$v['account_id'],
+                                'bm'=>$resultAccount['email'],
+                                'bm_type'=>2,
+                                'demand_type'=>4,
+                                'status'=>0,
+                                'dispose_type'=>0,
+                                'admin_id'=>$resultAccount['admin_id'],
+                                'create_time'=>time(),
+                            ];
+                        }else{
+                            $bmDataList[] = [
+                                'account_name'=>$resultAccount['name'],
+                                'account_id'=>$v['account_id'],
+                                'bm'=>empty($resultAccount['bm'])?$resultAccount['email']:$resultAccount['bm'],   //$resultAccount['bm'],
+                                'bm_type'=>$resultAccount['bm_type'],
+                                'demand_type'=>4,
+                                'status'=>0,
+                                'dispose_type'=>0,
+                                'admin_id'=>$resultAccount['admin_id'],
+                                'create_time'=>time(),
+                            ];
+                        }
                     }
                     
                     if(!empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
@@ -799,9 +826,13 @@ class Account extends Backend
 
                 if(empty($accountList)) throw new \Exception("Error Processing Request");
                 
+                $accountDataList = DB::table('ba_account')->whereIn('account_id',$accountList)->select()->toArray();
+                $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->select()->toArray();;
+                $rechargeDataList = DB::table('ba_recharge')->whereIn('account_id',$accountList)->select()->toArray();;
+                
                 foreach ($accountList as $value) {
                     $accountId = $value;
-                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>0,'dispose_status'=>0,'open_money'=>0]);
+                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>0,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
                     DB::table('ba_bm')->where('account_id',$accountId)->delete();
                     DB::table('ba_recharge')->where('account_id',$accountId)->delete();
                 }
@@ -809,6 +840,10 @@ class Account extends Backend
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountList)->update(
                     ['status'=>$accountStatus,'affiliation_admin_id'=>'']
                 ); 
+
+                DB::table('ba_account_recycle')->insertAll($accountDataList);
+                DB::table('ba_bm_recycle')->insertAll($bmDataList);
+                DB::table('ba_recharge_recycle')->insertAll($rechargeDataList);
 
                 //dd($accountList,$accountStatus);
                 $result = true;
