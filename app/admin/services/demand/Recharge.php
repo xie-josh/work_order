@@ -53,7 +53,7 @@ class Recharge
             $FacebookService = new \app\services\FacebookService();
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
             if($result1['code'] != 1) throw new \Exception($result1['msg']);
-            if($result1['data']['account_status'] != 1) throw new \Exception('FB账户异常，请确认账户状态[已经封户或状态异常]！');
+            if(!in_array($result1['data']['account_status'],[1,3])) throw new \Exception('FB账户异常，请确认账户状态[已经封户或状态异常]！');
 
             $spendCap = $result1['data']['spend_cap'];
             $spendCapUs = $result1['data']['spend_cap'];
