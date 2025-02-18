@@ -1072,16 +1072,25 @@ class Account extends Backend
                 
                 if(empty($accountTypeId) || empty($time) || empty($name) || empty($bm) || !is_numeric($money) || empty($adminId)) continue;
 
-                $data[] = [
+                $d = [
                     'name'=>$name,
                     'time_zone'=>$time,
-                    'bm'=>$bm,
+                    //'bm'=>$bm,
                     'money'=>$money,
                     'admin_id'=>$adminId,
                     'status'=>$authAdminId==1?1:0,
                     'account_type'=>$accountTypeId,
                     'create_time'=>time()
                 ];
+                if(filter_var($bm, FILTER_VALIDATE_EMAIL) !== false){
+                    $d['email'] = $bm;
+                    $d['bm_type'] = 2;
+                }else{
+                    $d['bm'] = $bm;
+                    $d['bm_type'] = 1;
+                }
+
+                $data[] = $d;
             }
             DB::table('ba_account')->insertAll($data);
             $result = true;
