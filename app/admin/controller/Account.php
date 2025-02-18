@@ -369,7 +369,7 @@ class Account extends Backend
                         $accountData = [];
                         $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
                         if(empty($v['name']) && !empty($resultProposal['name'])) $accountData['name'] = $resultProposal['name'];
-                        if(empty($v['bm'])) $accountData['dispose_status'] = 1;
+                        if(empty($v['bm']) && empty($v['email'])) $accountData['dispose_status'] = 1;
                         if(!empty($accountData)) $this->model->where('id',$v['id'])->update($accountData);
                         DB::table('ba_bm')->where('account_id',$v['account_id'])->update(['account_is'=>1]);
 
