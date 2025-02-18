@@ -21,6 +21,7 @@ class BmToken extends Backend
     protected string|array $preExcludeFields = ['last_login_time', 'login_failure', 'password', 'salt'];
 
     protected string|array $quickSearchField = ['username', 'nickname', 'id'];
+    protected array $noNeedPermission = ['getList'];
 
     public function initialize(): void
     {
