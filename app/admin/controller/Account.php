@@ -152,6 +152,18 @@ class Account extends Backend
                     }
                 }
 
+                if($data['bm_type'] == 1){
+                    if(empty($data['bm'])) throw new \Exception("BM不能为空！");
+                    $data['email'] = '';
+                }
+
+                if($data['bm_type'] == 2){
+                    if(empty($data['email'])) throw new \Exception("email不能为空！");
+                    $data['bm'] = '';
+                }
+
+                if($data['bm_type'] == 3 && (empty($data['email']) || empty($data['bm'])))  throw new \Exception("BM 与 Email不能为空！");
+
                 $admin = Db::table('ba_admin')->where('id',$this->auth->id)->find();
                 $accountNumber = $admin['account_number'];
                 $isAccount = $admin['is_account'];
@@ -167,9 +179,6 @@ class Account extends Backend
                 DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
 
                 $data['admin_id'] = $this->auth->id;
-
-                if($data['bm_type'] == 1) $data['email'] = '';
-                if($data['bm_type'] == 2) $data['bm'] = '';
 
                 // $data['account_id'] = $this->generateUniqueNumber();
                 $result = $this->model->save($data);
