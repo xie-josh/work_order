@@ -834,6 +834,16 @@ class Account extends Backend
                 $accountStatus = $data['account_status']??0;
 
                 if(empty($accountList)) throw new \Exception("Error Processing Request");
+
+
+                $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->where(
+                    [
+                        ['demand_type','=',2],
+                        ['status','=',0],
+                        ['dispose_type','=',0]
+                    ]
+                )->find();
+                if(!empty($bmDataList)) throw new \Exception("BM解绑未处理完成，请先处理BM解绑！".$bmDataList['account_id']);
                 
                 $accountDataList = DB::table('ba_account')->whereIn('account_id',$accountList)->select()->toArray();
                 $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->select()->toArray();;
@@ -849,6 +859,12 @@ class Account extends Backend
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountList)->update(
                     ['status'=>$accountStatus,'affiliation_admin_id'=>'']
                 ); 
+
+                $accountDataList = array_map(function($v){
+                    $v['account_recycle_time'] = date('Y-m-d H:i:s',time());
+                    unset($v['id']);
+                    return $v;
+                },$accountDataList);
 
                 DB::table('ba_account_recycle')->insertAll($accountDataList);
                 DB::table('ba_bm_recycle')->insertAll($bmDataList);
