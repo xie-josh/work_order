@@ -194,13 +194,15 @@ class Recharge
                 if(empty($cards)) {
                     throw new \Exception("未找到分配的卡");
                 }else{
-                    $param = [
-                        'transaction_limit_type'=>'limited',
-                        'transaction_limit_change_type'=>'decrease',
-                        'transaction_limit'=>($currencyNumber-1),
-                    ];
-                    $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
-                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    if($currencyNumber > 1){
+                        $param = [
+                            'transaction_limit_type'=>'limited',
+                            'transaction_limit_change_type'=>'decrease',
+                            'transaction_limit'=>($currencyNumber-1),
+                        ];
+                        $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    }
                     $resultCards = (new \app\services\CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                     if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
