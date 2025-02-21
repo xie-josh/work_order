@@ -288,6 +288,7 @@ class Consumption extends Backend
         ->field('account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname')
         ->leftJoin('ba_admin admin','admin.id=account_recycle.admin_id')
         ->where($accountRecycleWhere)
+        ->where('account_recycle.status',4)
         ->select()->toArray();
 
         $seenAccounts = [];
@@ -299,7 +300,9 @@ class Consumption extends Backend
                 $item['start_time'] = $seenAccounts[$item['account_id']];
                 $seenAccounts[$item['account_id']] = $item['account_recycle_time'];
             } else {
-                $item['start_time'] = '2024-01-01';
+                if(!empty($accountRecycleWhere)) $item['start_time'] = $accountRecycleWhere[0][2];
+                else $item['start_time'] = '2024-01-01';
+                
                 $seenAccounts[$item['account_id']] = $item['account_recycle_time'];
             }
             $accountRecycleList[] = [
