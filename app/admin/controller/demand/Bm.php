@@ -247,6 +247,8 @@ class Bm extends Backend
                         } 
                         if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v) > 0) throw new \Exception("BM不能包含中文");
 
+                        if (filter_var($v, FILTER_VALIDATE_EMAIL) && $bmType != 2) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
+
                         $dataList[] = [
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,
