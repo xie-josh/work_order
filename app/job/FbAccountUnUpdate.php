@@ -29,6 +29,7 @@ class FbAccountUnUpdate
 
     public function accountUpdate($params)
     {
+        set_time_limit(300);
         try {
             $businessId = $params['business_id'];
             $id = $params['id'];
@@ -56,6 +57,7 @@ class FbAccountUnUpdate
 
                 $accountList = [];
                 $currencyAccountList = [];
+                $accountStatusList = [];
                 foreach($result['data']['data'] as $item)
                 {  
                     if(!in_array($item['account_status'],[1,3])) continue;

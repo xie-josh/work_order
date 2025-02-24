@@ -283,6 +283,7 @@ class Consumption extends Backend
 
     public function accountRecycle2($accountRecycleWhere)
     {   
+        $accountConsumptionResults = [];
         $accountRecycleListResult = DB::table('ba_account_recycle')
         ->alias('account_recycle')
         ->field('account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname')
