@@ -204,13 +204,19 @@ class Recharge
                         if($cards['account_id'] == 1 && $cards['card_status'] == 'frozen'){
                             $resultCards = (new \app\services\CardService($cards['account_id']))->cardUnfreeze(['card_id'=>$cards['card_id']]);
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                            //if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                         }
                         $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                         if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        
+                        $resultCards = (new \app\services\CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                    }elseif($cards['card_status'] == 'normal'){
+                        $resultCards = (new \app\services\CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                     }
-                    $resultCards = (new \app\services\CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
-                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-                    if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                 }
             }
             //=============
