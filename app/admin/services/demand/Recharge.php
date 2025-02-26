@@ -183,7 +183,8 @@ class Recharge
                 'fb_money'=>$fbBoney,
                 'number'=>$currencyNumber,
                 'status'=>1,
-                'type'=>$type
+                'type'=>$type,
+                'update_time'=>time()
             ];
             $this->model->where('id',$result['id'])->update($data);
             DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
@@ -200,6 +201,10 @@ class Recharge
                             'transaction_limit_change_type'=>'decrease',
                             'transaction_limit'=>($currencyNumber-1),
                         ];
+                        if($cards['account_id'] == 1 && $cards['card_status'] == 'frozen'){
+                            $resultCards = (new \app\services\CardService($cards['account_id']))->cardUnfreeze(['card_id'=>$cards['card_id']]);
+                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        }
                         $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                         if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                     }

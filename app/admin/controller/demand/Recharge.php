@@ -662,7 +662,7 @@ class Recharge extends Backend
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
             'ID',
-            'Bm',
+            // 'Bm',
             '账户名称',
             '账户ID',
             '类型',
@@ -688,7 +688,7 @@ class Recharge extends Backend
             foreach($data as $v){
                 $dataList[] = [
                     $v['id'],
-                    $v['bm'],
+                    // $v['bm'],
                     $v['serial_name'],
                     $v['account_id'],
                     $type[$v['type']]??'',

@@ -108,7 +108,7 @@ class Admin extends Backend
         if(!empty($result['data'])) {
             $dataList = $result['data'];
 
-            $proposal = Db::table('ba_accountrequest_proposal')->where('status',0)->field('count(*) countNumber,admin_id')->group('admin_id')->select()->toArray();
+            $proposal = Db::table('ba_accountrequest_proposal')->whereIn('status',config('basics.FH_status'))->field('count(*) countNumber,admin_id')->group('admin_id')->select()->toArray();
             $proposalList = array_combine(array_column($proposal,'admin_id'),array_column($proposal,'countNumber'));
 
             foreach($dataList as &$v){

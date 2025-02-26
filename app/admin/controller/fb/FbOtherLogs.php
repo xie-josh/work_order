@@ -6,7 +6,7 @@ namespace app\admin\controller\fb;
 use app\common\controller\Backend;
 use think\facade\Db;
 
-class FbLogs extends Backend
+class FbOtherLogs extends Backend
 {
     /**
      * @var object
@@ -35,11 +35,6 @@ class FbLogs extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
-        //array_push($where,['accountrequest_proposal.processing_status','=',0]);
-        array_push($where,['fb_logs_model.type','IN',['FB_insights']]);
-        //array_push($where,['fb_logs_model.create_time','>',date('Y-m-d',strtotime('-30 days'))]);
-        //dd($where);
-
         $res = DB::table('ba_fb_logs')
             ->field('fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,fb_logs_model.logs,admin.nickname,account.open_money,fb_logs_model.create_time,accountrequest_proposal.processing_status,accountrequest_proposal.processing_amount,accountrequest_proposal.processing_time')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
@@ -47,13 +42,6 @@ class FbLogs extends Backend
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
             ->alias($alias)
             ->where($where)
-            // ->where('fb_logs_model.id','in',function($query){
-            //     $query->table('ba_fb_logs')->field('MAX(id) as max_id')->where([
-            //         ['type','IN',['FB_insights','FB_accountStatus']],
-            //         ['create_time','>',date('Y-m-d',strtotime('-30 days'))],
-            //         //['logs','NOT LIKE','%Application request limit reached%'],
-            //     ])->group('log_id');
-            // })
             ->order('fb_logs_model.id','desc')
             ->paginate($limit);
             

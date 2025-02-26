@@ -46,13 +46,14 @@ class AccountrequestProposal extends Backend
     {
 
         $type = $this->request->param('type');
+        $status = $this->request->param('status');
         if($type == 2) $result = $this->userIndex3();
         else if($type == 3) $result = $this->userIndex3();
-        else $result = $this->adminIndex();
+        else $result = $this->adminIndex($status);
         $this->success('', $result);
     }
 
-    public function adminIndex()
+    public function adminIndex($status)
     {
         // 如果是 select 则转发到 select 方法，若未重写该方法，其实还是继续执行 index
         if ($this->request->param('select')) {
@@ -75,7 +76,8 @@ class AccountrequestProposal extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-
+        
+        if($status === 0) array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
 
         if($limit == 999) $limit = 2500;
 
@@ -395,7 +397,7 @@ class AccountrequestProposal extends Backend
 
         $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
-        $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',99=>'终止使用'];
+        $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',98=>'回收',99=>'终止使用'];
 
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
@@ -587,6 +589,44 @@ class AccountrequestProposal extends Backend
             $timeArray[] = date('Y-m-d', $currentTimestamp);
         }
         return $timeArray;
+    }
+
+    public function batchReset()
+    {
+        $accountIds = $this->request->param('account_ids');
+        $accountListResult = DB::table('ba_account')
+        ->alias('account')
+        ->field('accountrequest_proposal.account_id,accountrequest_proposal.serial_name,account.admin_id,account.money')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->where('account.status',4)
+        ->whereIn('accountrequest_proposal.account_id',$accountIds)->select()->toArray();
+
+        $accountrequestProposalIds = array_column($accountListResult,'account_id');
+
+        $rechargeList = DB::table('ba_recharge')->whereIn('id',function($query) use($accountrequestProposalIds){
+            $query->table('ba_recharge')->field('max(id)')->whereIn('account_id',$accountrequestProposalIds)->group('account_id');
+        })->whereIn('type',[3,4])->column('account_id'); 
+
+        $data = [];
+        foreach($accountListResult as $v)
+        {
+            if(in_array($v['account_id'],$rechargeList) || $v['money'] < 1) continue;
+            
+            $data = [
+                "type" => "3",
+                "number" => 0,
+                "account_id" => $v['account_id'],
+                "admin_id" => $v['admin_id'],
+                "account_name" => $v['serial_name'],
+                'create_time'=>time()
+            ];
+            
+            $id = DB::table('ba_recharge')->insertGetId($data);
+            $jobHandlerClassName = 'app\job\AccountSpendDelete';
+            $jobQueueName = 'AccountSpendDelete';
+            Queue::later(1, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        }
+        $this->success('',[]);
     }
 
 

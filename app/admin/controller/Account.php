@@ -315,7 +315,7 @@ class Account extends Backend
                     $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray();
 
                     foreach($ids as $v){
-                        $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->where('status',0)->find();
+                        $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->whereIn('status',config('basics.FH_status'))->find();
                         if(empty($accountrequestProposal)) throw new \Exception("请选择分配的账户！");
 
                         if(!empty($v['account_type'])){
@@ -558,9 +558,9 @@ class Account extends Backend
                 $associationAccountTypeList = DB::table('ba_association_account_type')->where('admin_id',$accountrequestProposalId)->column('account_type_id');
                 
                 if(empty($accountIds)){
-                    $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->where('status',0)->select()->toArray();
+                    $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('status',config('basics.FH_status'))->select()->toArray();
                 }else{
-                    $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('account_id',$accountIds)->where('status',0)->select()->toArray();
+                    $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('account_id',$accountIds)->whereIn('status',config('basics.FH_status'))->select()->toArray();
                 }
 
                 $resultAccountList = DB::table('ba_account')->whereIn('id',$ids)->where('status',1)->select()->toArray();
@@ -835,15 +835,20 @@ class Account extends Backend
 
                 if(empty($accountList)) throw new \Exception("Error Processing Request");
 
-
-                $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->where(
-                    [
-                        ['demand_type','=',2],
-                        ['status','=',0],
-                        ['dispose_type','=',0]
-                    ]
-                )->find();
+                $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->where('demand_type',2)->where(function($query){
+                    $query->whereOr(
+                        [
+                            ['status','=',0],
+                            ['dispose_type','=',0]
+                        ]   
+                        );
+                })->find();;
                 if(!empty($bmDataList)) throw new \Exception("BM解绑未处理完成，请先处理BM解绑！".$bmDataList['account_id']);
+
+                $rechargeDataList = DB::table('ba_recharge')->whereIn('account_id',$accountList)
+                ->whereIn('type',[3,4])->where('status',0)->find();
+
+                if(!empty($rechargeDataList)) throw new \Exception("充值需求还有未处理的，请先处理完成！".$rechargeDataList['account_id']);
                 
                 $accountDataList = DB::table('ba_account')->whereIn('account_id',$accountList)->select()->toArray();
                 $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->select()->toArray();;
@@ -927,7 +932,7 @@ class Account extends Backend
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
             'ID',
-            '管理BM',
+            // '管理BM',
             '用户名',
             '账户名称',
             '账户ID',
@@ -954,7 +959,7 @@ class Account extends Backend
             foreach($data as $v){
                 $dataList[] = [
                     $v['id'],
-                    $v['accountrequest_proposal_id']?$v['accountrequest_proposal_bm']:'',
+                    // $v['accountrequest_proposal_id']?$v['accountrequest_proposal_bm']:'',
                     //($v['accountrequestProposal']['bm'])??'',
                     ($adminList[$v['admin_id']])??'',
                     $v['accountrequest_proposal_id']?$v['serial_name']:$v['name'],
