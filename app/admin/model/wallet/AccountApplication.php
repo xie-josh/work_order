@@ -34,4 +34,9 @@ class AccountApplication extends Model
     {
         return $this->belongsTo(\app\admin\model\Admin::class, 'admin_id', 'id');
     }
+
+    public function type(): \think\model\relation\BelongsTo
+    {
+        return $this->belongsTo(\app\admin\model\wallet\AccountApplicationType::class, 'type_id', 'id');
+    }
 }

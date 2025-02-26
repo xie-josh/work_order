@@ -4,6 +4,7 @@ namespace app\admin\controller\wallet;
 
 use Throwable;
 use app\common\controller\Backend;
+use think\facade\Db;
 
 /**
  * 入账申请
@@ -19,7 +20,7 @@ class AccountApplication extends Backend
 
     protected array|string $preExcludeFields = ['id', 'admin_id', 'create_time', 'update_time'];
 
-    protected array $withJoinTable = ['admin'];
+    protected array $withJoinTable = ['admin','type'];
 
     protected string|array $quickSearchField = ['id'];
 
@@ -54,7 +55,7 @@ class AccountApplication extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
-        $res->visible(['admin' => ['username']]);
+        $res->visible(['admin' => ['username'],'type' => ['name']]);
 
         $this->success('', [
             'list'   => $res->items(),
@@ -63,15 +64,60 @@ class AccountApplication extends Backend
         ]);
     }
 
+    public function add(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $data = $this->excludeFields($data);
+            if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
+                $data[$this->dataLimitField] = $this->auth->id;
+            }
+
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+                if ($this->modelValidate) {
+                    $validate = str_replace("\\model\\", "\\validate\\", get_class($this->model));
+                    if (class_exists($validate)) {
+                        $validate = new $validate();
+                        if ($this->modelSceneValidate) $validate->scene('add');
+                        $validate->check($data);
+                    }
+                }
+
+                //if(!empty($data['images'])) $data['status'] = 3;
+
+                $result = $this->model->save($data);
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+        }
+
+        $this->error(__('Parameter error'));
+    }
+
     public function edit(): void
     {
+        //$this->error('不可编辑！');
         $pk  = $this->model->getPk();
         $id  = $this->request->param($pk);
         $row = $this->model->find($id);
         if (!$row) {
             $this->error(__('Record not found'));
         }
-        if($row['status'] != 0) $this->error('该状态不可编辑！');
+        if($row['status'] != 0 && !$this->auth->isSuperAdmin()) $this->error('该状态不可编辑！');
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
@@ -99,7 +145,10 @@ class AccountApplication extends Backend
                         $validate->check($data);
                     }
                 }
-                $result = $row->save($data);
+                if(empty($data['images']))  throw new \Exception("请上传凭证！");
+                //$list = ['images'=>$data['images'],'type_id'=>$data['type_id'],'status'=>3];
+
+                $result = $row->save(['images'=>$data['images'],'type_id'=>$data['type_id']]);
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -119,6 +168,7 @@ class AccountApplication extends Backend
 
     public function del(array $ids = []): void
     {
+        $this->error('不可删除！');
         if (!$this->request->isDelete() || !$ids) {
             $this->error(__('Parameter error'));
         }
@@ -151,12 +201,12 @@ class AccountApplication extends Backend
             $this->error(__('No rows were deleted'));
         }
     }
-
-    public function audit()
+     public function audit()
     {
+        if(!$this->auth->isSuperAdmin())    $this->error('无权限！');
         $pk  = $this->model->getPk();
         $id  = $this->request->param($pk);
-        $row = $this->model->where('status',0)->find($id);
+        $row = $this->model->where([['status','<>',1]])->find($id);
         if (!$row) {
             $this->error(__('Record not found'));
         }
@@ -176,6 +226,15 @@ class AccountApplication extends Backend
             $result = false;
             $this->model->startTrans();
             try {
+
+                //if($data['status'] == 1 && !in_array($row['status'],[0,2,3]))  throw new \Exception("请上传凭证！");
+                //if($data['status'] === 0)  throw new \Exception("状态选择错误，不可以选择待处理");
+
+                if($data['status'] == 1){
+                    $money = Db::table('ba_admin')->where('id',$row->admin_id)->value('money');
+                    $money = bcadd((string)$money,(string)$row['amount'],2);
+                    Db::table('ba_admin')->where('id',$row->admin_id)->update(['money'=>$money]);
+                }
                 $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
