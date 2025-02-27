@@ -5,6 +5,7 @@ namespace app\admin\controller\wallet;
 use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
+use think\facade\Cache;
 
 /**
  * 入账申请
@@ -23,6 +24,7 @@ class AccountApplication extends Backend
     protected array $withJoinTable = ['admin','type'];
 
     protected string|array $quickSearchField = ['id'];
+    protected array $noNeedPermission = ['export','getExportRecharge'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -251,6 +253,75 @@ class AccountApplication extends Backend
         $this->success('', [
             'row' => $row
         ]);
+    }
+
+
+    public function export()
+    {
+        $where = [];
+        set_time_limit(300);
+
+        $batchSize = 2000;
+        $processedCount = 0;
+        $redisKey = 'wallet_account_application_'.$this->auth->id;
+        
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $query = $this->model
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order('account_application.id desc');
+        
+
+        $total = $query->count();
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            '提交时间',
+            '入账金额',
+            '付款方式',
+            '状态',            
+        ];
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $statusList = ['0'=>'待入账','1'=>'已入账','2'=>'已取消'];
+
+
+        $name = $folders['name'].'.xlsx';
+        $excel->fileName($folders['name'].'.xlsx', 'sheet1');
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $dataList=[];
+            foreach($data as $v){
+                $dataList[] = [
+                    $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
+                    $v['amount'],
+                    $v['type']['name']??'',
+                    $statusList[$v['status']]??'',
+                ];  
+                $processedCount++;
+            }
+            $excel->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+    public function getExportRecharge()
+    {
+        $progress = Cache::store('redis')->get('wallet_account_application_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
     }
 
     /**
