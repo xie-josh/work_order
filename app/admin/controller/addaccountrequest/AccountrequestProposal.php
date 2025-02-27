@@ -77,7 +77,7 @@ class AccountrequestProposal extends Backend
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         
-        if($status === 0) array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
+        if($status === "0") array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
 
         if($limit == 999) $limit = 2500;
 
