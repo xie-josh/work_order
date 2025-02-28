@@ -463,7 +463,7 @@ class Bm extends Backend
             try {
                 $ids = $data['ids'];
                 $status = $data['status'];
-                $comment = $data['comment']??'';
+                $comment = $this->request->param('comment',null,null)??'';
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray(); 
 
@@ -517,7 +517,7 @@ class Bm extends Backend
             try {
                 $ids = $data['ids'];
                 $status = $data['status'];
-                $comment = $data['comment']??'';
+                $comment = $this->request->param('comment',null,null)??'';
 
                 if(empty($comment)) throw new \Exception("评论必填！");
 

@@ -41,7 +41,7 @@ class FbLogs extends Backend
         //dd($where);
 
         $res = DB::table('ba_fb_logs')
-            ->field('fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,fb_logs_model.logs,admin.nickname,account.open_money,fb_logs_model.create_time,accountrequest_proposal.processing_status,accountrequest_proposal.processing_amount,accountrequest_proposal.processing_time')
+            ->field('fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,fb_logs_model.logs,admin.nickname,account.open_money,fb_logs_model.create_time,accountrequest_proposal.processing_status,accountrequest_proposal.processing_amount,accountrequest_proposal.processing_time,accountrequest_proposal.comment')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
@@ -94,6 +94,7 @@ class FbLogs extends Backend
                 $v['accountrequest_proposal']['processing_status'] = $v['processing_status'];
                 $v['accountrequest_proposal']['processing_amount'] = $v['processing_amount'];
                 $v['accountrequest_proposal']['processing_time'] = $v['processing_time'];
+                $v['accountrequest_proposal']['comment'] = $v['comment'];
                 $v['admin']['nickname'] = $v['nickname'];
 
             }
