@@ -631,7 +631,7 @@ class AccountrequestProposal extends Backend
 
     public function getFbAccountConsumptionTaskCount()
     {
-        $taskCount =  Cache::store('redis')->handler()->zcount('{queues:FbAccountConsumption}:delayed', '-inf', '+inf');
+        $taskCount =  Cache::store('redis')->handler()->llen('{queues:FbAccountConsumption}');
         $comment = '';
         if($taskCount >0){
             $comment = "消耗查询任务正在执行中！( $taskCount )";
