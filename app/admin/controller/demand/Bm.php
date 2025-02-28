@@ -23,7 +23,7 @@ class Bm extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['disposeStatus','index','getBmList','getBmAnnouncement','progressList'];
+    protected array $noNeedPermission = ['disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress'];
 
     protected bool|string|int $dataLimit = 'parent';
 
