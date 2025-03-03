@@ -154,6 +154,8 @@ class Account extends Backend
 
                 if($data['bm_type'] == 1){
                     if(empty($data['bm'])) throw new \Exception("BM不能为空！");
+                    if(strlen($data['bm']) > 20) throw new \Exception("BM长度不能超过20位！");
+                    if(filter_var($data['bm'], FILTER_VALIDATE_EMAIL) !== false) throw new \Exception("BM类型不能填写邮箱！");
                     $data['email'] = '';
                 }
 
