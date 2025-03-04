@@ -117,6 +117,16 @@ class AdminMoneyLog extends Backend
                 ];
 
 
+                $applicationData = [
+                    'status'=>1,
+                    'type_id'=>1,
+                    'admin_id'=>$data['admin_id'],
+                    'amount'=>$rechargeMoney,
+                    'create_time'=>time(),
+                    
+                ];
+                DB::table('ba_wallet_account_application')->insert($applicationData);
+
                 $result = $this->model->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
