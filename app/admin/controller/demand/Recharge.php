@@ -141,6 +141,9 @@ class Recharge extends Backend
                 
                 if($data['type'] == 1){
                     if($data['number'] <= 0) throw new \Exception("充值金额不能小于零");
+                    
+                    $cc = DB::table('ba_accountrequest_proposal')->where('account_id',$account['account_id'])->value('status');
+                    if($cc == 4) throw new \Exception("该账号暂停充值，请联系管理员！");
 
                     $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
                     $usableMoney = ($admin['money'] - $admin['used_money']);
