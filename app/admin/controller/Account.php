@@ -741,7 +741,7 @@ class Account extends Backend
                         // }  
                     }
                 }
-                $proposalData['is_cards'] = 1;
+                $proposalData['is_cards'] = 0;
                 DB::table('ba_accountrequest_proposal')->where('id',$id)->update($proposalData);
 
                 $result = true;
