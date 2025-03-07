@@ -740,7 +740,8 @@ class Account extends Backend
                         //     throw new \Exception($result['msg']);
                         // }  
                     }
-                }        
+                }
+                $proposalData['is_cards'] = 1;
                 DB::table('ba_accountrequest_proposal')->where('id',$id)->update($proposalData);
 
                 $result = true;
