@@ -14,7 +14,7 @@ class AccountRecycleModel extends Model
     protected $name = 'account_recycle';
 
     protected $append = ['uuid','currency_number','currency_open_money'];
-    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000"];
+    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000","VND"=>"25000"];
 
     // 自动写入时间戳字段
     protected $autoWriteTimestamp = true;
