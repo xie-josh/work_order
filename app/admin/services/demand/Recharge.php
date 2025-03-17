@@ -14,6 +14,8 @@ class Recharge
 
     protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000"];
 
+    protected $currency100 = ["IDR"];
+
     public function __construct($auth=null)
     {
         $this->model = new \app\admin\model\demand\Recharge();
@@ -54,6 +56,10 @@ class Recharge
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
             if($result1['code'] != 1) throw new \Exception($result1['msg']);
             if(!in_array($result1['data']['account_status'],[1,3])) throw new \Exception('FB账户异常，请确认账户状态[已经封户或状态异常]！');
+
+            if(in_array($currency,$this->currency100)){
+                $result1['data']['spend_cap'] =  bcmul($result1['data']['spend_cap'], '100', 2);
+            }
 
             $spendCap = $result1['data']['spend_cap'];
             $spendCapUs = $result1['data']['spend_cap'];
@@ -157,6 +163,11 @@ class Recharge
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
             if($result1['code'] != 1) throw new \Exception($result1['msg']);
 
+            if(in_array($currency,$this->currency100)){
+                $result1['data']['balance_amount'] =  bcmul($result1['data']['balance_amount'], '100', 2);
+                $result1['data']['spend_cap'] =  bcmul($result1['data']['spend_cap'], '100', 2);
+            }
+
             $fbAccountStatus = $result1['data']['account_status'];
             $money = $result1['data']['balance_amount'];
             $fbBoney = $result1['data']['spend_cap'];
@@ -175,6 +186,7 @@ class Recharge
             $result2 = $FacebookService->adAccountsDelete($accountrequestProposal);
             if($result2['code'] != 1) throw new \Exception("FB删除限额错误，请联系管理员！");
             $accountrequestProposal['spend'] = 0.01;
+            if(in_array($currency,$this->currency100)) $accountrequestProposal['spend'] = 1;
             $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
             if($result3['code'] != 1) throw new \Exception("FB重置限额错误，请联系管理员！");
             

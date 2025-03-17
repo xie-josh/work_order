@@ -31,9 +31,11 @@ class Consumption extends Backend
 
     public function export()
     {
-        set_time_limit(300);
+        set_time_limit(600);
 
         $data = $this->request->post();
+
+        //if(empty($data['status']) || $data['status'] != '99') $this->error('导出功能维护中!');
 
         $isCount = $data['is_count']??2;
         $startTime = $data['start_time']??'';
@@ -41,7 +43,7 @@ class Consumption extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
-        $batchSize = 2000;
+        $batchSize = 3000;
         $processedCount = 0;
         $redisKey = 'export_consumpotion'.'_'.$this->auth->id;
         
@@ -51,12 +53,14 @@ class Consumption extends Backend
             array_push($where,['date_stop','<=',$endTime]);
             $accountRecycleWhere = [
                 ['account_recycle.account_recycle_time','>=',$startTime],
-                ['account_recycle.account_recycle_time','<=',$endTime]
+                ['account_recycle.account_recycle_time','<=',$endTime." 23:59:59"]
             ];
         }
 
         //$accountRecycleList = $this->accountRecycle($accountRecycleWhere);
         $accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
+
+        // array_push($where,['account_consumption.account_id','=','1168825717882895']);
 
 
         $query =  $this->model
@@ -71,6 +75,7 @@ class Consumption extends Backend
             $query->group('account_id');
             $accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
         }else{
+            $accountRecycleWhere = [];
             $query->field('admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
             $accountRecycleList = $this->accountRecycle($accountRecycleWhere);
         }
@@ -263,6 +268,7 @@ class Consumption extends Backend
         ->field('account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname')
         ->leftJoin('ba_admin admin','admin.id=account_recycle.admin_id')
         ->where($accountRecycleWhere)
+        ->where('account_recycle.status',4)
         ->select()->toArray();
 
         //$seenAccounts = [];
