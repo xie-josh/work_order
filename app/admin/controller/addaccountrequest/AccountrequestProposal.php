@@ -284,6 +284,7 @@ class AccountrequestProposal extends Backend
 
                 foreach($ids as $k =>$v){
                     if(in_array($v,$accountList)) continue;
+                    $v = filter_var($v, FILTER_SANITIZE_NUMBER_INT);
                     $accountCount++;
                     $dataList[] = [
                         'bm'=>$bm,
