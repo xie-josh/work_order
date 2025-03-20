@@ -345,9 +345,11 @@ class Recharge extends Backend
                                 // if($resultProposal['is_cards'] != 2) throw new \Exception("未找到分配的卡");
                                 throw new \Exception("未找到分配的卡");
                             }else{
-                                $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
-                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-                                if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                                if($cards['card_status'] == 'normal'){
+                                    $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                    if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                                }
                             }
                         }
                         Cache::store('redis')->delete($key);

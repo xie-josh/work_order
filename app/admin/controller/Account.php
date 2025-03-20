@@ -845,7 +845,10 @@ class Account extends Backend
                             ['dispose_type','=',0]
                         ]   
                         );
-                })->find();;
+                })->where([
+                    ['status','<>',2],
+                    ['dispose_type','<>',2]
+                ])->find();;
                 if(!empty($bmDataList)) throw new \Exception("BM解绑未处理完成，请先处理BM解绑！".$bmDataList['account_id']);
 
                 $rechargeDataList = DB::table('ba_recharge')->whereIn('account_id',$accountList)
