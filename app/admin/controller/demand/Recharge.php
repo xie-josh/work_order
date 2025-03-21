@@ -164,6 +164,19 @@ class Recharge extends Backend
                         $recharge2 = $this->model->where($where)->find();
                         if(!empty($recharge) && empty($recharge2)) throw new \Exception("账号已经完成了清零请求,不可以在提交清零与扣款!");
                     }
+
+                    $cards = DB::table('ba_accountrequest_proposal')
+                    ->field('cards_info.id,cards_info.card_id,cards_info.account_id')
+                    ->alias('accountrequest_proposal')
+                    ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+                    ->where('accountrequest_proposal.account_id',$account['account_id'])
+                    ->find();
+                    //$cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+                    if(!empty($cards) && $cards['card_status'] == 'normal') {
+                        $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                    }
                 }
                 
                 $data['account_name'] = $account['name'];
@@ -566,7 +579,7 @@ class Recharge extends Backend
             ->alias($alias)
             ->where($where)
             ->order($order)
-            ->paginate(1);
+            ->paginate();
 
         $list = $res->items();
         $listTotal = $res->total();
@@ -581,10 +594,14 @@ class Recharge extends Backend
             ->alias($alias)
             ->where($where)
             ->order($order)
-            ->paginate(1);
+            ->paginate();
 
         $deductionList = $res->items();
         $deductionListtotal = $res->total();
+
+        $bmTokenList = DB::table('ba_fb_personalbm_token')->where([
+            ['expired_time','<',date("Y-m-d",strtotime("+6 day"))]
+        ])->field('name,expired_time')->select()->toArray();
 
         
         $result = (new \app\admin\services\card\Cards())->accountSingle();
@@ -598,6 +615,7 @@ class Recharge extends Backend
         $this->success('', [
             'list'   =>$list,
             'deduction_list'=>$deductionList,
+            'bm_token_list'=>$bmTokenList,
             'balance'=>$realTimeBalance,
             'total'=>$listTotal,
             'deduction_total'=>$deductionListtotal,

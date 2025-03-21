@@ -599,7 +599,7 @@ class Bm extends Backend
                 ->whereOr('bm.update_time', '<', (time() - 3600));
             })
             ->order($order)
-            ->paginate(1);
+            ->paginate();
 
         $this->success('', [
             'list'   => $res->items(),
