@@ -597,7 +597,7 @@ class Recharge extends Backend
             ->paginate();
 
         $deductionList = $res->items();
-        $deductionListtotal = $res->total();
+        $deductionTotal = $res->total();
 
         $bmTokenList = DB::table('ba_fb_personalbm_token')->where([
             ['expired_time','<',date("Y-m-d",strtotime("+6 day"))]
@@ -618,7 +618,7 @@ class Recharge extends Backend
             'bm_token_list'=>$bmTokenList,
             'balance'=>$realTimeBalance,
             'total'=>$listTotal,
-            'deduction_total'=>$deductionListtotal,
+            'deduction_total'=>$deductionTotal,
             'balance_total'=>$deductionListtotal,
         ]);
     }
