@@ -19,6 +19,7 @@ class RechargeRecycle extends Backend
     protected array|string $preExcludeFields = [];
 
     protected array $withJoinTable = ['admin','accountrequestProposal'];
+    protected array $noNeedPermission = ['index'];
 
     protected string|array $quickSearchField = [];
 

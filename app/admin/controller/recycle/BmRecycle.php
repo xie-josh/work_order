@@ -21,6 +21,7 @@ class BmRecycle extends Backend
     protected array $withJoinTable = ['admin'];
 
     protected string|array $quickSearchField = ['id'];
+    protected array $noNeedPermission = ['index'];
 
     public function initialize(): void
     {

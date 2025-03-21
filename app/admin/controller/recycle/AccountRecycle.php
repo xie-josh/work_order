@@ -24,6 +24,8 @@ class AccountRecycle extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
+    protected array $noNeedPermission = ['index'];
+
     public function initialize(): void
     {
         parent::initialize();
