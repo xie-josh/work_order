@@ -166,7 +166,7 @@ class Recharge extends Backend
                     }
 
                     $cards = DB::table('ba_accountrequest_proposal')
-                    ->field('cards_info.id,cards_info.card_id,cards_info.account_id')
+                    ->field('cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id')
                     ->alias('accountrequest_proposal')
                     ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
                     ->where('accountrequest_proposal.account_id',$account['account_id'])
