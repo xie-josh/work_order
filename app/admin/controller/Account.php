@@ -56,7 +56,7 @@ class Account extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-
+        $whereOr = [];
 
         array_push($this->withJoinTable,'accountrequestProposal');
         
@@ -68,6 +68,13 @@ class Account extends Backend
                 } else {
                     //$v[2] = $number;
                 }
+                continue;
+            }
+            if($v[0] == 'account.time_zone'){
+                $whereOr[] = ['account.time_zone',$v[1],$v[2]];
+                $whereOr[] = ['accountrequestProposal.time_zone',$v[1],$v[2]];
+                unset($where[$k]);
+                continue;
             }
         }
 
@@ -82,6 +89,9 @@ class Account extends Backend
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
+            ->where(function($query) use($whereOr){
+                $query->whereOr($whereOr);
+            })
             ->order('id','desc')
             ->paginate($limit);
 
