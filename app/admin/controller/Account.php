@@ -249,8 +249,10 @@ class Account extends Backend
                     }
                 }
                 
+                
                 if($data['bm_type'] == 1) $data['email'] = '';
                 if($data['bm_type'] == 2) $data['bm'] = '';
+                unset($data['money']);
 
                 $result = $row->save($data);
                 $this->model->commit();
