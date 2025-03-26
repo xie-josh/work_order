@@ -1108,6 +1108,7 @@ class Account extends Backend
             $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
             if($accountNumber < ($countNumber + $openAccountNumber) && $this->auth->id != 1) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
  
+            $notMoneyAdminList = explode(',',env('CACHE.NOT_MONEY_admin',''));
             $data = [];
             foreach($filteredArray as $v){
                 $accountTypeId = $accountTypeList[$v[0]]??'';
@@ -1115,8 +1116,15 @@ class Account extends Backend
                 $name = $v[2];
                 $bm = $v[3];
                 //$money = $v[4];
-                $money = 0;
+                //$money = 0;
+
                 $adminId = empty($adminId)?($v[5]??0):$adminId;
+
+                if(in_array($adminId,$notMoneyAdminList)) $money = $v[4];
+                else $money = 0;
+                    
+                
+               
                 
                 if(empty($accountTypeId) || empty($time) || empty($name) || empty($bm) || !is_numeric($money) || empty($adminId)) continue;
 
