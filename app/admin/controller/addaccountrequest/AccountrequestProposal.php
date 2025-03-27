@@ -683,6 +683,220 @@ class AccountrequestProposal extends Backend
 
     }
 
+
+    public function accountCardBind()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $result = false;
+            //$this->model->startTrans();
+            try {
+                //数据校验
+                $accountId = $data['account_id'];
+                $typr = $data['type'];
+                $cardNo = $data['card_no'];
+                $timeZone = $data['time_zone'];
+                $limited = $data['limited'];
+
+
+                $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->find();
+                if(empty($accountrequestProposal)) throw new \Exception('错误：未找到账户或已经分配了卡！'); 
+
+                $cards = DB::table('ba_cards_info')->where('card_no',$cardNo)->where('is_use',0)->find();
+                if(empty($cards)) throw new \Exception('错误：[未找到卡]或[卡已经被使用]或[卡不可使用]！');
+                $cardsId = $cards['cards_id'];
+
+                $cardModel = new \app\admin\model\card\CardsModel();
+                $cardInfoModel = new \app\admin\model\card\CardsInfoModel();
+                $accountCard = new \app\admin\model\addaccountrequest\AccountCard();
+
+                $proposalData = [
+                    'time_zone'=>$timeZone,
+                    'is_cards'=>0,
+                    'cards_id'=>$cardsId
+                ];
+
+                $param = [];
+                $param['card_id'] = $cards['card_id'];
+                $param['nickname'] = $this->getNickname($accountrequestProposal['account_id']);
+                switch($typr){
+                    case 1:
+                        $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                        $param['transaction_limit_type'] = 'limited';
+                        $param['transaction_limit_change_type'] = 'increase';
+                        $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
+                        $param['transaction_is'] = 1;
+
+                        $resultCards =  $cardModel->updateCard($cards,$param);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        
+                        break;
+                    case 2:
+                        $resultCards =  $cardModel->updateCard($cards,$param);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+
+                        break;
+                    case 3:
+                        $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                        $param['transaction_limit_type'] = 'limited';
+                        $param['transaction_limit_change_type'] = 'increase';
+                        $param['transaction_limit'] = $limited;
+                        $param['transaction_is'] = 1;
+
+                        $resultCards =  $cardModel->updateCard($cards,$param);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+
+                        break;
+                    default:
+                        throw new \Exception("参数错误！");
+                }
+
+                $cardInfoModel->where('cards_id',$cards['cards_id'])->update(['is_use'=>1]);
+
+                if(!empty($accountrequestProposal['cards_id'])){
+                    $accountCard->insert([
+                        'account_id'=>$accountrequestProposal['account_id'],
+                        'cards_id'=>$accountrequestProposal['cards_id']
+                    ]);
+
+                    $cardResult = $cardInfoModel->field('id,card_id,cards_id,card_status,account_id')->where('cards_id',$accountrequestProposal['cards_id'])->find();
+                    if($cardResult['card_status'] == 'normal'){
+                        $cardService = new \app\services\CardService($cardResult['account_id']);
+                        $result = $cardService->cardFreeze(['card_id'=>$cardResult['card_id']]);
+                        if($result['code'] != 1) throw new \Exception($result['msg']);
+                        if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cardResult['id'])->update(['card_status'=>$result['data']['cardStatus']]);
+                    }
+                }
+                
+                $result = $this->model->where('account_id',$accountId)->update($proposalData); 
+
+                // $this->model->commit();
+            } catch (Throwable $e) {
+                // $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+        }
+
+        $this->error(__('Parameter error'));
+    }
+    
+
+    public function accountCardList()
+    {
+        $data = $this->request->get();
+        if(empty($data['account_id'])) $this->error('参数错误！');
+        $card = DB::table('ba_accountrequest_proposal')
+        ->alias('accountrequest_proposal')
+        ->field('cards_info.card_no,cards_info.cards_id,card_platform.name card_platform_name')
+        ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+        ->leftJoin('ba_card_account card_account','card_account.id=cards_info.account_id')
+        ->leftJoin('ba_card_platform card_platform','card_platform.id=card_account.card_platform_id')
+        ->where('accountrequest_proposal.account_id',$data['account_id'])->find();
+
+        
+        $cardList = DB::table('ba_account_card')
+        ->alias('account_card')
+        ->field('cards_info.card_no,cards_info.cards_id,card_platform.name card_platform_name')
+        ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=account_card.cards_id')
+        ->leftJoin('ba_card_account card_account','card_account.id=cards_info.account_id')
+        ->leftJoin('ba_card_platform card_platform','card_platform.id=card_account.card_platform_id')
+        ->where('account_card.account_id',$data['account_id'])->select()->toArray();
+
+        if(!empty($card['cards_id'])){
+            $card['type'] = 1;
+            array_push($cardList,$card);
+        }else{
+            $cardList = [];
+        }
+        
+
+        return $this->success('', $cardList);
+    }
+
+    public function accountCardHandoff()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+               
+
+                if(empty($data['account_id']) || empty($data['cards_id'])) $this->error('参数错误！');    
+                $accountId = $data['account_id'];
+                $cardsId = $data['cards_id'];                            
+                
+                $accountCardsId = $this->model->where('account_id',$accountId)->value('cards_id');
+                if(empty($accountCardsId)) throw new \Exception('未找到该账户的卡号！');
+
+                $accountCard = new \app\admin\model\addaccountrequest\AccountCard();
+
+                $result = $accountCard->where('account_id',$accountId)->where('cards_id',$cardsId)->delete();
+                if(empty($result)) throw new \Exception('该户下未找到该卡号！');
+
+                $accountCard->insert([
+                    'account_id'=>$accountId,
+                    'cards_id'=>$accountCardsId
+                ]);
+
+                $this->model->where('account_id',$accountId)->update(['cards_id'=>$cardsId]);
+
+
+                $cardResultList = DB::table('ba_cards_info')->field('id,card_id,cards_id,card_status,account_id')->whereIn('cards_id',[$cardsId,$accountCardsId])->select()->toArray();                
+                foreach($cardResultList as $v)
+                {
+                    if($v['cards_id'] == $cardsId && $v['card_status'] != 'normal') {
+                        $cardService = new \app\services\CardService($v['account_id']);
+                        $result = $cardService->cardUnfreeze(['card_id'=>$v['card_id']]);
+                        if($result['code'] != 1) throw new \Exception($result['msg']);
+                        if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$v['id'])->update(['card_status'=>$result['data']['cardStatus']]);
+                        continue;
+                    }
+                    if($v['cards_id'] == $accountCardsId && $v['card_status'] == 'normal'){
+                        $cardService = new \app\services\CardService($v['account_id']);
+                        $result = $cardService->cardFreeze(['card_id'=>$v['card_id']]);
+                        if($result['code'] != 1) throw new \Exception($result['msg']);
+                        if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$v['id'])->update(['card_status'=>$result['data']['cardStatus']]);
+                        continue;
+                    }
+                }
+
+                DB::commit();
+            } catch (Throwable $e) {
+                DB::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('edit successfully'));
+            } else {
+                $this->error(__('No rows edit'));
+            }
+        }
+
+        $this->error(__('Parameter error'));
+    }
+
+
+    function getNickname($nickname)
+    {
+        $nickname = (string)$nickname;
+        if(in_array($nickname[0],[1,4]) && strlen($nickname) >= 16) $nickname = substr($nickname,0,15);
+        return $nickname;
+    }
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
