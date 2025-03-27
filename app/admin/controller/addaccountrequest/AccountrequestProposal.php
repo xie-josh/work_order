@@ -26,7 +26,7 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['Export','getAccountrequestProposal','getExportProgress'];
+    protected array $noNeedPermission = ['Export','getAccountrequestProposal','getExportProgress',"accountCardBind","accountCardList","accountCardHandoff"];
 
     protected bool|string|int $dataLimit = 'parent';
 
