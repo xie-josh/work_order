@@ -45,8 +45,10 @@ class FbAccountConsumption
             // $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             // if($params['type'] == 2) $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
 
-            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,'',$params['id']);
-            if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,'',$params['id']);
+            // $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,'',$params['id']);
+            // if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,'',$params['id']);
+
+            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($params['personalbm_token_ids']);            
             
             if(!empty($token)) $params['token'] = $token;
             

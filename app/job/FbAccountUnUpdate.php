@@ -35,13 +35,16 @@ class FbAccountUnUpdate
             $id = $params['id'];
 
             $_is = true;
-            if($params['type'] == 1){
-                $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,$id);
-                $params['token'] = $token;
-            }else if($params['type'] == 2){
-                $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,$id);
-                $params['token'] = $token;
-            }
+            // if($params['type'] == 1){
+            //     $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,$id);
+            //     $params['token'] = $token;
+            // }else if($params['type'] == 2){
+            //     $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,$id);
+            //     $params['token'] = $token;
+            // }
+            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($params['personalbm_token_ids']);
+            $params['token'] = $token;
+            
             while ($_is) {
                 $params['account_status'] = 1;
                 $result = (new \app\services\FacebookService())->list($params);

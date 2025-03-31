@@ -12,7 +12,16 @@ class FbService
         (new FacebookService())->list([]);
     }
 
-    public function getPersonalbmToken($type=1,$fbTokenId = '',$accountrequestProposalId='')
+    public function getPersonalbmToken($fbTokenIds)
+    {
+        $model = (new \app\admin\model\fb\PersonalBmTokenModel());
+        $id = explode(',',$fbTokenIds)[0];        
+        $result = $model->where('id',$id)->value('token');
+        return $result;
+    }
+
+
+    public function getPersonalbmToken2($type=1,$fbTokenId = '',$accountrequestProposalId='')
     {
         $model = (new \app\admin\model\fb\PersonalBmTokenModel());
 
@@ -29,6 +38,5 @@ class FbService
         }
         return $result;
     }
-
 
 }
