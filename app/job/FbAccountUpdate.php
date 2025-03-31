@@ -47,8 +47,11 @@ class FbAccountUpdate
                 $result = (new \app\services\FacebookService())->list($params);
                 if(empty($result) || $result['code'] == 0) return true;
                 
-                $params['after'] = $result['data']['after']??'';  
-                if(empty($params['after'])) $_is = false;
+                $params['after'] = $result['data']['after']??''; 
+                $params['pageSize'] = $result['data']['pageSize']??0;
+                $params['total'] = $result['data']['total']??0;
+                
+                if(empty($params['after']) || $params['total'] < $params['pageSize']) $_is = false;
 
                 if(empty($result['data']['data'])){
                     $_is = false;

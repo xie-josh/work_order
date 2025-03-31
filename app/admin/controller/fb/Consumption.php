@@ -35,7 +35,7 @@ class Consumption extends Backend
 
         $data = $this->request->post();
 
-        //if(empty($data['status']) || $data['status'] != '99') $this->error('导出功能维护中!');
+        // if(empty($data['status']) || $data['status'] != '99') $this->error('导出功能维护中!');
 
         $isCount = $data['is_count']??2;
         $startTime = $data['start_time']??'';
@@ -57,8 +57,8 @@ class Consumption extends Backend
             ];
         }
 
-        //$accountRecycleList = $this->accountRecycle($accountRecycleWhere);
-        $accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
+        // $accountRecycleList = $this->accountRecycle($accountRecycleWhere);
+        //$accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
 
         // array_push($where,['account_consumption.account_id','=','1168825717882895']);
 
@@ -71,14 +71,15 @@ class Consumption extends Backend
         ->where($where);
 
         if($isCount == 1){
-            $query->field('admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
+            $query->field('account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
             $query->group('account_id');
             $accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
         }else{
             $accountRecycleWhere = [];
-            $query->field('admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
+            $query->field('account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
             $accountRecycleList = $this->accountRecycle($accountRecycleWhere);
         }
+        // dd($accountRecycleList['579613691644460'],$isCount);
 
         $total = $query->count();
 
@@ -108,10 +109,15 @@ class Consumption extends Backend
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];
             foreach($data as $v){
-                $nickname = $v['nickname']??'';
+                $nickname = '';
                 $spend = $v['spend']??0;
                 $dateStart =  $v['date_start'];
                 $accountRecycle = $accountRecycleList[$v['account_id']]??[];
+
+                if(!empty($v['open_time'])){
+                    $openTimeDate = date('Y-m-d',$v['open_time']);
+                    if($v['date_start'] >= $openTimeDate) $nickname = $v['nickname'];
+                }
                 
                 if(!empty($accountRecycle)){
                     if($isCount == 1){
@@ -121,7 +127,7 @@ class Consumption extends Backend
                                 $v['serial_name'],                    
                                 $v['account_id'],
                                 $v['currency'],
-                                $recycle['spend'],
+                                (float)$recycle['spend'],
                                 $recycle['date_start'],
                                 $recycle['date_stop'],
                                 $recycle['nickname'],
@@ -133,12 +139,32 @@ class Consumption extends Backend
                         }
 
                     }else{
+                        // if(empty($v['nickname']) && !empty($accountRecycle)){
+                        //     $accountRecycleCount = count($accountRecycle) - 1;
+                        //     $nickname = $accountRecycle[$accountRecycleCount]['nickname'];
+                        // }else{
+                        //     foreach($accountRecycle as $recycle){
+                        //         if($v['date_start'] >= $recycle['strat_open_time'] && $v['date_start'] < $recycle['end_open_time']){
+                        //             $nickname = $recycle['nickname'];
+                        //             break;
+                        //         }
+                        //     }
+                        // }                       
+
                         foreach($accountRecycle as $recycle){
-                            if($v['date_start'] < $recycle['account_recycle_time']){
+                            if($v['date_start'] >= $recycle['strat_open_time'] && $v['date_start'] < $recycle['end_open_time']){
                                 $nickname = $recycle['nickname'];
                                 break;
                             }
                         }
+
+                        if(empty($nickname) && !empty($accountRecycle)){
+                            $accountRecycleCount = count($accountRecycle) - 1;
+                            if($v['date_start'] >= $accountRecycle[$accountRecycleCount]['strat_open_time']){
+                                $nickname = $accountRecycle[$accountRecycleCount]['nickname'];
+                            }
+                        }
+
                     }
                 }
                 
@@ -147,7 +173,7 @@ class Consumption extends Backend
                     $v['serial_name'],                    
                     $v['account_id'],
                     $v['currency'],
-                    $spend,
+                    (float)$spend,
                     $dateStart,
                     $v['date_stop'],
                     $nickname,
@@ -265,11 +291,19 @@ class Consumption extends Backend
     {   
         $accountRecycleListResult = DB::table('ba_account_recycle')
         ->alias('account_recycle')
-        ->field('account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname')
+        ->field('account_recycle.id,account_recycle.open_time,account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname')
         ->leftJoin('ba_admin admin','admin.id=account_recycle.admin_id')
         ->where($accountRecycleWhere)
         ->where('account_recycle.status',4)
         ->select()->toArray();
+
+        $accountIds = array_unique(array_column($accountRecycleListResult,'account_id'));
+        $accountListResult = DB::table('ba_account')->field('open_time,account_id')->whereIn('account_id',$accountIds)->where('status',4)->select()->toArray();
+        $accountList = [];
+        foreach ($accountListResult as $key => $item) {
+            $accountList[$item['account_id']] = date('Y-m-d',$item['open_time']);
+        }
+
 
         //$seenAccounts = [];
         $accountRecycleList = [];
@@ -280,9 +314,35 @@ class Consumption extends Backend
             // } else {
             //     $seenAccounts[$item['account_id']] = $item['account_recycle_time'];
             // }
-            $item['account_recycle_time'] = date('Y-m-d',strtotime($item['account_recycle_time']));
+            //$item['account_recycle_time'] = date('Y-m-d',strtotime($item['account_recycle_time']));
+            // $stratOpenTime = date('Y-m-d',strtotime($item['open_time']));
+            // $endOpenTime = date('Y-m-d',strtotime($item['account_recycle_time']));
+            $item['open_time'] = date('Y-m-d',$item['open_time']);
             $accountRecycleList[$item['account_id']][] = $item;
         }
+        foreach($accountRecycleList as $key => &$value){
+            foreach ($value as $key2 => &$value2) {
+                $value2['strat_open_time'] = $value2['open_time'];
+                $value2['end_open_time'] = '';
+                if(isset($value[$key2+1])) $value2['end_open_time'] = $value[$key2+1]['open_time'];
+                if(!isset($value[$key2+1]) && isset($accountList[$value2['account_id']])) $value2['end_open_time'] = $accountList[$value2['account_id']];
+            }
+        }
+        // $a = '2025-02-20';
+        // $a1 = '2025-02-20';
+        // $name = '1111';
+
+
+
+
+        // $a2 = '2025-02-20';
+
+        // if($a2 >= $a && $a2 < $a1 || $name){
+        //     dd(1);
+        // }
+
+
+        // dd($accountRecycleList,$accountList);
         
         return $accountRecycleList;
     }

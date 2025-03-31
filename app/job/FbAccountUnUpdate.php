@@ -47,8 +47,11 @@ class FbAccountUnUpdate
                 $result = (new \app\services\FacebookService())->list($params);
                 if(empty($result) || $result['code'] == 0) return true;
 
-                $params['after'] = $result['data']['after']??'';  
-                if(empty($params['after'])) $_is = false;
+                $params['after'] = $result['data']['after']??'';
+                $params['pageSize'] = $result['data']['pageSize']??0;
+                $params['total'] = $result['data']['total']??0;
+                
+                if(empty($params['after']) || $params['total'] < $params['pageSize']) $_is = false;
                 
                 if(empty($result['data']['data'])){
                     $_is = false;
@@ -58,16 +61,23 @@ class FbAccountUnUpdate
                 $accountList = [];
                 $currencyAccountList = [];
                 $accountStatusList = [];
+                $accountNameList = [];
+                $accountTimeZoneList = [];
                 foreach($result['data']['data'] as $item)
                 {  
-                    if(!in_array($item['account_status'],[1,3])) continue;
                     $item['id'] = str_replace('act_', '', $item['id']);
+                    $accountNameList[$item['id']] = [
+                        'account_id'=>$item['id'],
+                        'serial_name'=>$item['name']
+                    ];
+                    $accountTimeZoneList[(string)$item['timezone_offset_hours_utc']][] = $item['id'];
+                    if(!in_array($item['account_status'],[1,3])) continue;
                     $accountList[] = $item;
                     $currencyAccountList[$item['currency']][] = $item['id'];
                     $accountStatusList[$item['account_status']][] = $item['id'];
                 }
+                
                 $accountIds = array_column($accountList,'id');
-
                 // $cardList = DB::table('ba_accountrequest_proposal')
                 // ->alias('accountrequest_proposal')
                 // ->field('accountrequest_proposal.close_time,accountrequest_proposal.account_id,cards_info.card_no,cards_info.card_status,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.cards_id')
@@ -89,6 +99,15 @@ class FbAccountUnUpdate
                     //     ]);
                     // }
                 // }
+
+                if(!empty($accountTimeZoneList)){
+                    $this->updateTimeZone($accountTimeZoneList);
+                }
+
+                if(!empty($accountNameList)){
+                    $this->updateSerialName($accountIds,$accountNameList);
+                }
+
                 foreach($currencyAccountList as $k => $v){
                     $where = [
                         ['accountrequest_proposal.account_id','IN',$v],
@@ -113,6 +132,92 @@ class FbAccountUnUpdate
             //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
         }
         return true;   
+    }
+
+    public function updateSerialName($accountIds,$accountNameList)
+    {
+        $where = [
+            ['accountrequest_proposal.account_id','IN',$accountIds],
+            ['account.status','=',4],
+        ];
+        $resultList = DB::table('ba_accountrequest_proposal')
+        ->alias('accountrequest_proposal')                    
+        ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
+        ->where($where)->column('accountrequest_proposal.account_id');
+        $params = [];
+        foreach($resultList as &$v){
+            $serialName = $accountNameList[$v]['serial_name']??'';
+            $params[] = [
+                'account_id'=>$v,
+                'serial_name'=>$serialName
+            ];
+        }
+        $this->dbBatchUpdate('ba_accountrequest_proposal',$params,'account_id');
+        return true;
+    }
+    public function updateTimeZone($timeZoneList)
+    {
+        $TIME_ZONE = config('basics.TIME_ZONE');
+        foreach($timeZoneList as $k => $v){
+            $timeZone = $TIME_ZONE[$k]??$k;
+            $where = [
+                ['accountrequest_proposal.account_id','IN',$v],
+                ['account.status','=',4],
+            ];
+            DB::table('ba_accountrequest_proposal')
+            ->alias('accountrequest_proposal')
+            ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.time_zone'=>$timeZone]);
+        }
+        return true;
+    }
+    public static function dbBatchUpdate(string $table_name,array $data,string $field)
+    {
+        // 生成SQL
+        $sql = 'UPDATE '.$table_name." SET ";
+        $fields = $casesSql = [];
+        foreach ($data as $key => $value) {
+            // 指定更新字段不存在
+            if (!isset($value[$field])){
+                continue;
+            }
+            // 记录更新字段
+            $temp = $value[$field];
+            if(!in_array($temp,$fields)){
+                $fields[]='"'.$temp.'"';
+            }
+            // 拼接更新字段条件
+            foreach ($value as $k => $v) {
+                // 更新条件字段不更新
+                if ($k == $field){
+                    continue;
+                }
+                $temp = $value[$field];
+                // 拼接CASE，默认CASE头
+                $caseWhen = isset($casesSql[$k]) ? $casesSql[$k] : "`{$k}` = (CASE `{$field}` ";
+                // 拼接WHEN
+                $caseSql = sprintf(
+                    "%s WHEN '%s' THEN '%s' ",
+                    $caseWhen,$temp,$v
+                );
+                $casesSql[$k] = $caseSql;
+            }
+        }
+        if (!$casesSql){
+            return false;
+        }
+        $endSql = [];
+        // 拼接结束END
+        foreach ($casesSql as $key=>$val){
+            $endSql[] = $val." END)";
+        }
+        $sql .= implode(',',$endSql);
+        unset($data,$casesSql,$endSql);
+        // 拼接WHERE
+        $str = implode(',',  $fields );
+        $sql .=" WHERE `{$field}` IN ({$str})";
+        // 创建并执行完整SQL
+        $res = Db::execute($sql);
+        return $res;
     }
 
     public function accountInsights(){
