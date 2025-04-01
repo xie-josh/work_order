@@ -13,4 +13,16 @@ class BmTokenModel extends Model
 {
     protected $name = 'fb_bm_token';
     protected $autoWriteTimestamp = true;
+
+
+    public function getPersonalbmTokenIdsAttr($value, $data): array
+    {
+        return array_map('intval', explode(',', $value));
+    }
+
+    public function setPersonalbmTokenIdsAttr($value): string
+    {
+        return implode(',', $value);
+    }
+
 }
