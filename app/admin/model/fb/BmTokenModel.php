@@ -17,6 +17,7 @@ class BmTokenModel extends Model
 
     public function getPersonalbmTokenIdsAttr($value, $data): array
     {
+        if(empty($value)) return [];
         return array_map('intval', explode(',', $value));
     }
 
