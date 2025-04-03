@@ -164,7 +164,7 @@ class Bm extends Backend
                 if(!empty($v['accountrequestProposal']['admin_id'])) $adminIds[] = $v['accountrequestProposal']['admin_id'];
             }        
             $admin = DB::table('ba_admin')->whereIn('id',$adminIds)->select()->toArray();
-            
+            $bmBlackList = DB::table('ba_bm_blacklist')->select()->column('bm');
             $adminList = [];
             foreach($admin as $v){
                 $adminList[$v['id']] = $v['nickname'];
@@ -173,6 +173,8 @@ class Bm extends Backend
             
             foreach($dataList as &$v){
                 $v['account_requestProposal_admin'] = $adminList[$v['accountrequestProposal']['admin_id']??0]??'';
+                if(in_array($v['bm'],$bmBlackList)) $v['blacklist'] = '黑名单';
+                else $v['blacklist'] = '';
             }
         }
             
