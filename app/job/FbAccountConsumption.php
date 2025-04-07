@@ -67,13 +67,13 @@ class FbAccountConsumption
             
             if(empty($result) || $result['code'] == 5){
                 $accountrequestProposal = DB::table('ba_accountrequest_proposal')
-                ->field('accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,cards_info.card_id,cards_info.account_id cards_account_id')
+                ->field('accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.card_status')
                 ->alias('accountrequest_proposal')
                 ->where('accountrequest_proposal.account_id',$accountId)
                 ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
                 ->find();
                 DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['account_status'=>0,'processing_status'=>0,'pull_account_status'=>date('Y-m-d H:i',time())]);
-                if(!empty($accountrequestProposal) && $accountrequestProposal['is_cards'] == 0 && $accountrequestProposal['card_id']){
+                if(!empty($accountrequestProposal) && $accountrequestProposal['is_cards'] == 0 && $accountrequestProposal['card_id'] && $accountrequestProposal['cards_info'] != 'frozen'){
                     $result = (new CardService($accountrequestProposal['cards_account_id']))->cardFreeze(['card_id'=>$accountrequestProposal['card_id']]);
                     if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$accountrequestProposal['card_id'])->update(['card_status'=>$result['data']['cardStatus']]);
                 }

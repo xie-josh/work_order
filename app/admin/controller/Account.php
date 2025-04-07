@@ -248,7 +248,11 @@ class Account extends Backend
                         $validate->check($data);
                     }
                 }
-                
+
+                if(!$this->auth->isSuperAdmin()){
+                    unset($data['status']);
+                    unset($data['dispose_status']);
+                }
                 
                 if($data['bm_type'] == 1) $data['email'] = '';
                 if($data['bm_type'] == 2) $data['bm'] = '';

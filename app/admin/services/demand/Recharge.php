@@ -24,6 +24,10 @@ class Recharge
     public function spendUp($params)
     {
         $result = false;
+        $isCards = false;
+        $cardsNumber = 0;
+        $cards = [];
+        $isCardStatus = false;
         try {
             
             $id = $params['id']??0;
@@ -80,30 +84,39 @@ class Recharge
 
             $spendCap = bcadd((string)$spendCap,(string)$fbNumber,2);
 
-            $accountrequestProposal['spend'] = $spendCap;
-            $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
-            if($result3['code'] != 1) throw new \Exception("FB重置限额错误，请联系管理员！");
+
+            $cardsNumber = $result['number'];
 
             $param = [
                 'transaction_limit_type'=>'limited',
                 'transaction_limit_change_type'=>'increase',
-                'transaction_limit'=>$result['number'],
+                'transaction_limit'=>$cardsNumber,
             ];
             $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$result['account_id'])->find();
             if($resultProposal['is_cards'] != 2){
                 $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                 if(empty($cards)) {
                     throw new \Exception("未找到分配的卡");
-                }else{
-                    $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
-                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-
+                }else{                    
                     if($cards['card_status'] != 'normal'){
                         $resultCards = (new \app\services\CardService($cards['account_id']))->cardUnfreeze(['card_id'=>$cards['card_id']]);
                         if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$cards['card_id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                        $isCardStatus = true;
                     }
+
+                    $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+
+                    $isCards = true;
                 }
             }
+
+            $accountrequestProposal['spend'] = $spendCap;
+            $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
+            if($result3['code'] != 1) throw new \Exception("FB重置限额错误，请联系管理员！");
+
+            
 
             DB::table('ba_account')->where('account_id',$result['account_id'])->inc('money',$result['number'])->update(['update_time'=>time(),'is_'=>1]);
             $data = [
@@ -120,7 +133,25 @@ class Recharge
                     ['log_id'=>$id,'type'=>'services_error_spend_up','data'=>json_encode($result),'logs'=>$th->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
                 );
                 $result = $this->model->where('id',$id)->update(['comment'=>$th->getMessage()]);
-            } 
+            }
+            if($isCards){
+                $param = [
+                    'transaction_limit_type'=>'limited',
+                    'transaction_limit_change_type'=>'decrease',
+                    'transaction_limit'=>$cardsNumber,
+                ];
+
+                $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                // if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                
+                if($cards['card_status'] != 'frozen' && $isCardStatus){
+                    $resultCards = (new \app\services\CardService($cards['account_id']))->cardfreeze(['card_id'=>$cards['card_id']]);
+                    // if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$cards['card_id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                }
+ 
+            }
+
             return ['code'=>0,'msg'=>$th->getMessage()];
         }
         if ($result !== false) {
@@ -198,9 +229,8 @@ class Recharge
                 'type'=>$type,
                 'update_time'=>time()
             ];
-            $this->model->where('id',$result['id'])->update($data);
-            DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
-            DB::table('ba_admin')->where('id',$result['admin_id'])->dec('used_money',$currencyNumber)->update();
+            
+            
 
             if($accountrequestProposal['is_cards'] != 2) {
                 $cards = DB::table('ba_cards_info')->where('cards_id',$accountrequestProposal['cards_id']??0)->find();
@@ -233,7 +263,10 @@ class Recharge
                 }
             }
             //=============
-
+            
+            DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
+            DB::table('ba_admin')->where('id',$result['admin_id'])->dec('used_money',$currencyNumber)->update();
+            $this->model->where('id',$result['id'])->update($data);
             Cache::store('redis')->delete($key);
             $result = true;
         } catch (Throwable $e) {
