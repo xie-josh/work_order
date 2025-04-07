@@ -249,8 +249,9 @@ class Account extends Backend
                     }
                 }
 
+                unset($data['status']);
+                
                 if(!$this->auth->isSuperAdmin()){
-                    unset($data['status']);
                     unset($data['dispose_status']);
                 }
                 
