@@ -97,7 +97,6 @@ class Account extends Backend
 
         $dataList = $res->toArray()['data'];
         if($dataList){
-            
             $resultTypeList = DB::table('ba_account_type')->select()->toArray();
             $typeList = array_column($resultTypeList,'name','id');
 
@@ -114,15 +113,14 @@ class Account extends Backend
                     $bmList[$v['account_id']][] = $v['bm'];
                 }
             }
-            
             foreach($dataList as &$v){
                 $v['account_type_name'] = '';
                 if($v['status'] != 4 && $status != 1) $v['account_id'] = '';
                 if(!empty($typeList[$v['account_type']])) $v['account_type_name'] = $typeList[$v['account_type']];
                 $v['bm_list'] = $bmList[$v['account_id']]??[];
                 $v['admin'] = [
-                    'username'=>$v['admin']['username'],
-                    'nickname'=>$v['admin']['nickname']
+                    'username'=>$v['admin']['username']??"",
+                    'nickname'=>$v['admin']['nickname']??""
                 ];
             }
         }
@@ -161,6 +159,7 @@ class Account extends Backend
                         $validate->check($data);
                     }
                 }
+                $money = $data['money']??0;
 
                 if($data['bm_type'] == 1){
                     if(empty($data['bm'])) throw new \Exception("BM不能为空！");
@@ -173,6 +172,10 @@ class Account extends Backend
                     if(empty($data['email'])) throw new \Exception("email不能为空！");
                     $data['bm'] = '';
                 }
+
+                
+                if($money < 0)  throw new \Exception("开户金额不能小于0！");
+
 
                 if($data['bm_type'] == 3 && (empty($data['email']) || empty($data['bm'])))  throw new \Exception("BM 与 Email不能为空！");
 
@@ -250,14 +253,15 @@ class Account extends Backend
                 }
 
                 unset($data['status']);
-                
+                unset($data['money']);
+
                 if(!$this->auth->isSuperAdmin()){
                     unset($data['dispose_status']);
                 }
                 
                 if($data['bm_type'] == 1) $data['email'] = '';
                 if($data['bm_type'] == 2) $data['bm'] = '';
-                unset($data['money']);
+                
 
                 $result = $row->save($data);
                 $this->model->commit();
@@ -324,10 +328,17 @@ class Account extends Backend
                 if($status == 1){
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+                    $list = $this->model->whereIn('id',$data['ids'])->field('admin_id,id,money')->whereIn('status',[2,5])->select()->append([])->toArray();
+                    foreach($list as $v){
+                        DB::table('ba_admin')->where('id',$v['admin_id'])->inc('used_money',$v['money'])->update();
+                    }
+                    if(!empty($list)) $this->model->whereIn('id',array_column($list,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+
+                    
                 }elseif($status == 2){
-                    $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
+                    $ids = $this->model->whereIn('id',$ids)->whereIn('status',[0,1])->select()->toArray();
                     foreach($ids as $v){
-                        DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
+                        if($v['money'] > 0) DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                 }elseif($status == 3){
