@@ -61,10 +61,32 @@ class Account extends Backend
         array_push($this->withJoinTable,'accountrequestProposal');
         
         foreach($where as $k => &$v){
+            if($v[0] == 'account.id' && $v[1] == 'IN'){
+                foreach($v[2] as &$item){
+                    if (preg_match('/\d+/', $item, $matches)) {
+                        $number = ltrim($matches[0], '0'); // 移除开头的零
+                        $item = $number;
+                    } else {
+                        //$v[2] = $number;
+                    }
+                    continue;
+                }
+                continue;
+            }
             if($v[0] == 'account.id'){
                 if (preg_match('/\d+/', $v[2], $matches)) {
                     $number = ltrim($matches[0], '0'); // 移除开头的零
                     $v[2] = '%'.$number.'%';
+                } else {
+                    //$v[2] = $number;
+                }
+                continue;
+            }
+            if($v[0] == 'account.uuid'){
+                if (preg_match('/\d+/', $v[2], $matches)) {
+                    $number = ltrim($matches[0], '0'); // 移除开头的零
+                    $v[0] = 'account.id';
+                    $v[2] = $number;
                 } else {
                     //$v[2] = $number;
                 }
@@ -77,7 +99,6 @@ class Account extends Backend
                 continue;
             }
         }
-
         if($status == 1){
             array_push($where,['account.status','in',[1,3,4,5]]);
         }elseif($status == 3){
