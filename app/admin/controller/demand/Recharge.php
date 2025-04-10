@@ -277,9 +277,9 @@ class Recharge extends Backend
                 $type = $data['type']??0;
                 $fbBoney = $data['fb_money']??0;
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
+                if(empty($ids) || empty($status)) throw new \Exception("请选择需要操作的数据！");
 
-                $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
 
                 if($status == 1){
                     foreach($ids as $v){
@@ -375,7 +375,9 @@ class Recharge extends Backend
                         }
                     }
                 }
-                
+
+                $result = $this->model->whereIn('id',array_column($ids,'id'))->where('status',0)->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+
                 $result = true;
                 DB::commit();
             } catch (Throwable $e) {

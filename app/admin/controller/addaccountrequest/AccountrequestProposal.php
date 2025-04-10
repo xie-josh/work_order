@@ -161,9 +161,13 @@ class AccountrequestProposal extends Backend
                     $currencyNumber = (string)$totalConsumption;
                 }
 
-                $fbBalance = ($totalRecharge + $firshflush) - $totalDeductions - $currencyNumber - $totalReset;
+                $fbBalance = bcadd((string)$totalRecharge , (string)$firshflush,2) ;
+                $fbBalance = bcsub((string)$fbBalance , (string)$totalDeductions,2) ;
+                $fbBalance = bcsub((string)$fbBalance , (string)$currencyNumber,2) ;
+                $fbBalance = bcsub((string)$fbBalance , (string)$totalReset,2) ;
+                
                 $fbSpand = $currencyNumber;
-                $v['fb_balance'] = bcadd((string)$fbBalance,'0',2);
+                $v['fb_balance'] = $fbBalance;
                 $v['fb_spand'] = bcadd((string)$fbSpand,'0',2);
             }
         }
