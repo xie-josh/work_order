@@ -74,10 +74,10 @@ class FbAccountUnUpdate
                         'serial_name'=>$item['name']
                     ];
                     $accountTimeZoneList[(string)$item['timezone_offset_hours_utc']][] = $item['id'];
+                    $accountStatusList[$item['account_status']][] = $item['id'];
                     if(!in_array($item['account_status'],[1,3])) continue;
                     $accountList[] = $item;
-                    $currencyAccountList[$item['currency']][] = $item['id'];
-                    $accountStatusList[$item['account_status']][] = $item['id'];
+                    $currencyAccountList[$item['currency']][] = $item['id'];                    
                 }
                 
                 $accountIds = array_column($accountList,'id');
@@ -103,13 +103,11 @@ class FbAccountUnUpdate
                     // }
                 // }
 
-                if(!empty($accountTimeZoneList)){
-                    $this->updateTimeZone($accountTimeZoneList);
-                }
+                if(!empty($accountTimeZoneList)) $this->updateTimeZone($accountTimeZoneList);
+                
+                if(!empty($accountNameList)) $this->updateSerialName($accountIds,$accountNameList);                
 
-                if(!empty($accountNameList)){
-                    $this->updateSerialName($accountIds,$accountNameList);
-                }
+                if(!empty($accountStatusList)) $this->accountReturn($accountStatusList);
 
                 foreach($currencyAccountList as $k => $v){
                     $where = [
@@ -122,6 +120,7 @@ class FbAccountUnUpdate
                     ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
                 }
                 foreach($accountStatusList as $k => $v){
+                    if($k == 2) continue;
                     DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 }
                 //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>1,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
@@ -221,6 +220,65 @@ class FbAccountUnUpdate
         // 创建并执行完整SQL
         $res = Db::execute($sql);
         return $res;
+    }
+
+    public function accountReturn($params)
+    {
+        $dataList = [];
+        foreach($params as $k => $v)
+        {
+            if($k == 1){
+                $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',2)->column('account_id');
+                $resultList2 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->column('account_id');
+                
+                foreach($resultList as $v){
+                    $dataList[] = [
+                        'account_id'=>$v,
+                        'type'=>1,
+                        'create_time'=>time()
+                    ];
+                }
+                foreach($resultList2 as $v){
+                    $dataList[] = [
+                        'account_id'=>$v,
+                        'type'=>3,
+                        'create_time'=>time()
+                    ];
+                }
+                // if(!empty($dataList)) DB::table('ba_account_return')->insertAll($dataList);
+            }else if($k == 2){
+                $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->column('account_id');
+                foreach($resultList as $v){
+                    $dataList[] = [
+                        'account_id'=>$v,
+                        'type'=>4,
+                        'create_time'=>time()
+                    ];
+                }
+                // if(!empty($dataList)) DB::table('ba_account_return')->insertAll($dataList);
+            }else if($k == 3){
+                $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',2)->column('account_id');
+                $resultList2 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->column('account_id');
+                foreach($resultList as $v){
+                    $dataList[] = [
+                        'account_id'=>$v,
+                        'type'=>2,
+                        'create_time'=>time()
+                    ];
+                }
+                foreach($resultList2 as $v){
+                    $dataList[] = [
+                        'account_id'=>$v,
+                        'type'=>5,
+                        'create_time'=>time()
+                    ];
+                }
+                // if(!empty($dataList)) DB::table('ba_account_return')->insertAll($dataList);
+            }
+        }
+        if(!empty($dataList)) DB::table('ba_account_return')->insertAll($dataList);
+
+        return true;
     }
 
     public function accountInsights(){
