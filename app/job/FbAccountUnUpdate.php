@@ -229,7 +229,7 @@ class FbAccountUnUpdate
         {
             if($k == 1){
                 $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',2)->column('account_id');
-                $resultList2 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->column('account_id');
+                $resultList2 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->whereNotNull('pull_account_status')->column('account_id');
                 
                 foreach($resultList as $v){
                     $dataList[] = [
@@ -247,7 +247,7 @@ class FbAccountUnUpdate
                 }
                 // if(!empty($dataList)) DB::table('ba_account_return')->insertAll($dataList);
             }else if($k == 2){
-                $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->column('account_id');
+                $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->whereNotNull('pull_account_status')->column('account_id');
                 foreach($resultList as $v){
                     $dataList[] = [
                         'account_id'=>$v,
@@ -258,7 +258,7 @@ class FbAccountUnUpdate
                 // if(!empty($dataList)) DB::table('ba_account_return')->insertAll($dataList);
             }else if($k == 3){
                 $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',2)->column('account_id');
-                $resultList2 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->column('account_id');
+                $resultList2 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->whereNotNull('pull_account_status')->column('account_id');
                 foreach($resultList as $v){
                     $dataList[] = [
                         'account_id'=>$v,
