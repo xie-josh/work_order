@@ -329,16 +329,26 @@ class Account extends Backend
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                     $list = $this->model->whereIn('id',$data['ids'])->field('admin_id,id,money')->whereIn('status',[2,5])->select()->append([])->toArray();
-                    foreach($list as $v){
-                        DB::table('ba_admin')->where('id',$v['admin_id'])->inc('used_money',$v['money'])->update();
-                    }
-                    if(!empty($list)) $this->model->whereIn('id',array_column($list,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+                    if(!empty($list)){
+                        // $amount = $this->model->whereIn('id',array_column($list,'id'))->whereIn('status',[2,5])->sum('money');
+                        foreach($list as $v){
+                            if($v['money'] <= 0) continue;
+                            $admin = Db::table('ba_admin')->where('id',$v['admin_id'])->find();
+                            $usableMoney = bcsub((string)$admin['money'], (string)$admin['used_money'],2);
+                            
+                            if($usableMoney <= 0 || $usableMoney < $v['money']) throw new \Exception($admin['nickname'].":余额不足,不足以支持该开户需求,请联系管理员！");
 
+                            DB::table('ba_admin')->where('id',$v['admin_id'])->inc('used_money',$v['money'])->update();
+                            $this->model->where('id',$v['id'])->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+                        }
+                        // if(!empty($list)) $this->model->whereIn('id',array_column($list,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+                    }
                     
                 }elseif($status == 2){
                     $ids = $this->model->whereIn('id',$ids)->whereIn('status',[0,1])->select()->toArray();
                     foreach($ids as $v){
-                        if($v['money'] > 0) DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
+                        if($v['money'] <= 0) continue;
+                        DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                 }elseif($status == 3){
@@ -890,7 +900,7 @@ class Account extends Backend
                 
                 foreach ($accountList as $value) {
                     $accountId = $value;
-                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>0,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
+                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>2,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
                     DB::table('ba_bm')->where('account_id',$accountId)->delete();
                     DB::table('ba_recharge')->where('account_id',$accountId)->delete();
                 }
