@@ -52,17 +52,11 @@ class Consumption extends Backend
             array_push($where,['date_start','>=',$startTime]);
             array_push($where,['date_stop','<=',$endTime]);
             $accountRecycleWhere = [
-                ['account_recycle.account_recycle_time','>=',$startTime],
-                ['account_recycle.account_recycle_time','<=',$endTime." 23:59:59"]
+                'start_time'=>$startTime,
+                'end_time'=>$endTime
             ];
         }
-
-        // $accountRecycleList = $this->accountRecycle($accountRecycleWhere);
-        //$accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
-
-        // array_push($where,['account_consumption.account_id','=','1168825717882895']);
-
-
+       
         $query =  $this->model
         ->alias('account_consumption')        
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
@@ -100,6 +94,8 @@ class Consumption extends Backend
             '系统状态',
         ];
 
+        if($isCount != 1) $header[] = '开户时间';
+
         $config = [
             'path' => $folders['path']
         ];
@@ -112,16 +108,31 @@ class Consumption extends Backend
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];
             foreach($data as $v){
+                
                 $nickname = '';
+                $openTime = '';
                 $spend = $v['spend']??0;
                 $dateStart =  $v['date_start'];
                 $accountRecycle = $accountRecycleList[$v['account_id']]??[];
                 $statusValue = $statusList[$v['status']]??'未找到状态';
-
-                if(!empty($v['open_time'])){
+                                
+                if(!empty($v['open_time']) && $isCount != 1){
                     $openTimeDate = date('Y-m-d',$v['open_time']);
-                    if($v['date_start'] >= $openTimeDate) $nickname = $v['nickname'];
+                    if($v['date_start'] >= $openTimeDate){
+                        $nickname = $v['nickname'];
+                        $openTime = date('Y-m-d',$v['open_time']);
+                    }
                 }
+                
+                if(!empty($v['open_time']) && $isCount == 1)
+                {
+                    $openTimeDate = date('Y-m-d',$v['open_time']);
+                    if($v['date_stop'] >= $openTimeDate) $nickname = $v['nickname'];
+                }
+
+                // if($v['account_id'] == '1738696516982083'){
+                //     dd($v,$accountRecycle,$openTimeDate,$nickname);
+                // }
                 
                 if(!empty($accountRecycle)){
                     if($isCount == 1){
@@ -142,6 +153,11 @@ class Consumption extends Backend
                             $spend = bcsub((string)$spend ,(string)$recycle['spend'],2);
                             $dateStart = $recycle['date_stop'];
                         }
+                        if(empty($v['open_time']) || $v['open_time'] > strtotime($endTime." 23:59:59"))
+                        {
+                            $processedCount++;
+                            continue;
+                        }
 
                     }else{
                         // if(empty($v['nickname']) && !empty($accountRecycle)){
@@ -154,11 +170,12 @@ class Consumption extends Backend
                         //             break;
                         //         }
                         //     }
-                        // }                       
+                        // }
 
                         foreach($accountRecycle as $recycle){
                             if($v['date_start'] >= $recycle['strat_open_time'] && $v['date_start'] < $recycle['end_open_time']){
                                 $nickname = $recycle['nickname'];
+                                $openTime = $recycle['open_time'];
                                 break;
                             }
                         }
@@ -167,6 +184,7 @@ class Consumption extends Backend
                             $accountRecycleCount = count($accountRecycle) - 1;
                             if($v['date_start'] >= $accountRecycle[$accountRecycleCount]['strat_open_time']){
                                 $nickname = $accountRecycle[$accountRecycleCount]['nickname'];
+                                $openTime = $accountRecycle[$accountRecycleCount]['open_time'];
                             }
                         }
 
@@ -185,6 +203,7 @@ class Consumption extends Backend
                     $v['bm'],
                     $v['affiliation_bm'],
                     $statusValue,
+                    $openTime
                 ];  
                 $processedCount++;
             }
@@ -355,6 +374,215 @@ class Consumption extends Backend
 
     public function accountRecycle2($accountRecycleWhere)
     {   
+        $startTime = '';
+        $endTime = '';
+        $accountRecycleWhere2 = [];
+        if(!empty($accountRecycleWhere['start_time']) && !empty($accountRecycleWhere['end_time']))
+        {
+            $startTime = $accountRecycleWhere['start_time'];
+            //$endTime = $accountRecycleWhere['end_time'];
+            $endTime = date("Y-m-d",strtotime($accountRecycleWhere['end_time'] . ' +1 day'));
+            $accountRecycleWhere2[] = [
+                'account_recycle.open_time','<',strtotime($endTime)
+            ];
+        }
+
+         $accountRecycleListResult = DB::table('ba_account_recycle')
+         ->alias('account_recycle')
+         ->field('account_recycle.id,account_recycle.open_time,account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname')
+         ->leftJoin('ba_admin admin','admin.id=account_recycle.admin_id')
+         ->whereNotNull('account_recycle.open_time')
+        //  ->where($accountRecycleWhere)
+        ->where($accountRecycleWhere2)
+         ->where('account_recycle.status',4)
+         ->select()->toArray();
+
+         $accountIds = array_unique(array_column($accountRecycleListResult,'account_id'));
+         $accountListResult = DB::table('ba_account')->field('open_time,account_id')
+         ->whereIn('account_id',$accountIds)->where('status',4)
+         ->where('open_time','<',strtotime($endTime))
+         ->select()->toArray();
+         $accountList = array_column($accountListResult,null,'account_id');
+         
+ 
+         $accountRecycleList = [];
+        foreach ($accountRecycleListResult as $key => $item) {
+            $item['open_time'] = date('Y-m-d',$item['open_time']);
+            $accountRecycleList[$item['account_id']][] = $item;
+        }
+        foreach($accountRecycleList as $k => &$v){
+            if(!empty($accountList[$k])){
+                $v[] = [
+                    // "id" => 25505
+                    "open_time" => date('Y-m-d',$accountList[$k]['open_time']),
+                    "account_id" => $accountList[$k]['account_id'],
+                    "account_recycle_time" => '',
+                    "nickname" => ''
+                ];
+            }
+        }
+
+
+
+        $stratOpenTime = '';
+        $endOpenTime = '';
+        $accountConsumptionResults = [];
+
+        if(!empty($startTime))
+        {
+            $startTime2 = strtotime($startTime . ' +1 day');
+            $endTime2 = strtotime($endTime);
+            // $startTimeDate = date('Y-m-d', $startTime2);
+
+            $accountListResult2 = DB::table('ba_account')->field('open_time,account_id')->whereNotIn('account_id',$accountIds)->where('status',4)
+            ->where([
+                ['open_time','>=',$startTime2],
+                ['open_time','<',$endTime2],
+            ])->select()->toArray();
+            
+            $dataWhere = [];
+            foreach($accountListResult2 as $item)
+            {
+                $startTimeDate = date('Y-m-d', $item['open_time']);
+                // if($item['account_id'] == '579613691644460'){
+                //     dd(88,$startTimeDate);
+                // }
+                $dataWhere = [
+                    ['date_start','>=',$startTime],
+                    ['date_start','<',$startTimeDate],
+                    ['account_id','=',$item['account_id']]
+                ];
+                $result = Db::table('ba_account_consumption')
+                ->field('sum(spend) as spend, account_id')
+                ->where($dataWhere)->find();
+
+                $accountConsumptionResults[$result['account_id']][] = [
+                    'spend' => $result['spend'],
+                    'account_id' => $result['account_id'],
+                    'date_start' => $startTime,
+                    'date_stop' => $startTimeDate,
+                    'nickname' => '',
+                ];
+            }
+        }
+
+        // dd($accountRecycleList['554903870883876'],$endTime);
+        // dd($accountConsumptionResults['579613691644460']);
+
+        // dd($accountRecycleList);
+        // foreach($accountRecycleList as $key => &$value){
+        //     foreach ($value as $key2 => &$value2) {
+        //         $value2['strat_open_time'] = $value2['open_time'];
+        //         $value2['end_open_time'] = '';
+        //         if(isset($value[$key2+1])) $value2['end_open_time'] = $value[$key2+1]['open_time'];
+        //         if(!isset($value[$key2+1]) && isset($accountList[$value2['account_id']])) $value2['end_open_time'] = $accountList[$value2['account_id']];
+        //     }
+        // }
+
+        $_is = true;
+        foreach($accountRecycleList as $key => &$value){
+            $_is = true;
+            foreach ($value as $key2 => &$value2) {
+                if(!isset($value2['id'])) continue;
+                $dataWhere = [];
+                $endOpenTime = '';
+                if(isset($value[$key2+1])) $endOpenTime = $value[$key2+1]['open_time'];
+
+                if($value2['open_time'] > ($startTime." 23:59:59") && $_is && $key2 === 0){
+                    $dataWhere[] = ['account_id','=',$value2['account_id']];
+                    array_push($dataWhere,['date_start','>=',$startTime]);
+                    array_push($dataWhere,['date_start','<',$value2['open_time']]);
+
+                    $result = Db::table('ba_account_consumption')
+                    ->field('sum(spend) as spend, account_id')
+                    ->where($dataWhere)->find();
+                    if(!empty($result['account_id'])){
+                        $accountConsumptionResults[$result['account_id']][] = [
+                            'spend' => $result['spend'],
+                            'account_id' => $result['account_id'],
+                            'date_start' => $startTime,
+                            'date_stop' => $value2['open_time'],
+                            'nickname' => '',
+                        ];
+                    }
+                    $dataWhere = [];
+                    $_is = false;
+                }
+
+                // if($value2['account_id'] == '1072789028075390'){
+                //     dd($accountRecycleList['1072789028075390']??[],$value2['open_time'],$value2['open_time'] > ($startTime." 23:59:59"),$_is);
+                // }
+
+
+                $dataWhere[] = ['account_id','=',$value2['account_id']];
+                if(empty($endOpenTime)){
+                    if($value2['open_time'] >= $startTime)
+                    {
+                        array_push($dataWhere,['date_start','>=',$value2['open_time']]);
+                        array_push($dataWhere,['date_start','<',$endTime]);
+                    }else{
+                        array_push($dataWhere,['date_start','>=',$startTime]);
+                        array_push($dataWhere,['date_start','<',$endTime]);
+                    }
+                }else{
+                    if($endOpenTime < $startTime) continue;
+                    if($value2['open_time'] < $startTime)
+                    {
+                        if($endOpenTime < $endTime)
+                        {
+                            array_push($dataWhere,['date_start','>=',$startTime]);
+                            array_push($dataWhere,['date_start','<',$endOpenTime]);
+                        }else if($endOpenTime > $endTime){
+                            array_push($dataWhere,['date_start','>=',$startTime]);
+                            array_push($dataWhere,['date_start','<',$endTime]);
+                        }
+                        
+                    }else if($value2['open_time'] > $startTime)
+                    {
+                        if($endOpenTime < $endTime)
+                        {
+                            array_push($dataWhere,['date_start','>=',$value2['open_time']]);
+                            array_push($dataWhere,['date_start','<',$endOpenTime]);
+                        }else if($endOpenTime > $endTime){
+                            array_push($dataWhere,['date_start','>=',$value2['open_time']]);
+                            array_push($dataWhere,['date_start','<',$endTime]);
+                        }
+                    }
+                }
+                $result = Db::table('ba_account_consumption')
+                ->field('sum(spend) as spend, account_id')
+                ->where($dataWhere)->find();
+                if(!empty($result['account_id'])){
+                    $accountConsumptionResults[$result['account_id']][] = [
+                        'spend' => $result['spend'],
+                        'account_id' => $result['account_id'],
+                        'date_start' => $dataWhere[1][2],
+                        'date_stop' => date('Y-m-d',strtotime($dataWhere[2][2])),
+                        'nickname' => $value2['nickname'],
+                    ];
+                }
+                // dd($dataWhere,$value,$result,$accountConsumptionResults);            
+
+                //  if(!isset($value[$key2+1]) && isset($accountList[$value2['account_id']])) $value2['end_open_time'] = $accountList[$value2['account_id']];
+             }
+         }
+        // dd($accountConsumptionResults['1072789028075390']??[],$accountRecycleList['1072789028075390']??[]);
+        return $accountConsumptionResults;
+    }
+
+
+    public function accountRecycle3($accountRecycleWhere)
+    {   
+
+
+        /**
+         * 1.求出老外消耗的 （开始）
+         * 2.开户时间 ~ 开户时间 求出每一段时间消耗 （）
+         * 
+         * 
+         * 
+         */
+
         $accountConsumptionResults = [];
         $accountRecycleListResult = DB::table('ba_account_recycle')
         ->alias('account_recycle')

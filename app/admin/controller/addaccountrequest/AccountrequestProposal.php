@@ -404,6 +404,14 @@ class AccountrequestProposal extends Backend
 
         $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',6=>'开户异常',98=>'回收',99=>'终止使用'];
 
+        // $cardsList = DB::table('ba_account_card')->select()->toArray();
+
+        $maxCountList = DB::table('ba_account_card')
+        ->field('COUNT(id) as cnt')
+        ->group('account_id')
+        ->order('cnt')->select()->toArray();
+        $maxCount = 0;
+        if(!empty(array_column($maxCountList,'cnt'))) $maxCount = max(array_column($maxCountList,'cnt'));
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
@@ -416,9 +424,13 @@ class AccountrequestProposal extends Backend
             'account_bm',
             'status',
             'nickname',
-            'card_no',
             'FB_account_status',
+            'card_no',
         ];
+
+        for($i = 0; $i < $maxCount; $i++){
+            $header[] = 'card_no'.($i+1);
+        }
 
         $config = [
             'path' => $folders['path']
@@ -426,13 +438,28 @@ class AccountrequestProposal extends Backend
         $excel  = new \Vtiful\Kernel\Excel($config);
 
         $name = $folders['name'].'.xlsx';
+
+        
         
         $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
+
+            $cardsList = DB::table('ba_account_card')->whereIn('account_card.account_id',array_column($data,'account_id'))
+            ->alias('account_card')
+            ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=account_card.cards_id')
+            ->field('account_card.account_id,cards_info.card_no')->select()->toArray();
+
+            $groupedCards = [];
+            foreach ($cardsList as $v) {
+                $groupedCards[$v['account_id']][] = $v['card_no'];
+            }
+
+
             $dataList=[];
+            $excelData = [];
             foreach($data as $v){
-                $dataList[] = [
+                $excelData  = [
                     'bm'=>$v['bm'],
                     'time_zone'=>$v['time_zone'],
                     'account_id'=>$v['account_id'],
@@ -442,9 +469,16 @@ class AccountrequestProposal extends Backend
                     'account_bm'=> $v['account_bm'],
                     'status'=> $statusValue[$v['status']]??'未知的状态',
                     'nickname'=>$v['nickname'],
+                    'FB_account_status'=>$accountStatus[$v['account_status']]??'未找到状态',
                     'card_no'=>$v['card_no'],
-                    'FB_account_status'=>$accountStatus[$v['account_status']]??'未找到状态'
-                ];  
+                ];
+                if(!empty($groupedCards[$v['account_id']])){
+                    $cardNoList = $groupedCards[$v['account_id']];
+                    foreach($cardNoList as $k => $cardNo){
+                        $excelData['card_no'.($k+1)] = $cardNo;
+                    }
+                }
+                $dataList[] = $excelData ;  
                 $processedCount++;
             }
             $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
