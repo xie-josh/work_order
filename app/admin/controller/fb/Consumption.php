@@ -111,6 +111,7 @@ class Consumption extends Backend
                 
                 $nickname = '';
                 $openTime = '';
+                $serialName = $v['serial_name'];
                 $spend = $v['spend']??0;
                 $dateStart =  $v['date_start'];
                 $accountRecycle = $accountRecycleList[$v['account_id']]??[];
@@ -176,6 +177,7 @@ class Consumption extends Backend
                             if($v['date_start'] >= $recycle['strat_open_time'] && $v['date_start'] < $recycle['end_open_time']){
                                 $nickname = $recycle['nickname'];
                                 $openTime = $recycle['open_time'];
+                                $serialName = $recycle['name'];
                                 break;
                             }
                         }
@@ -185,6 +187,7 @@ class Consumption extends Backend
                             if($v['date_start'] >= $accountRecycle[$accountRecycleCount]['strat_open_time']){
                                 $nickname = $accountRecycle[$accountRecycleCount]['nickname'];
                                 $openTime = $accountRecycle[$accountRecycleCount]['open_time'];
+                                $serialName = $accountRecycle[$accountRecycleCount]['name'];
                             }
                         }
 
@@ -193,7 +196,7 @@ class Consumption extends Backend
                 
                 $dataList[] = [
                     $accountStatus[$v['account_status']]??'未找到状态',
-                    $v['serial_name'],                    
+                    $serialName,                    
                     $v['account_id'],
                     $v['currency'],
                     (float)$spend,
@@ -316,7 +319,7 @@ class Consumption extends Backend
     {   
         $accountRecycleListResult = DB::table('ba_account_recycle')
         ->alias('account_recycle')
-        ->field('account_recycle.id,account_recycle.open_time,account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname')
+        ->field('account_recycle.id,account_recycle.open_time,account_recycle.account_id,account_recycle.account_recycle_time,admin.nickname,account_recycle.name')
         ->leftJoin('ba_admin admin','admin.id=account_recycle.admin_id')
         ->where($accountRecycleWhere)
         ->where('account_recycle.status',4)
@@ -368,7 +371,7 @@ class Consumption extends Backend
 
 
         // dd($accountRecycleList,$accountList);
-        
+        // dd($accountRecycleList);
         return $accountRecycleList;
     }
 
