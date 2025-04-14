@@ -13,5 +13,6 @@ return [
         'FbAccountUpdateTask' => 'app\command\FbAccountUpdateTask',
         'FbAccountUnUpdateTask' => 'app\command\FbAccountUnUpdateTask',
         'FbAccountConsumptionTask' => 'app\command\FbAccountConsumptionTask',
+        'AccountListBackupTask' => 'app\command\AccountListBackupTask',
     ],
 ];
