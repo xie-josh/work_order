@@ -539,7 +539,7 @@ class AccountrequestProposal extends Backend
 
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type')
+            ->field('accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotIn('accountrequest_proposal.status',[0,99])
@@ -579,8 +579,7 @@ class AccountrequestProposal extends Backend
 
         $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
 
-        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,'',$params['id']);
-        if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,'',$params['id']);
+        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($params['personalbm_token_ids']);
         
         if(!empty($token)) $params['token'] = $token;
         
@@ -742,7 +741,7 @@ class AccountrequestProposal extends Backend
 
 
                 $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->find();
-                if(empty($accountrequestProposal)) throw new \Exception('错误：未找到账户或已经分配了卡！'); 
+                if(empty($accountrequestProposal)) throw new \Exception('错误：未找到账户！'); 
 
                 $cards = DB::table('ba_cards_info')->where('card_no',$cardNo)->where('is_use',0)->find();
                 if(empty($cards)) throw new \Exception('错误：[未找到卡]或[卡已经被使用]或[卡不可使用]！');
@@ -827,6 +826,39 @@ class AccountrequestProposal extends Backend
         $this->error(__('Parameter error'));
     }
     
+    public function accountCardBindDel()
+    {
+        if ($this->request->post()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $result = false;
+            try {
+                //数据校验
+                $cardsId = $data['cards_id'];
+
+                if(empty($cardsId)) throw new \Exception('参数错误！');
+
+                $accountCard = new \app\admin\model\addaccountrequest\AccountCard();
+                $result = $accountCard->where('cards_id',$cardsId)->delete();
+                if(empty($result)) throw new \Exception('该户下未找到该卡号！');
+
+                DB::table('ba_cards_info')->where('cards_id',$cardsId)->update(['is_use'=>0]);
+
+            } catch (Throwable $e) {
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+        }
+
+        $this->error(__('Parameter error'));
+    }
 
     public function accountCardList()
     {
