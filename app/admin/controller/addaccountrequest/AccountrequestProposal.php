@@ -754,7 +754,7 @@ class AccountrequestProposal extends Backend
                 $proposalData = [
                     'time_zone'=>$timeZone,
                     'is_cards'=>0,
-                    'cards_id'=>$cardsId
+                    // 'cards_id'=>$cardsId
                 ];
 
                 $param = [];
@@ -794,19 +794,22 @@ class AccountrequestProposal extends Backend
 
                 $cardInfoModel->where('cards_id',$cards['cards_id'])->update(['is_use'=>1]);
 
-                if(!empty($accountrequestProposal['cards_id'])){
+                if(!empty($accountrequestProposal['cards_id'])){                    
+
                     $accountCard->insert([
                         'account_id'=>$accountrequestProposal['account_id'],
-                        'cards_id'=>$accountrequestProposal['cards_id']
+                        'cards_id'=>$cardsId
                     ]);
 
-                    $cardResult = $cardInfoModel->field('id,card_id,cards_id,card_status,account_id')->where('cards_id',$accountrequestProposal['cards_id'])->find();
-                    if($cardResult['card_status'] == 'normal'){
-                        $cardService = new \app\services\CardService($cardResult['account_id']);
-                        $result = $cardService->cardFreeze(['card_id'=>$cardResult['card_id']]);
-                        if($result['code'] != 1) throw new \Exception($result['msg']);
-                        if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cardResult['id'])->update(['card_status'=>$result['data']['cardStatus']]);
-                    }
+                    // $cardResult = $cardInfoModel->field('id,card_id,cards_id,card_status,account_id')->where('cards_id',$accountrequestProposal['cards_id'])->find();
+                    // if($cardResult['card_status'] == 'normal'){
+                    //     $cardService = new \app\services\CardService($cardResult['account_id']);
+                    //     $result = $cardService->cardFreeze(['card_id'=>$cardResult['card_id']]);
+                    //     if($result['code'] != 1) throw new \Exception($result['msg']);
+                    //     if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cardResult['id'])->update(['card_status'=>$result['data']['cardStatus']]);
+                    // }                
+                }else{
+                    $proposalData['cards_id'] = $cardsId;
                 }
                 
                 $result = $this->model->where('account_id',$accountId)->update($proposalData); 
