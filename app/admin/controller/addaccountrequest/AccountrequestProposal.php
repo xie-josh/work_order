@@ -752,10 +752,11 @@ class AccountrequestProposal extends Backend
                 $accountCard = new \app\admin\model\addaccountrequest\AccountCard();
 
                 $proposalData = [
-                    'time_zone'=>$timeZone,
+                    // 'time_zone'=>$timeZone,
                     'is_cards'=>0,
                     // 'cards_id'=>$cardsId
                 ];
+                if(!empty($timeZone)) $proposalData['time_zone'] = $timeZone;
 
                 $param = [];
                 $param['card_id'] = $cards['card_id'];
