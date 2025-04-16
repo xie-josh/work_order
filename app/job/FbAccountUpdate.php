@@ -82,18 +82,18 @@ class FbAccountUpdate
 
                 $accountrequestProposalClose = [];
                 $accountrequestProposalCloseIs = [];
-                $errorList = [];
+                // $errorList = [];
                 foreach($cardList as $v){
 
-                    if($v['account_status'] != '2'){
-                        $errorList[] = [
-                            'log_id'=>$v['account_id'],
-                            'type'=>'FB_accountStatus',
-                            'data'=>'',
-                            'logs'=>'账户状态发生变更【封户/冻卡】',
-                            'create_time'=>date('Y-m-d H:i:s',time())
-                        ];
-                    }
+                    // if($v['account_status'] != '2'){
+                    //     $errorList[] = [
+                    //         'log_id'=>$v['account_id'],
+                    //         'type'=>'FB_accountStatus',
+                    //         'data'=>'',
+                    //         'logs'=>'账户状态发生变更【封户/冻卡】',
+                    //         'create_time'=>date('Y-m-d H:i:s',time())
+                    //     ];
+                    // }
 
                     $closeTime = $v['close_time']??'';
                     if(empty($closeTime)) $accountrequestProposalClose[] = $v['account_id'];
@@ -128,7 +128,7 @@ class FbAccountUpdate
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>2,'bm_token_id'=>$id,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where([['account_status','<>','2']])->update(['processing_status'=>0]);
-                DB::table('ba_fb_logs')->insertAll($errorList);
+                // DB::table('ba_fb_logs')->insertAll($errorList);
             }
 
             
