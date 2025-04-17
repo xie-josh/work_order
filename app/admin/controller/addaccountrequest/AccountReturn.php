@@ -54,7 +54,7 @@ class AccountReturn extends Backend
             $adminList = array_column($admin, 'nickname', 'id');
             foreach ($dataList as $key => &$value) {
                 $value['account']['nickname'] = '';
-                if(isset($adminList[$value['account']['admin_id']])) {
+                if(isset($adminList[$value['account']['admin_id']??0])) {
                     $nickname = $adminList[$value['account']['admin_id']];
                     unset($dataList[$key]['account']);
                     $value['account']['nickname'] = $nickname;
