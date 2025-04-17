@@ -14,5 +14,10 @@ class AccountReturnModel extends Model
 
     // 自动写入时间戳字段
     protected $autoWriteTimestamp = true;
+
+    public function account()
+    {
+        return $this->belongsTo(\app\admin\model\Account::class, 'account_id', 'account_id');
+    }
     
 }

@@ -18,7 +18,7 @@ class AccountReturn extends Backend
 
     protected array|string $preExcludeFields = ['id', 'create_time', 'update_time'];
 
-    protected array $withJoinTable = [];
+    protected array $withJoinTable = ['account'];
 
     protected string|array $quickSearchField = ['id'];
 
@@ -32,6 +32,42 @@ class AccountReturn extends Backend
         $this->model = new \app\admin\model\addaccountrequest\AccountReturnModel();
     }
 
+
+    public function index(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+        $dataList = $res->toArray()['data'];
+        if($dataList){
+            $admin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
+            $adminList = array_column($admin, 'nickname', 'id');
+            foreach ($dataList as $key => &$value) {
+                $value['account']['nickname'] = '';
+                if(isset($adminList[$value['account']['admin_id']])) {
+                    $nickname = $adminList[$value['account']['admin_id']];
+                    unset($dataList[$key]['account']);
+                    $value['account']['nickname'] = $nickname;
+                }
+            }
+        }
+
+        $this->success('', [
+            'list'   => $dataList,
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
 
     public function audit(): void
     {
