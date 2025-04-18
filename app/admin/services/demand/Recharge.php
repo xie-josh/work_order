@@ -12,7 +12,7 @@ class Recharge
     protected object $model;
     protected object $auth;
 
-    protected $currencyRate = ["EUR"=>"0.84","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000","VND"=>"23500"];
+    protected $currencyRate = ["EUR"=>"0.8","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000","VND"=>"23500"];
 
     protected $currency100 = ["IDR","VND"];
 
