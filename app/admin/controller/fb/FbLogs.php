@@ -39,7 +39,7 @@ class FbLogs extends Backend
         array_push($where,['fb_logs_model.type','IN',['FB_insights']]);
 
         $res = DB::table('ba_fb_logs')
-            ->field('fb_logs_model.status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_money,account.money,fb_logs_model.create_time')
+            ->field('fb_logs_model.status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
@@ -70,7 +70,7 @@ class FbLogs extends Backend
             管理BM  accountrequest_proposal->bm (可搜索)
             账户名称  accountrequest_proposal->serial_name (可搜索)
             账户ID   accountrequest_proposal->account_id (可搜索)
-            开户时间 open_money
+            开户时间 open_time
             归属用户 admin->nickname
             总充值  currency_account
             总消耗    logs_process_amout  
@@ -175,7 +175,7 @@ class FbLogs extends Backend
         array_push($where,['fb_logs_model.type','IN',['FB_insights']]);
 
         $query = DB::table('ba_fb_logs')
-            ->field('fb_logs_model.status fb_logs_status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_money,account.money,fb_logs_model.create_time')
+            ->field('fb_logs_model.status fb_logs_status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
@@ -227,7 +227,7 @@ class FbLogs extends Backend
                     $v['bm'],
                     $v['serial_name'],
                     $v['account_id'],
-                    empty($v['open_money'])?'':date('Y-m-d H:i:s',$v['open_money']),
+                    empty($v['open_time'])?'':date('Y-m-d H:i:s',$v['open_time']),
                     $v['nickname'],
                     $currencyNumber,
                     $v['logs_process_amout'],
