@@ -39,7 +39,7 @@ class FbLogs extends Backend
         array_push($where,['fb_logs_model.type','IN',['FB_insights']]);
 
         $res = DB::table('ba_fb_logs')
-            ->field('fb_logs_model.status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time')
+            ->field('fb_logs_model.status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time,account.open_money')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
@@ -65,9 +65,10 @@ class FbLogs extends Backend
 
             foreach($dataList as &$v){
 
-                $recharge = $rechargeList[$v['account_id']]??0;
+                $recharge = $rechargeList[$v['account_id']]??0;                
                 $chargebacks = $chargebacksList[$v['account_id']]??0;
-                $money = bcsub((string)$recharge, (string)$chargebacks, 2);
+                $recharge = bcadd((string)$recharge, (string)$v['open_money'], 2);
+                $money = bcsub((string)$recharge, (string)$chargebacks, 2);                
 
                 $currencyNumber =  '';
                 if(!empty($currencyRate[$v['currency']])){
@@ -187,7 +188,7 @@ class FbLogs extends Backend
         array_push($where,['fb_logs_model.type','IN',['FB_insights']]);
 
         $query = DB::table('ba_fb_logs')
-            ->field('fb_logs_model.status fb_logs_status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time')
+            ->field('fb_logs_model.status fb_logs_status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time,account.open_money')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
@@ -238,6 +239,7 @@ class FbLogs extends Backend
             foreach($data as $v){
                 $recharge = $rechargeList[$v['account_id']]??0;
                 $chargebacks = $chargebacksList[$v['account_id']]??0;
+                $recharge = bcadd((string)$recharge, (string)$v['open_money'], 2);
                 $money = bcsub((string)$recharge, (string)$chargebacks, 2);
 
                 $currencyNumber =  '';
