@@ -5,6 +5,7 @@ namespace app\job;
 use think\queue\Job;
 use app\services\CardService;
 use think\facade\Db;
+use think\facade\Queue;
 set_time_limit(600);
 
 class FbAccountUpdate
@@ -113,6 +114,7 @@ class FbAccountUpdate
                         ]);
                     }
                 }
+                
                 foreach($currencyAccountList as $k => $v){
                     //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->where('status',1)->update(['currency'=>$k]);
                     $where = [
@@ -128,9 +130,11 @@ class FbAccountUpdate
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>2,'bm_token_id'=>$id,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where([['account_status','<>','2']])->update(['processing_status'=>0]);
+
+                $accountIds2 = DB::table('ba_accountrequest_proposal')->where('account_status',1)->where('affiliation_admin_id',21)->whereIn('account_id',$accountIds)->column('account_id');
+                if(!empty($accountIds2)) $this->accountClear($accountIds2);
                 // DB::table('ba_fb_logs')->insertAll($errorList);
             }
-
             
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
@@ -140,10 +144,98 @@ class FbAccountUpdate
             );
             //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);            
         }
-        return true;        
+        return true;
     }
 
-    public function accountInsights(){
+    public function accountClear($accountIds){
+        //活跃 变 封户
+        /**
+         * 1.没有充值需求时，直接跳过
+         * 1.最后一个充值需求是否是清零
+         *    是：
+         *      continue;
+         * 
+         *    否：
+         *       1.统计所有改账户的需求
+         *       2.求和所有“充值需求”的金额
+         *       3.“扣款取消”与“充值需求”状态更新为失败
+         *       4.把充值需求所有钱退回到对应账号
+         *       
+         * 
+         *       最后是不是完成状态：
+         *          是：
+         *              是且是充值需求时：生成异步清零需求
+         *          否：
+         * 
+         * 
+         * 1.有未完成的充值需求-需要退回与修改状态
+         * 2.有未完成的扣款取消-修改状态
+         * 
+         * 
+         * 
+         */
 
+        $recharge = (new \app\admin\model\demand\Recharge());
+        foreach($accountIds as $accountId){
+            DB::startTrans();
+            $amount = "0";
+            $usedMoney = 0;
+            $accountMoney = 0;
+            $id = 0;
+            $rechargeList = [];
+            $accountClear = $recharge->order('id','desc')->field('type,admin_id,status,account_name')->where('account_id',$accountId)->find();
+            if(empty($accountClear)) continue;
+            $usedMoney = DB::table('ba_admin')->where('id',$accountClear['admin_id'])->value('used_money');
+            $accountMoney = DB::table('ba_account')->where('account_id',$accountId)->value('money');
+            if(in_array($accountClear['type'],[1,2]))
+            {
+                $rechargeResult = $recharge->where('status',0)->field('id,account_id,type,number')->where('account_id',$accountId)->select()->toArray();
+                $rechargeList = array_column($rechargeResult,'id');
+                foreach($rechargeResult as $v)
+                {
+                    if($v['type'] == 1) $amount = bcadd((string)$v['number'],$amount,2);
+                }
+
+                if(!empty($accountMoney))
+                {
+                    $data = [
+                        "type" => "3",
+                        "number" => 0,
+                        "account_id" => $accountId,
+                        "admin_id" => $accountClear['admin_id'],
+                        "account_name" => $accountClear['account_name'],
+                        // 'create_time'=>time()
+                    ];
+                    $id = $recharge->insertGetId($data);
+                }
+            }else{
+                continue;
+            }
+            if(!empty($rechargeList)) $recharge->whereIn('id',$rechargeList)->update(['status'=>2,'update_time'=>time()]);
+
+            if($amount > 0){
+                $result = DB::table('ba_admin')->where('id',$accountClear['admin_id'])->where('used_money',$usedMoney)->dec('used_money',$amount)->update();
+                if($result){
+                    //if(!empty($id)) $this->rechargeJob($id);
+                    DB::commit();
+                }else{
+                    DB::rollback();
+                }
+            }else{
+                //if(!empty($id)) $this->rechargeJob($id);
+                DB::commit();
+            }   
+        }        
+        
+        return true;
     }
+
+    public function rechargeJob($id)
+    {        
+        $jobHandlerClassName = 'app\job\AccountSpendDelete';
+        $jobQueueName = 'AccountSpendDelete';
+        Queue::later(60, $jobHandlerClassName, ['id'=>$id], $jobQueueName);        
+        return true;
+    }
+
 }
