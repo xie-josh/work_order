@@ -51,17 +51,29 @@ class FbLogs extends Backend
             
         $dataList = $res->toArray()['data'];
 
+        $rechargeModel = new \app\admin\model\demand\Recharge();
+
         if($dataList)
         {
             $currencyRate = config('basics.currency');
 
+            $accountIds = array_column($dataList,'account_id');
+            $rechargeList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',1)->where('status',1)->select()->append([])->toArray();
+            $chargebacksList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',2)->where('status',1)->select()->append([])->toArray();
+            $rechargeList = array_column($rechargeList,'number','account_id');
+            $chargebacksList = array_column($chargebacksList,'number','account_id');
+
             foreach($dataList as &$v){
+
+                $recharge = $rechargeList[$v['account_id']]??0;
+                $chargebacks = $chargebacksList[$v['account_id']]??0;
+                $money = bcsub((string)$recharge, (string)$chargebacks, 2);
 
                 $currencyNumber =  '';
                 if(!empty($currencyRate[$v['currency']])){
-                    $currencyNumber = bcmul((string)$v['money'], $currencyRate[$v['currency']],2);
+                    $currencyNumber = bcmul($money, $currencyRate[$v['currency']],2);
                 }else{
-                    $currencyNumber = (string)$v['money'];
+                    $currencyNumber = $money;
                 }
                 $v['currency_account'] = $currencyNumber;
 
@@ -189,6 +201,7 @@ class FbLogs extends Backend
         $statusValue = [0=>'未处理',1=>'处理完成'];
         $currencyRate = config('basics.currency');
 
+        $rechargeModel = new \app\admin\model\demand\Recharge();
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
             '管理BM',
@@ -211,16 +224,27 @@ class FbLogs extends Backend
         $excel  = new \Vtiful\Kernel\Excel($config);
 
         $name = $folders['name'].'.xlsx';
-
+        
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
+
+            $accountIds = array_column($data,'account_id');
+            $rechargeList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',1)->where('status',1)->select()->append([])->toArray();
+            $chargebacksList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',2)->where('status',1)->select()->append([])->toArray();
+            $rechargeList = array_column($rechargeList,'number','account_id');
+            $chargebacksList = array_column($chargebacksList,'number','account_id');
+
             $dataList=[];
             foreach($data as $v){
+                $recharge = $rechargeList[$v['account_id']]??0;
+                $chargebacks = $chargebacksList[$v['account_id']]??0;
+                $money = bcsub((string)$recharge, (string)$chargebacks, 2);
+
                 $currencyNumber =  '';
                 if(!empty($currencyRate[$v['currency']])){
-                    $currencyNumber = bcmul((string)$v['money'], $currencyRate[$v['currency']],2);
+                    $currencyNumber = bcmul($money, $currencyRate[$v['currency']],2);
                 }else{
-                    $currencyNumber = (string)$v['money'];
+                    $currencyNumber = $money;
                 }
 
                 $dataList[] = [
