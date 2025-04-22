@@ -58,8 +58,8 @@ class FbLogs extends Backend
             $currencyRate = config('basics.currency');
 
             $accountIds = array_column($dataList,'account_id');
-            $rechargeList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',1)->where('status',1)->select()->append([])->toArray();
-            $chargebacksList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',2)->where('status',1)->select()->append([])->toArray();
+            $rechargeList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',1)->where('status',1)->group('account_id')->select()->append([])->toArray();
+            $chargebacksList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',2)->where('status',1)->group('account_id')->select()->append([])->toArray();
             $rechargeList = array_column($rechargeList,'number','account_id');
             $chargebacksList = array_column($chargebacksList,'number','account_id');
 
@@ -230,8 +230,8 @@ class FbLogs extends Backend
             $data = $query->limit($offset, $batchSize)->select()->toArray();
 
             $accountIds = array_column($data,'account_id');
-            $rechargeList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',1)->where('status',1)->select()->append([])->toArray();
-            $chargebacksList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->where('type',2)->where('status',1)->select()->append([])->toArray();
+            $rechargeList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->group('account_id')->where('type',1)->where('status',1)->select()->append([])->toArray();
+            $chargebacksList = $rechargeModel->field('account_id,sum(number) number')->whereIn('account_id',$accountIds)->group('account_id')->where('type',2)->where('status',1)->select()->append([])->toArray();
             $rechargeList = array_column($rechargeList,'number','account_id');
             $chargebacksList = array_column($chargebacksList,'number','account_id');
 
