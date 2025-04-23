@@ -62,7 +62,8 @@ class Consumption extends Backend
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
         ->leftJoin('ba_admin admin','admin.id=account.admin_id')
-        ->where($where);
+        ->where($where)
+        ->order('account_consumption.id','asc');
 
         $statusList = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',6=>'开户异常',98=>'回收',99=>'终止使用'];
 

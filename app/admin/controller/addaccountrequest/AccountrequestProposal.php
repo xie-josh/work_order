@@ -395,6 +395,7 @@ class AccountrequestProposal extends Backend
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
         ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+        ->order('accountrequest_proposal.id','asc')
         ->where($where);
         $total = $query->count(); 
 
