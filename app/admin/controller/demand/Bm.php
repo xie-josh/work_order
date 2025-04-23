@@ -358,8 +358,6 @@ class Bm extends Backend
         ]);
     }
 
-
-
     public function audit(): void
     {
         if ($this->request->isPost()) {
@@ -495,6 +493,62 @@ class Bm extends Backend
                 DB::table('ba_account')->whereIn('account_id',$accountIds)->where('dispose_status',2)->update(['dispose_status'=>$disposeStatus]);
 
                 DB::table('ba_bm_progress')->insertAll($progressData);
+
+                $result = true;
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
+    public function disposeAll()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            $this->model->startTrans();
+            try {
+                $ids = $data['ids'];
+                $status = $data['status'];
+                $disposeStatus = $data['dispose_status'];
+                $comment = $this->request->param('comment',null,null)??'';
+
+                $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,account_id')->select()->toArray(); 
+                $accountTypeIds = [];
+                foreach($bmList as $v){
+                    if($v['demand_type'] == 4) $accountTypeIds[] = $v['account_id'];
+                }  
+
+                $newStatus = 2;
+
+                if($disposeStatus != 0){
+                    if($status != 1) throw new \Exception("没有完成提交，不可以处理，请先提交完成！");
+                    if($disposeStatus == 1){
+                        $disposeStatus2 = 1;
+                    }elseif($disposeStatus == 2){
+                        $disposeStatus2 = 4;
+                    }
+                }elseif($status != 0){
+                    if($status == 1){
+                        $disposeStatus2 = 2;
+                    }elseif($status == 2){
+                        $disposeStatus2 = 3;
+                    }
+                }else{
+                    $disposeStatus2 = 0;
+                }
+
+                if($disposeStatus == 1) $newStatus = 1;
+
+                $this->model->whereIn('id',array_column($bmList,'id'))->update(['new_status'=>$newStatus,'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$comment,'update_time'=>time()]);
+                if(!empty($accountTypeIds)) DB::table('ba_account')->whereIn('account_id',$accountTypeIds)->update(['dispose_status'=>$disposeStatus2]);
 
                 $result = true;
                 $this->model->commit();

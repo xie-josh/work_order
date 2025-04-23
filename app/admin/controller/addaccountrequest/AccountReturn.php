@@ -5,6 +5,7 @@ namespace app\admin\controller\addaccountrequest;
 use Throwable;
 use app\common\controller\Backend;
 use think\facade\Db;
+use think\facade\Cache;
 
 
 class AccountReturn extends Backend
@@ -99,6 +100,79 @@ class AccountReturn extends Backend
         $this->error('功能未开放！');
     }
 
+
+    public function export()
+    {
+        $where = [];
+        set_time_limit(300);
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        $batchSize = 2000;
+        $processedCount = 0;
+        $redisKey = 'export_progress'.'_'.$this->auth->id;
+        
+        $query = $this->model
+        ->field($this->indexField)
+        ->withJoin($this->withJoinTable, $this->withJoinType)
+        ->alias($alias)
+        ->where($where)
+        ->order("account_return_model.id",'desc');
+
+        $total = $query->count(); 
+
+        $resultAdmin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
+
+        $adminListValue = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
+        $typeListValue = [1=>"封户回来活跃",2=>"封户回来待支付",3=>"丢失回来活跃",4=>"丢失回来封户",5=>"丢失回来待支付"];
+        $statusListValue = [0=>"未处理",1=>"处理完成"];
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            '账户ID',
+            '用户名',
+            '类型',
+            '状态',
+            '创建时间'
+        ];
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $name = $folders['name'].'.xlsx';
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
+            $dataList=[];
+            foreach($data as $v){
+                $dataList[] = [
+                    $v['account_id'],
+                    $adminListValue[$v['account']['admin_id']] ?? '',
+                    $typeListValue[$v['type']] ?? '',
+                    $statusListValue[$v['status']] ?? '',
+                    date('Y-m-d H:i:s', $v['create_time']),
+                ];  
+                $processedCount++;
+            }
+            $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+    public function getExportProgress()
+    {
+        $progress = Cache::store('redis')->get('export_progress'.'_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
+    }
 
 
 }
