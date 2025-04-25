@@ -23,9 +23,9 @@ class AccountReturn extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = [];
+    protected array $noNeedPermission = ['index','audit','export'];
 
-    protected bool|string|int $dataLimit = 'parent';
+    //protected bool|string|int $dataLimit = 'parent';
 
     public function initialize(): void
     {
@@ -148,7 +148,7 @@ class AccountReturn extends Backend
             foreach($data as $v){
                 $dataList[] = [
                     $v['account_id'],
-                    $adminListValue[$v['account']['admin_id']] ?? '',
+                    empty($v['account']['admin_id']) ? '' :$adminListValue[$v['account']['admin_id']] ?? '',
                     $typeListValue[$v['type']] ?? '',
                     $statusListValue[$v['status']] ?? '',
                     date('Y-m-d H:i:s', $v['create_time']),

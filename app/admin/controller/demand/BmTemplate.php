@@ -22,6 +22,8 @@ class BmTemplate extends Backend
 
     protected string|array $defaultSortField = 'weight,desc';
 
+    protected array $noNeedPermission = ['index'];
+
     public function initialize(): void
     {
         parent::initialize();
