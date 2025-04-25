@@ -240,6 +240,7 @@ class Bm extends Backend
                 ->where([['dispose_type','=',0]])->column('bm');
                 $error = [];
 
+                
                 $dataList = [];
                 if(!empty($checkList)){
                     foreach($checkList as $v){
@@ -249,8 +250,11 @@ class Bm extends Backend
                         } 
                         if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v) > 0) throw new \Exception("BM不能包含中文");
 
-                        if (filter_var($v, FILTER_VALIDATE_EMAIL) && $demandType == 1 && $bmType != 2) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
+                        if($demandType == 1 && $bmType == 1 && preg_match('/[a-zA-Z]/', $v)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
+                        if($demandType == 1 && $bmType == 2 && !filter_var($v, FILTER_VALIDATE_EMAIL)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
 
+                        //if (filter_var($v, FILTER_VALIDATE_EMAIL) && $demandType == 1 && $bmType != 2) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
+                        // dd($checkList,!filter_var($v, FILTER_VALIDATE_EMAIL));
                         $dataList[] = [
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,
@@ -337,8 +341,10 @@ class Bm extends Backend
                 $accountId = $data['account_id']??'';
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
-
                 if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $data['bm']) > 0) throw new \Exception("BM不能包含中文");
+
+                if($data['demand_type'] == 1 && $data['bm_type'] == 1 && preg_match('/[a-zA-Z]/', $data['bm'])) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
+                if($data['demand_type'] == 1 && $data['bm_type'] == 2 && !filter_var($data['bm'], FILTER_VALIDATE_EMAIL)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
 
                 $result = $row->save($data);
                 $this->model->commit();
@@ -370,22 +376,28 @@ class Bm extends Backend
                 $comment = $data['comment']??'';
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray(); 
+                $bmTemplate = new \app\admin\model\demand\BmTemplate();
+                $servicesBasics = new \app\services\Basics();
 
                 $progressData = [];
+                $bmData = [];
                 $commentValue = '';
                 foreach($ids as $v){
+
+                    $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
+
                     switch ($status) {
                         case '1':
                             $disposeStatus  = 2;
-                            $commentValue = '已提交:'.$comment;
+                            $commentValue = '已提交:'.$getTemplateValue;
                             break;
                         case '2':
                             $disposeStatus = 3;
-                            $commentValue = '提交异常:'.$comment;
+                            $commentValue = '提交异常:'.$getTemplateValue;
                             break;
                         case '3':
                             $disposeStatus = 1;
-                            $commentValue = '处理完成:'.$comment;
+                            $commentValue = '处理完成:'.$getTemplateValue;
                             break;
                         default:
                             break;
@@ -397,15 +409,24 @@ class Bm extends Backend
                         'comment'=>$commentValue,
                         'create_time'=>time()
                     ];
+
+                    
+                    if($status == 3){
+                        $bmData[] = ['id'=>$v['id'],'status'=>1,'dispose_type'=>1,'comment'=>$getTemplateValue,'update_time'=>time()];
+                    }else{
+                        $bmData[] = ['id'=>$v['id'],'status'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()];
+                    }                
                 }
 
-                $bmData = [];
-                if($status == 3){
-                    $bmData = ['status'=>1,'dispose_type'=>1,'comment'=>$comment,'update_time'=>time()];
-                }else{
-                    $bmData = ['status'=>$status,'comment'=>$comment,'update_time'=>time()];
-                }
-                $result = $this->model->whereIn('id',array_column($ids,'id'))->update($bmData);
+                $servicesBasics->dbBatchUpdate('ba_bm',$bmData, 'id');
+
+                // $bmData = [];
+                // if($status == 3){
+                //     $bmData = ['status'=>1,'dispose_type'=>1,'comment'=>$comment,'update_time'=>time()];
+                // }else{
+                //     $bmData = ['status'=>$status,'comment'=>$comment,'update_time'=>time()];
+                // }
+                //$result = $this->model->whereIn('id',array_column($ids,'id'))->update($bmData);
                 
                 DB::table('ba_bm_progress')->insertAll($progressData);
 
@@ -467,26 +488,35 @@ class Bm extends Backend
 
                 $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray(); 
 
+                $bmTemplate = new \app\admin\model\demand\BmTemplate();
+                $servicesBasics = new \app\services\Basics();
+
                 $accountIds = [];
                 $progressData = [];
                 $commentValue = '';
+                $bmData = [];
                 foreach($ids as $v){
+                    $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
+
                     $accountIds[] = $v['account_id'];
-                    if($v['demand_type'] == 2 && $status == 1){
-                        $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
-                    }
-                    
-                    if($status == 1) $commentValue = '处理完成:'.$comment;
-                    else if($status == 2) $commentValue = '处理异常:'.$comment;
+                    if($v['demand_type'] == 2 && $status == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
+                        
+                    if($status == 1) $commentValue = '处理完成:'.$getTemplateValue;
+                    else if($status == 2) $commentValue = '处理异常:'.$getTemplateValue;
 
                     $progressData[] = [
                         'bm_id'=>$v['id'],
                         'comment'=>$commentValue,
                         'create_time'=>time()
                     ];
+
+                    $bmData[] = [
+                        'id'=>$v['id'],'dispose_type'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()
+                    ];
                 }
                 
-                $this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'comment'=>$comment,'update_time'=>time()]);
+                //$this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()]);
+                $servicesBasics->dbBatchUpdate('ba_bm',$bmData, 'id');
 
                 if($status == 1)$disposeStatus  = 1;
                 else $disposeStatus = 4;
@@ -520,13 +550,8 @@ class Bm extends Backend
                 $disposeStatus = $data['dispose_status'];
                 $comment = $this->request->param('comment',null,null)??'';
 
-                $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,account_id')->select()->toArray(); 
-                $accountTypeIds = [];
-                foreach($bmList as $v){
-                    if($v['demand_type'] == 4) $accountTypeIds[] = $v['account_id'];
-                }  
-
-                $newStatus = 2;
+                $bmTemplate = new \app\admin\model\demand\BmTemplate();
+                $servicesBasics = new \app\services\Basics();
 
                 if($disposeStatus != 0){
                     if($status != 1) throw new \Exception("没有完成提交，不可以处理，请先提交完成！");
@@ -545,9 +570,19 @@ class Bm extends Backend
                     $disposeStatus2 = 0;
                 }
 
-                if($disposeStatus == 1) $newStatus = 1;
+                $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,account_id')->select()->toArray(); 
+                $accountTypeIds = [];
+                $bmData = [];
+                foreach($bmList as $v){
+                    $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
+                    if($v['demand_type'] == 4) $accountTypeIds[] = $v['account_id'];
+                    $bmData[] = ['id'=>$v['id'],'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$getTemplateValue,'update_time'=>time()];
+                    
+                    if($v['demand_type'] == 2 && $disposeStatus2 == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
+                }                  
 
-                $this->model->whereIn('id',array_column($bmList,'id'))->update(['new_status'=>$newStatus,'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$comment,'update_time'=>time()]);
+                $servicesBasics->dbBatchUpdate('ba_bm',$bmData, 'id');
+                // $this->model->whereIn('id',array_column($bmList,'id'))->update(['new_status'=>$newStatus,'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$comment,'update_time'=>time()]);                
                 if(!empty($accountTypeIds)) DB::table('ba_account')->whereIn('account_id',$accountTypeIds)->update(['dispose_status'=>$disposeStatus2]);
 
                 $result = true;
@@ -662,6 +697,88 @@ class Bm extends Backend
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
+    }
+
+    public function batchAdd()
+    {
+        $this->error('该功能暂未开放');
+        $result = false;
+        try {
+            $data = $this->request->post();
+            $accountIds = $data['account_ids']??[];
+            $bmList = $data['bm_list']??[];
+            $demandType = $data['demand_type']??1;
+
+            $accountListResult = DB::table('ba_account')->whereIn('account_id',$accountIds)->select()->toArray();
+
+
+            //是否已经绑定过且没有解绑 （状态等于1 AND demand_type = 1 AND new_status = 1）
+            //是有已经提交了需求，在处理中(status = 0 OR dispose_type = 0)
+            
+            
+            if(empty($accountListResult) || empty($bmList)) throw new \Exception("未找到账户ID");
+            
+
+            $dataList = array_merge(...array_map(function($v1) use ($bmList,$demandType){
+                return array_map(function($v2) use ($v1,$demandType){
+                    if($demandType == 1)
+                    {  
+                        $adminId = $this->auth->id;
+                        $result = DB::table('ba_bm')
+                        ->where([
+                            ['status','=',1],
+                            ['demand_type','=',1],
+                            ['new_status','=',1],
+                            ['account_id','=',$v1['account_id']],
+                            ['bm','=',$v2],
+                            ['admin_id','=',$adminId],
+                        ])->find();
+
+
+                        $result1 = DB::table('ba_bm')
+                        ->where([
+                            ['account_id','=',$v1['account_id']],
+                            ['bm','=',$v2],
+                            ['admin_id','=',$adminId],
+                        ])->where(function($query){
+                            $query->whereOr([
+                                ['status','=',0],
+                                ['dispose_type','=',0]
+                            ]);
+                        })
+                        ->find();
+                        if(!empty($result) || !empty($result1)) throw new \Exception("该账户已经提交过需求，不可重复提交！({$v1['account_id']}-{$v2})");   
+                    }
+                    
+                    $bmType = 1;
+                    if(filter_var($v2, FILTER_VALIDATE_EMAIL) !== false) $bmType = 2;
+
+                    $data = [
+                        'demand_type'=>$demandType,
+                        'account_id'=>$v1['account_id'],
+                        'bm'=>$v2,
+                        'bm_type'=>$bmType,
+                        'account_name'=>$v1['name'],
+                        'admin_id'=>$this->auth->id,
+                        'create_time'=>time()
+                    ];
+                    return $data;
+                },$bmList);
+            },$accountListResult));
+            
+            // dd($dataList); 
+
+            $result = $this->model->insertAll($dataList);
+            //code...
+        } catch (\Throwable $th) {
+            //throw $th;
+            $this->error($th->getMessage());
+        }
+        if ($result !== false) {
+            $this->success(__('Added successfully'));
+        } else {
+            $this->error(__('No rows were added'));
+        }
     }
 
     /**
