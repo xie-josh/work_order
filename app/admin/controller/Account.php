@@ -979,7 +979,7 @@ class Account extends Backend
         
         $query =  $this->model
         ->alias('account')
-        ->field('account.open_time,account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm accountrequest_proposal_bm')
+        ->field('account.account_type,account.open_time,account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm accountrequest_proposal_bm')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         //->withJoin(['accountrequestProposal'], 'LEFT')
         ->order('account.id','desc')
@@ -988,6 +988,9 @@ class Account extends Backend
         $total = $query->count(); 
 
         $resultAdmin = DB::table('ba_admin')->select()->toArray();
+
+        $accountTypeList = DB::table('ba_account_type')->field('id,name')->select()->toArray();
+        $accountTypeListValue = array_column($accountTypeList,'name','id');
 
         $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
@@ -1006,6 +1009,7 @@ class Account extends Backend
             '首充金额',
             'BM绑定',
             '开户状态',
+            '账户类型',
             '创建时间',
             '修改时间',
             '开户时间'
@@ -1029,12 +1033,13 @@ class Account extends Backend
                     ($adminList[$v['admin_id']])??'',
                     $v['accountrequest_proposal_id']?$v['serial_name']:$v['name'],
                     //$v['name'],
-                    $v['account_id'],
+                    $v['status'] != 4 ? "" : $v['account_id'],
                     $v['time_zone'],
                     $v['bm'],
                     $v['open_money'],
                     $disposeStatusValue[$v['dispose_status']],
                     $statusValue[$v['status']],
+                    $accountTypeListValue[$v['account_type']]??'',
                     $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
                     $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
                     $v['open_time']?date('Y-m-d H:i',$v['open_time']):'',
