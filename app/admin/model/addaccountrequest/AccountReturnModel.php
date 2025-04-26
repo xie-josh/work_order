@@ -19,5 +19,10 @@ class AccountReturnModel extends Model
     {
         return $this->belongsTo(\app\admin\model\Account::class, 'account_id', 'account_id');
     }
+
+    public function accountrequestProposal()
+    {
+        return $this->belongsTo(\app\admin\model\addaccountrequest\AccountrequestProposal::class, 'account_id', 'account_id');
+    }
     
 }
