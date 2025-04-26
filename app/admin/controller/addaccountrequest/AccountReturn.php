@@ -13,13 +13,13 @@ class AccountReturn extends Backend
     /**
      * AccountrequestProposal模型对象
      * @var object
-     * @phpstan-var \app\admin\model\demand\BcTkModel
+     * @phpstan-var \app\admin\model\addaccountrequest\AccountReturnModel
      */
     protected object $model;
 
     protected array|string $preExcludeFields = ['id', 'create_time', 'update_time'];
 
-    protected array $withJoinTable = ['account'];
+    protected array $withJoinTable = ['account','accountrequestProposal'];
 
     protected string|array $quickSearchField = ['id'];
 
@@ -57,8 +57,13 @@ class AccountReturn extends Backend
                 $value['account']['nickname'] = '';
                 if(isset($adminList[$value['account']['admin_id']??0])) {
                     $nickname = $adminList[$value['account']['admin_id']];
+                    $bm = $value['accountrequestProposal']['bm'];
+                    $status = $value['accountrequestProposal']['status'];
                     unset($dataList[$key]['account']);
+                    unset($dataList[$key]['accountrequestProposal']);
                     $value['account']['nickname'] = $nickname;
+                    $value['accountrequestProposal']['bm'] = $bm;
+                    $value['accountrequestProposal']['status'] = $status;
                 }
             }
         }
@@ -77,7 +82,7 @@ class AccountReturn extends Backend
             $data = $this->request->post();
             if(empty($data['ids']) || empty($data['status'])) $this->error('参数错误！');
             
-            $resutn = $this->model->whereIn('id',$data['ids'])->update(['status'=>$data['status']]);
+            $resutn = $this->model->whereIn('id',$data['ids'])->update(['status'=>$data['status'],'update_time'=>time()]);
 
             if($resutn){
                 $this->success('操作成功！');
@@ -123,15 +128,18 @@ class AccountReturn extends Backend
         $resultAdmin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
 
         $adminListValue = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
+        $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',6=>'开户异常',98=>'回收',99=>'终止使用'];
         $typeListValue = [1=>"封户回来活跃",2=>"封户回来待支付",3=>"丢失回来活跃",4=>"丢失回来封户",5=>"丢失回来待支付"];
         $statusListValue = [0=>"未处理",1=>"处理完成"];
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
+            '管理BM',
             '账户ID',
             '用户名',
             '类型',
-            '状态',
+            '账户状态',
+            '处理状态',
             '创建时间'
         ];
 
@@ -147,9 +155,11 @@ class AccountReturn extends Backend
             $dataList=[];
             foreach($data as $v){
                 $dataList[] = [
+                    $v['accountrequestProposal']['bm'],
                     $v['account_id'],
-                    empty($v['account']['admin_id']) ? '' :$adminListValue[$v['account']['admin_id']] ?? '',
+                    empty($v['account']['admin_id']) ? '' :$adminListValue[$v['account']['admin_id']] ?? '',                    
                     $typeListValue[$v['type']] ?? '',
+                    $statusValue[$v['accountrequestProposal']['status']]??'未知的状态',
                     $statusListValue[$v['status']] ?? '',
                     date('Y-m-d H:i:s', $v['create_time']),
                 ];  
