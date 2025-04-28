@@ -965,6 +965,18 @@ class AccountrequestProposal extends Backend
         $this->error(__('Parameter error'));
     }
 
+    public function editStatusAll()
+    {
+        if(!$this->auth->isSuperAdmin()) $this->error('没有权限！');
+        $data = $this->request->post();
+        if(empty($data['account_ids']) || !isset($data['status'])) $this->error('参数错误！');
+        $accountIds = $data['account_ids'];
+        $status = $data['status'];
+
+        $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['status'=>$status]);
+        if($result) return $this->success(__('Update successful'));
+        return $this->error(__('No rows updated'));
+    }
 
     function getNickname($nickname)
     {
