@@ -608,6 +608,9 @@ class Recharge extends Backend
         
         $result = (new \app\admin\services\card\Cards())->accountSingle();
         $realTimeBalance = $result['data']['row']['realTimeBalance']??'未查询到！';
+
+
+        $accountReturn = DB::table('ba_account_return')->where('status',0)->count();
         
         $deductionListtotal = 0;
         if($realTimeBalance < 10000){
@@ -622,6 +625,7 @@ class Recharge extends Backend
             'total'=>$listTotal,
             'deduction_total'=>$deductionTotal,
             'balance_total'=>$deductionListtotal,
+            'account_return'=>$accountReturn,
         ]);
     }
 
