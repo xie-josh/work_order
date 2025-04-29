@@ -402,6 +402,9 @@ class Bm extends Backend
                         default:
                             break;
                     }
+
+                    if($v['demand_type'] == 2 && $disposeStatus == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
+
                     DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>$disposeStatus]);
 
                     $progressData[] = [
