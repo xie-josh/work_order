@@ -68,16 +68,18 @@ class Consumption extends Backend
         $statusList = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',6=>'开户异常',98=>'回收',99=>'终止使用'];
 
         if($isCount == 1){
-            $query->field('account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
+            $query->field('accountrequest_proposal.admin_id admin_channel,account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
             $query->group('account_id');
             $accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
         }else{
             $accountRecycleWhere = [];
-            $query->field('account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
+            $query->field('accountrequest_proposal.admin_id admin_channel,account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
             $accountRecycleList = $this->accountRecycle($accountRecycleWhere);
         }
-        // dd($accountRecycleList['579613691644460'],$isCount);
 
+        $adminChannelList = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
+        $adminChannelList = array_column($adminChannelList,'nickname','id');
+        
         $total = $query->count();
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
@@ -93,6 +95,7 @@ class Consumption extends Backend
             '管理BM',
             '归属BM',
             '系统状态',
+            '渠道'
         ];
 
         if($isCount != 1) $header[] = '开户时间';
@@ -110,6 +113,7 @@ class Consumption extends Backend
             $dataList=[];
             foreach($data as $v){
                 
+                $adminChannel = $adminChannelList[$v['admin_channel']]??'';
                 $nickname = '';
                 $openTime = '';
                 $serialName = $v['serial_name'];
@@ -151,6 +155,7 @@ class Consumption extends Backend
                                 $v['bm'],
                                 $v['affiliation_bm'],
                                 $statusValue,
+                                $adminChannel,
                             ];
                             $spend = bcsub((string)$spend ,(string)$recycle['spend'],2);
                             $dateStart = $recycle['date_stop'];
@@ -207,7 +212,8 @@ class Consumption extends Backend
                     $v['bm'],
                     $v['affiliation_bm'],
                     $statusValue,
-                    $openTime
+                    $adminChannel,
+                    $openTime,
                 ];  
                 $processedCount++;
             }
