@@ -9,7 +9,7 @@ class Admin extends Validate
     protected $failException = true;
 
     protected $rule = [
-        'username'  => 'require|regex:^[a-zA-Z][a-zA-Z0-9_]{2,15}$|unique:admin',
+        'username'  => 'require|unique:admin',
         'nickname'  => 'require',
         'password'  => 'require|regex:^(?!.*[&<>"\'\n\r]).{6,32}$',
         'email'     => 'email|unique:admin',
