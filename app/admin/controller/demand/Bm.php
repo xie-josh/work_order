@@ -523,7 +523,7 @@ class Bm extends Backend
 
                 if($status == 1)$disposeStatus  = 1;
                 else $disposeStatus = 4;
-                DB::table('ba_account')->whereIn('account_id',$accountIds)->where('dispose_status',2)->update(['dispose_status'=>$disposeStatus]);
+                DB::table('ba_account')->whereIn('account_id',$accountIds)->where('status',2)->update(['dispose_status'=>$disposeStatus]);
 
                 DB::table('ba_bm_progress')->insertAll($progressData);
 
