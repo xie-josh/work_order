@@ -521,6 +521,7 @@ class AccountrequestProposal extends Backend
     public function accountRefresh()
     {
         $accountId = $this->request->param('account_id');
+        $type = $this->request->param('type');
         $result = false;
         $resultData = [];
         try {
@@ -537,7 +538,7 @@ class AccountrequestProposal extends Backend
 
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('fb_bm_token.pull_status,accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
+            ->field('accountrequest_proposal.account_id,fb_bm_token.pull_status,accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotIn('accountrequest_proposal.status',$FHStatus2)
@@ -545,44 +546,20 @@ class AccountrequestProposal extends Backend
             ->where('accountrequest_proposal.account_id',$accountId)
             ->find();
             
-            $FacebookService = new \app\services\FacebookService();
-            $result1 = $FacebookService->adAccounts($accountrequestProposal);
-            if($result1['code'] != 1 || empty($result1['data']['account_status'])) throw new \Exception('无法查询该账户，请联系管理员1-1!');
-            DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountId)->update(['account_status'=>$result1['data']['account_status'],'pull_account_status'=>date('Y-m-d H:i',time())]);
-
-            if(empty($accountrequestProposal['account_id'])) throw new \Exception("无法查询该账户，请联系管理员1-2!");
-            if($accountrequestProposal['pull_status'] == 1)$this->accountConsumption($accountrequestProposal);
-
-            $currency = $accountrequestProposal['currency'];    
-
-
-
-            $account = DB::table('ba_account')->field('money,account_id,open_time')->where('account_id',$accountId)->find();
-
-            $accountAmount = $account['money']??0;
-            $openTime = date('Y-m-d',$account['open_time']);                        
-
-            $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountId)->where('date_start','>=',$openTime)->sum('spend');
-
-            $currencyRate = config('basics.currency');
-
-            $balance = '';
-            $accountStatus = $result1['data']['account_status'];
-
-
-            if(!empty($currencyRate[$currency])){
-                $accountAmount = bcmul((string)$accountAmount, $currencyRate[$currency],2);
+            if(empty($accountrequestProposal['account_id'])) throw new \Exception("无法查询该账户，请联系管理员1-1!");
+            
+            if($type == 1){
+                $accountStatus = $this->refreshStatus($accountrequestProposal);
+                $resultData = [
+                    'account_status'=>$accountStatus
+                ];
+            }else if($type == 2){
+                $accountStatus = $this->refreshConsumption($accountrequestProposal);
+                $resultData = [
+                    'fb_balance'=>$accountStatus['fb_balance'],
+                    'fb_spand'=>bcadd((string)$accountStatus['fb_spand'],'0',2)
+                ];
             }
-
-            if($accountAmount < $accountSpent) $balance = 0;
-            else $balance = bcsub((string)$accountAmount, (string)$accountSpent,2);
-
-
-            $resultData = [
-                'account_status'=>$accountStatus,
-                'fb_balance'=>$balance,
-                'fb_spand'=>bcadd((string)$accountSpent,'0',2)
-            ];
 
             $result = true;
         } catch (Throwable $th) {
@@ -595,6 +572,46 @@ class AccountrequestProposal extends Backend
             $this->error(__('No rows updated'));
         }
     }
+
+    public function refreshStatus($accountrequestProposal)
+    {
+        $FacebookService = new \app\services\FacebookService();
+        $result1 = $FacebookService->adAccounts($accountrequestProposal);
+        if($result1['code'] != 1 || empty($result1['data']['account_status'])) throw new \Exception('无法查询该账户，请联系管理员1-2!');
+        DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposal['account_id'])->update(['account_status'=>$result1['data']['account_status'],'pull_account_status'=>date('Y-m-d H:i',time())]);
+        return $result1['data']['account_status'];
+    }
+
+    public function refreshConsumption($accountrequestProposal)
+    {
+        $result = $this->accountConsumption($accountrequestProposal);
+        if($result['code'] != 1) throw new \Exception($result['msg']);
+        $currency = $accountrequestProposal['currency'];    
+        $account = DB::table('ba_account')->field('money,account_id,open_time')->where('account_id',$accountrequestProposal['account_id'])->find();
+
+        $accountAmount = $account['money']??0;
+        $openTime = date('Y-m-d',$account['open_time']);                        
+
+        $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountrequestProposal['account_id'])->where('date_start','>=',$openTime)->sum('spend');
+
+        $currencyRate = config('basics.currency');
+
+        $balance = '';
+
+        if(!empty($currencyRate[$currency])){
+            $accountAmount = bcmul((string)$accountAmount, $currencyRate[$currency],2);
+        }
+
+        if($accountAmount < $accountSpent) $balance = 0;
+        else $balance = bcsub((string)$accountAmount, (string)$accountSpent,2);
+
+        $resultData = [
+            'fb_balance'=>$balance,
+            'fb_spand'=>bcadd((string)$accountSpent,'0',2)
+        ];
+        return $resultData;
+    }
+
 
     public function accountConsumption($params)
     {
@@ -610,7 +627,7 @@ class AccountrequestProposal extends Backend
         if(!empty($token)) $params['token'] = $token;
         
         $result = (new \app\services\FacebookService())->insights($params);
-        if(empty($result) || $result['code'] != 1) throw new \Exception("无法查询该账户，请联系管理员1-3！");
+        if(empty($result) || $result['code'] != 1) return ['code'=>0,'msg'=>'无法查询该账户，请联系管理员1-3！'];
         
         $accountConsumption = $result['data']['data']??[];
         $accountConsumption = array_column($accountConsumption,null,'date_start');
@@ -636,7 +653,7 @@ class AccountrequestProposal extends Backend
 
         if(!empty($data))  DB::table('ba_account_consumption')->insertAll($data);
 
-        return true;
+        return ['code'=>1,'msg'=>'success'];
     }
 
     function generateTimeArray($startDate, $endDate) {
@@ -1002,6 +1019,57 @@ class AccountrequestProposal extends Backend
         $nickname = (string)$nickname;
         if(in_array($nickname[0],[1,4]) && strlen($nickname) >= 16) $nickname = substr($nickname,0,15);
         return $nickname;
+    }
+
+    public function batchAdd(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) $this->error(__('Parameter %s can not be empty', ['']));
+            
+            $result = false;
+            DB::startTrans();
+            try {
+                $list = $data['list'];
+
+                if(empty($list)) throw new \Exception('参数错误！');
+                if(count($list) > 30) throw new \Exception('批量添加不能超过30个！');
+
+                
+
+                foreach($list as $v)
+                {
+                    $accountId = $v['account_id'];
+                    $amount = $v['amount'];
+                    $type = $v['type'];
+
+                    $redis = Cache::store('redis')->handler();
+                    $lockKey = 'lock:recharge_'.$accountId;
+                    $lockValue = uniqid();  // 用唯一 ID 标识锁的持有者
+                    $expireTime = 10; // 锁的过期时间（秒）
+                    
+                    $acquired = $redis->set($lockKey, $lockValue, ['NX', 'EX' => $expireTime]);
+
+                    //删除
+                    $redis->del($lockKey);
+                }
+
+
+
+                
+                DB::commit();
+            } catch (Throwable $e) {
+                DB::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+        }
+
+        $this->error(__('Parameter error'));
     }
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
