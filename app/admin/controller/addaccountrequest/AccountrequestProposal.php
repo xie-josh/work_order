@@ -130,7 +130,25 @@ class AccountrequestProposal extends Backend
 
             $currencyRate = config('basics.currency');
 
+            $accountListIds = array_column($dataList,'account_id');
+
+            $recharge = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->where('type',1)->where('status',1)->group('account_id')->select()->toArray();
+            $recharge1 = DB::table('ba_account')->field('open_money,account_id')->whereIn('account_id',$accountListIds)->select()->toArray();
+            $recharge2 = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->where('type',2)->where('status',1)->group('account_id')->select()->toArray();
+            $recharge4 = DB::table('ba_recharge')->field('sum(number) number,account_id')->whereIn('account_id',$accountListIds)->whereIn('type',[3,4])->where('status',1)->group('account_id')->select()->toArray();
+
+            $recharge = array_column($recharge,'number','account_id');
+            $recharge1 = array_column($recharge1,'open_money','account_id');
+            $recharge2 = array_column($recharge2,'number','account_id');
+            $recharge4 = array_column($recharge4,'number','account_id');
+
             foreach($dataList as &$v){
+
+                $totalRecharge = $recharge[$v['account_id']]??0;
+                $openMoney = $v['open_money'];
+                $totalDeductions = $recharge2[$v['account_id']]??0;
+                $totalReset = $recharge4[$v['account_id']]??0;
+
                 // 余额：
                 //    1.账户总充值 - 花费 （充值比消耗小余额默认0）
 
@@ -138,11 +156,14 @@ class AccountrequestProposal extends Backend
                 //     1.fb花费（总消费账单）
 
                 $balance = '';
-                $accountAmount = $v['money']??0;
+//                $accountAmount = $v['money']??0;
+                $accountAmount = "0";
                 $openTime = date('Y-m-d',$v['open_time']);
-                $accountSpent = DB::table('ba_account_consumption')->where('account_id',$v['account_id'])->where('date_start','>=',$openTime)->sum('spend');
-                
-                $balance = '';
+                $accountSpent = DB::table('ba_account_consumption')->where('account_id',$v['account_id'])->where('date_start','>=',$openTime)->sum('spend');                
+
+                $accountAmount = bcadd((string)$totalRecharge , (string)$openMoney,2);
+                $accountAmount = bcsub((string)$accountAmount , (string)$totalDeductions,2) ;
+                $accountAmount = bcsub((string)$accountAmount , (string)$totalReset,2) ;
 
                 if(!empty($currencyRate[$v['currency']])){
                     $accountAmount = bcmul((string)$accountAmount, $currencyRate[$v['currency']],2);
@@ -512,26 +533,29 @@ class AccountrequestProposal extends Backend
 
             if(empty($accountResult)) throw new \Exception("未找到账户!");
 
+            $FHStatus2 = config('basics.FH_status2');
+
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
+            ->field('fb_bm_token.pull_status,accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
-            ->whereNotIn('accountrequest_proposal.status',[0,99])
+            ->whereNotIn('accountrequest_proposal.status',$FHStatus2)
             ->whereNotNull('fb_bm_token.token')
             ->where('accountrequest_proposal.account_id',$accountId)
             ->find();
-
-            $this->accountConsumption($accountrequestProposal);
-
-            if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
-            $currency = $accountrequestProposal['currency'];    
-
+            
             $FacebookService = new \app\services\FacebookService();
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
-            if($result1['code'] != 1 || empty($result1['data']['account_status'])) throw new \Exception($result1['msg']);
-
+            if($result1['code'] != 1 || empty($result1['data']['account_status'])) throw new \Exception('无法查询该账户，请联系管理员1-1!');
             DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountId)->update(['account_status'=>$result1['data']['account_status'],'pull_account_status'=>date('Y-m-d H:i',time())]);
+
+            if(empty($accountrequestProposal['account_id'])) throw new \Exception("无法查询该账户，请联系管理员1-2!");
+            if($accountrequestProposal['pull_status'] == 1)$this->accountConsumption($accountrequestProposal);
+
+            $currency = $accountrequestProposal['currency'];    
+
+
 
             $account = DB::table('ba_account')->field('money,account_id,open_time')->where('account_id',$accountId)->find();
 
@@ -586,7 +610,7 @@ class AccountrequestProposal extends Backend
         if(!empty($token)) $params['token'] = $token;
         
         $result = (new \app\services\FacebookService())->insights($params);
-        if(empty($result) || $result['code'] != 1) throw new \Exception("消耗查询异常！");
+        if(empty($result) || $result['code'] != 1) throw new \Exception("无法查询该账户，请联系管理员1-3！");
         
         $accountConsumption = $result['data']['data']??[];
         $accountConsumption = array_column($accountConsumption,null,'date_start');
