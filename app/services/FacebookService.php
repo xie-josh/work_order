@@ -24,7 +24,7 @@ class FacebookService
             
             $param = [
                 'fields'=>'id,name,account_status,amount_spent,currency,created_time,timezone_offset_hours_utc',
-                'limit'=>500
+                'limit'=>200
             ];
             if($accountStatus == 1){
                 // $param['filtering'][] =  [

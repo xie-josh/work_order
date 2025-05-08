@@ -456,43 +456,44 @@ class Airwallex extends Backend implements CardInterface
 
     public function createCard($params)
     {
-        $param = [];
-        $url = "$this->url/api/v1/issuing/cardholders";
-        $method = 'GET';
+        $UUID = $this->getUUID();
+        // $param = [];
+        // $url = "$this->url/api/v1/issuing/cardholders";
+        // $method = 'GET';
 
-        // $cardholder_id = 'ff5f1eb4-2e06-4b7b-9f5e-dbe04adbd77e';
+        $cardholder_id = 'eddff90c-036e-421b-8f43-4789b2105a8f';
 
-        // $param = [
-        //     'authorization_controls'=>[
-        //         'allowed_transaction_count'=>'MULTIPLE',
-        //         'transaction_limits'=>[
-        //             "currency"=> "USD",
-        //             'limits'=>[
-        //                 [
-        //                     'interval'=>'ALL_TIME',
-        //                     'amount'=>2
-        //                 ],
-        //                 [
-        //                     'interval'=>'PER_TRANSACTION',
-        //                     'amount'=>5000
-        //                 ]
-        //             ]
-        //         ],
-        //     ],
-        //     'cardholder_id'=>$cardholder_id,
-        //     'created_by'=>'建江',
-        //     "form_factor"=>"VIRTUAL",
-        //     'is_personalized'=>false,
-        //     'program'=>[
-        //         'purpose'    =>'COMMERCIAL'
-        //     ],
-        //     //"issue_to"=>"ORGANISATION",
-        //     //'purpose'=>'MARKETING_EXPENSES',
-        //     'nick_name'=>'250120',
-        //     'request_id'=>$UUID
-        // ];
-        // $url = "$this->url/api/v1/issuing/cards/create";
-        // $method = 'POST';
+        $param = [
+            'authorization_controls'=>[
+                'allowed_transaction_count'=>'MULTIPLE',
+                'transaction_limits'=>[
+                    "currency"=> "USD",
+                    'limits'=>[
+                        [
+                            'interval'=>'ALL_TIME',
+                            'amount'=>2000
+                        ],
+                        [
+                            'interval'=>'PER_TRANSACTION',
+                            'amount'=>5000
+                        ]
+                    ]
+                ],
+            ],
+            'cardholder_id'=>$cardholder_id,
+            'created_by'=>'建江',
+            "form_factor"=>"VIRTUAL",
+            'is_personalized'=>false,
+            'program'=>[
+                'purpose'    =>'COMMERCIAL'
+            ],
+            //"issue_to"=>"ORGANISATION",
+            //'purpose'=>'MARKETING_EXPENSES',
+            'nick_name'=>'250503',
+            'request_id'=>$UUID
+        ];
+        $url = "$this->url/api/v1/issuing/cards/create";
+        $method = 'POST';
 
 
         $header = [
@@ -500,7 +501,7 @@ class Airwallex extends Backend implements CardInterface
             'Authorization'=>'Bearer '.$this->token
         ];
         $result = $this->curlHttp($url,$method,$header,$param);
-        dd($result);
+        // dd($result,'846522');
 
         if($result['msg'] == 'succeed'){           
             return $this->returnSucceed();
@@ -528,7 +529,19 @@ class Airwallex extends Backend implements CardInterface
     //https://x-api.photonpay.com/vcc/open/v2/sandBoxTransaction
     public function test($params):array
     {
-        $UUID = $this->getUUID();
+        
+        // $this->createCard($params);
+        // return [];
+        // $UUID = $this->getUUID();
+
+        if(!empty($params['type']) && $params['type'] == 'transactionDetail'){
+            $result = $this->transactionDetail2($params);
+            if($result['code'] == 1){
+                return $result;
+            }else{
+                return $this->returnError($result['msg']);
+            }
+        }
 
 
         //模拟消费
@@ -541,11 +554,20 @@ class Airwallex extends Backend implements CardInterface
         // $method = 'POST';
 
 
-         $param = [
-            'card_id'=>'f28426d7-06a8-47f0-9e62-481dbe3da85f',
-        ];
-        $url = "$this->url/api/v1/issuing/authorizations";
-        $method = 'GET';
+        //  $param = [
+        //     'card_id'=>'f28426d7-06a8-47f0-9e62-481dbe3da85f',
+        // ];
+        // $url = "$this->url/api/v1/issuing/authorizations";
+        // $method = 'GET';
+
+
+        //销卡
+        // $param = [
+        //     'id'=>$params['card_id'],
+        //     'card_status'=>'CLOSED'
+        // ];
+        // $url = "$this->url/api/v1/issuing/cards/{$params['card_id']}/update";
+        // $method = 'POST';
 
 
         $header = [
@@ -553,10 +575,42 @@ class Airwallex extends Backend implements CardInterface
             'Authorization'=>'Bearer '.$this->token
         ];
         $result = $this->curlHttp($url,$method,$header,$param);
-        dd($result);
 
-        if($result['msg'] == 'succeed'){           
+        if(!empty($result['updated_at'])){           
             return $this->returnSucceed();
+        }else{
+            return $this->returnError($result['msg']);
+        }
+    }
+
+
+    public function transactionDetail2($params):array
+    {
+        $url = "$this->url/api/v1/issuing/transactions";
+        $method = 'GET';
+        $header = [
+            'Content-Type'=>'application/json',
+            'Authorization'=>'Bearer '.$this->token
+        ];
+        $param = [
+            'from_created_at'=>'2024-12-30T11:05:00+0000',
+            'to_created_at'=>'2025-05-07T11:05:00+0000',
+            'card_id'=>$params['card_id'],
+            'page_num'=>$params['page_index']??0,
+            'page_size'=>$params['page_size']??200,
+        ];
+        $result = $this->curlHttp($url,$method,$header,$param);
+        // dd($result);
+        if(isset($result['items'])){
+            $items = $result['items'];
+            $data = [
+                'data' => $items,
+                'total' => '',
+                'pageSize' => $param['page_size'],
+                'pageIndex' => $param['page_num'],
+                'numbers' => count($items),
+            ];
+            return $this->returnSucceed($data);
         }else{
             return $this->returnError($result['msg']);
         }
