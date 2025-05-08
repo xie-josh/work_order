@@ -63,6 +63,8 @@ class FbLogs extends Backend
             $rechargeList = array_column($rechargeList,'number','account_id');
             $chargebacksList = array_column($chargebacksList,'number','account_id');
 
+            $accountRecycle = DB::table('ba_account_recycle')->whereIn('account_id',$accountIds)->column('account_id');
+
             foreach($dataList as &$v){
 
                 $recharge = $rechargeList[$v['account_id']]??0;                
@@ -100,6 +102,7 @@ class FbLogs extends Backend
                 $v['accountrequest_proposal']['serial_name'] = $v['serial_name'];
                 $v['accountrequest_proposal']['currency'] = $v['currency'];
                 $v['admin']['nickname'] = $v['nickname'];
+                $v['is_account_recycle'] = in_array($v['account_id'],$accountRecycle) ? 1 : 0;
 
             }
         }
@@ -186,21 +189,26 @@ class FbLogs extends Backend
         $redisKey = 'export_progress'.'_'.$this->auth->id;
         
         array_push($where,['fb_logs_model.type','IN',['FB_insights']]);
+        array_push($where,['fb_logs_model.create_time','>',date('Y-m-d',strtotime('-15 days'))]);
 
         $query = DB::table('ba_fb_logs')
-            ->field('fb_logs_model.status fb_logs_status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,accountrequest_proposal.currency,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time,account.open_money')
+            ->field('cards_info.card_no,fb_logs_model.status fb_logs_status,fb_logs_process.amout logs_process_amout,fb_logs_process.comment logs_process_comment,fb_logs_process.create_time logs_process_create_time,fb_logs_model.type,fb_logs_model.log_id,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.status,accountrequest_proposal.serial_name,accountrequest_proposal.currency,accountrequest_proposal.cards_id,fb_logs_model.logs,admin.nickname,account.open_time,account.money,fb_logs_model.create_time,account.open_money')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=fb_logs_model.log_id')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
             ->leftJoin('ba_admin admin','admin.id=account.admin_id')
             ->leftJoin('ba_fb_logs_process fb_logs_process','fb_logs_process.fb_logs_id=fb_logs_model.id')
+            ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
             ->alias($alias)
             ->where($where)
             ->order('fb_logs_model.id','desc');
 
         $total = $query->count(); 
+        $query2 = clone($query);
+        $query3 = clone($query);
 
         $statusValue = [0=>'未处理',1=>'处理完成'];
         $currencyRate = config('basics.currency');
+        $accountReturnType = config('basics.account_return_type');
 
         $rechargeModel = new \app\admin\model\demand\Recharge();
         $folders = (new \app\common\service\Utils)->getExcelFolders();
@@ -215,9 +223,57 @@ class FbLogs extends Backend
             '货币',
             '创建时间',
             '处理状态',
+            '是否回收过',
             '处理时间',
-            '备注'
+            '备注',
+            '状态变更类型',
+            'card_no',
         ];
+
+        /**
+         * 添加新列 - 账户状态变更的类型
+            1.只给‘账户错误处理’ 未处理的数据生成类型
+            2.如果有多条‘账户状态变更’数据只取最后一条数据的类型
+            3.‘账户状态变更‘的时间 必须大于 ‘账户错误处理‘的时间
+         * 
+         */
+
+        $accountIds = $query2->group('fb_logs_model.log_id')->column('fb_logs_model.log_id');
+
+        $accountIds2 = $query3->group('fb_logs_model.log_id')->where('fb_logs_model.status',0)->column('fb_logs_model.log_id');        
+        
+        $maxCountList = DB::table('ba_account_card')
+        ->field('COUNT(id) as cnt')
+        ->group('account_id')
+        ->order('cnt')->whereIn('account_id',$accountIds)->select()->toArray();
+        $maxCount = 0;
+        if(!empty(array_column($maxCountList,'cnt'))) $maxCount = max(array_column($maxCountList,'cnt'));
+
+        for($i = 0; $i < $maxCount; $i++){
+            $header[] = 'card_no'.($i+1);
+        }
+
+        $cardsList = DB::table('ba_account_card')->whereIn('account_card.account_id',$accountIds)
+            ->alias('account_card')
+            ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=account_card.cards_id')
+            ->field('account_card.account_id,cards_info.card_no')->select()->toArray();
+
+        $groupedCards = [];
+        foreach ($cardsList as $v) {
+            $groupedCards[$v['account_id']][] = $v['card_no'];
+        }
+
+        $accountReturnList = DB::table('ba_account_return')->field('account_id,type,FROM_UNIXTIME(create_time) create_time')
+            ->whereIn('id', function ($query) use ($accountIds2) {
+                $query->table('ba_account_return')
+                ->field('MAX(id)')
+                ->whereIn('account_id', $accountIds2)
+                ->group('account_id');
+            })
+            ->select()->toArray();
+
+        if(!empty($accountReturnList)) $accountReturnList = array_column($accountReturnList,null,'account_id');
+        
 
         $config = [
             'path' => $folders['path']
@@ -235,7 +291,10 @@ class FbLogs extends Backend
             $rechargeList = array_column($rechargeList,'number','account_id');
             $chargebacksList = array_column($chargebacksList,'number','account_id');
 
+            $accountRecycle = DB::table('ba_account_recycle')->whereIn('account_id',$accountIds)->column('account_id');
+ 
             $dataList=[];
+            $excelData = [];
             foreach($data as $v){
                 $recharge = $rechargeList[$v['account_id']]??0;
                 $chargebacks = $chargebacksList[$v['account_id']]??0;
@@ -249,7 +308,16 @@ class FbLogs extends Backend
                     $currencyNumber = $money;
                 }
 
-                $dataList[] = [
+                $accountReturnTypeValue = '';
+                if(!empty($accountReturnList[$v['account_id']]))
+                {
+                    $accountReturn = $accountReturnList[$v['account_id']];
+                    if($accountReturn['create_time'] > $v['create_time']) {
+                        $accountReturnTypeValue = $accountReturnType[$accountReturn['status']]??'';
+                    }
+                }
+
+                $excelData  = [
                     $v['bm'],
                     $v['serial_name'],
                     $v['account_id'],
@@ -260,9 +328,20 @@ class FbLogs extends Backend
                     $v['currency'],
                     $v['create_time'],
                     $statusValue[$v['fb_logs_status']]??'未知状态',
+                    in_array($v['account_id'],$accountRecycle) ? '是' : '否',
                     $v['logs_process_create_time'],
                     $v['logs_process_comment'],
+                    $accountReturnTypeValue,
+                    $v['card_no'],
                 ];  
+
+                if(!empty($groupedCards[$v['account_id']])){
+                    $cardNoList = $groupedCards[$v['account_id']];
+                    foreach($cardNoList as $k => $cardNo){
+                        $excelData['card_no'.($k+1)] = $cardNo;
+                    }
+                }
+                $dataList[] = $excelData ;  
                 $processedCount++;
             }
             $excel->fileName($folders['name'].'.xlsx', 'sheet1')
