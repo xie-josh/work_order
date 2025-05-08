@@ -540,7 +540,7 @@ class AccountrequestProposal extends Backend
             ->alias('accountrequest_proposal')
             ->field('accountrequest_proposal.account_id,fb_bm_token.pull_status,accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
-            ->where('fb_bm_token.status',1)
+            ->where('fb_bm_token.pull_status',1)
             ->whereNotIn('accountrequest_proposal.status',$FHStatus2)
             ->whereNotNull('fb_bm_token.token')
             ->where('accountrequest_proposal.account_id',$accountId)
@@ -575,6 +575,9 @@ class AccountrequestProposal extends Backend
 
     public function refreshStatus($accountrequestProposal)
     {
+        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['personalbm_token_ids']);
+        if(!empty($token)) $accountrequestProposal['token'] = $token;
+
         $FacebookService = new \app\services\FacebookService();
         $result1 = $FacebookService->adAccounts($accountrequestProposal);
         if($result1['code'] != 1 || empty($result1['data']['account_status'])) throw new \Exception('无法查询该账户，请联系管理员1-2!');
