@@ -240,7 +240,7 @@ class FbLogs extends Backend
 
         $accountIds = $query2->group('fb_logs_model.log_id')->column('fb_logs_model.log_id');
 
-        $accountIds2 = $query3->group('fb_logs_model.log_id')->where('fb_logs_model.status',0)->column('fb_logs_model.log_id');        
+        $accountIds2 = $query3->where('fb_logs_model.status',0)->group('fb_logs_model.log_id')->column('fb_logs_model.log_id');        
         
         $maxCountList = DB::table('ba_account_card')
         ->field('COUNT(id) as cnt')
@@ -313,7 +313,7 @@ class FbLogs extends Backend
                 {
                     $accountReturn = $accountReturnList[$v['account_id']];
                     if($accountReturn['create_time'] > $v['create_time']) {
-                        $accountReturnTypeValue = $accountReturnType[$accountReturn['status']]??'';
+                        $accountReturnTypeValue = $accountReturnType[$accountReturn['type']]??'';
                     }
                 }
 
