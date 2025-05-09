@@ -227,8 +227,9 @@ class Bm extends Backend
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID");
 
+                $notConsumptionStatus = config('basics.NOT_consumption_status');
                 $accountrequestProposal = Db::table('ba_accountrequest_proposal')->where('account_id',$accountId)->value('status');
-                if(empty($accountrequestProposal) || $accountrequestProposal == 99) throw new \Exception("未找到账户或该账户已经终止使用，不可操作，请联系管理员！");
+                if(empty($accountrequestProposal) || in_array($accountrequestProposal,$notConsumptionStatus)) throw new \Exception("未找到账户或该账户已经终止使用，不可操作，请联系管理员！");
 
                 if(empty($checkList) && $demandType != 3) throw new \Exception("请填写或需要操作的BM");
 

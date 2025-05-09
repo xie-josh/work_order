@@ -1,6 +1,7 @@
 <?php
 
 return  [
+    'NOT_consumption_status'=>[0,99,5,3],
     'FH_status' => [0,98],
     'TIME_ZONE'=>[
         "-12"=>'GMT -12:00',
