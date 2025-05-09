@@ -534,7 +534,7 @@ class AccountrequestProposal extends Backend
 
             if(empty($accountResult)) throw new \Exception("未找到账户!");
 
-            $FHStatus2 = config('basics.FH_status2');
+            $FHStatus2 = config('basics.NOT_consumption_status');
 
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
@@ -542,10 +542,9 @@ class AccountrequestProposal extends Backend
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.pull_status',1)
             ->whereNotIn('accountrequest_proposal.status',$FHStatus2)
-            ->whereNotNull('fb_bm_token.token')
+            // ->whereNotNull('fb_bm_token.token')
             ->where('accountrequest_proposal.account_id',$accountId)
             ->find();
-            
             if(empty($accountrequestProposal['account_id'])) throw new \Exception("无法查询该账户，请联系管理员1-1!");
             
             if($type == 1){
