@@ -682,8 +682,7 @@ class AccountrequestProposal extends Backend
 
         $rechargeList = DB::table('ba_recharge')->whereIn('id',function($query) use($accountrequestProposalIds){
             $query->table('ba_recharge')->field('max(id)')->whereIn('account_id',$accountrequestProposalIds)->group('account_id');
-        })->whereIn('type',[3,4])->column('account_id'); 
-
+        })->whereIn('type',[3,4])->where('status','<>',"2")->column('account_id');
 
         $data = [];
         foreach($accountListResult as $v)
