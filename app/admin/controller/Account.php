@@ -443,30 +443,30 @@ class Account extends Backend
                         if(!empty($accountData)) $this->model->where('id',$v['id'])->update($accountData);
                         DB::table('ba_bm')->where('account_id',$v['account_id'])->update(['account_is'=>1]);
 
-                        if($v['money'] > 0){
-                            $this->model->whereIn('id',$v['id'])->update(['open_money'=>$v['money']]);
+                        $this->model->whereIn('id',$v['id'])->update(['open_money'=>$v['money']]);
+                        
+                        if($resultProposal['is_cards'] == 2) continue;
+                        $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+
+                        $key = 'account_audit_'.$v['id'];
+                        $redisValue = Cache::store('redis')->get($key);
+                        if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+                                                    
+                        if(empty($cards)) {
+                            //TODO...
+                            throw new \Exception("未找到分配的卡或把账户设置成无卡！");
+                        }else if($v['money'] > 0){
                             $param = [
                                 //'max_on_percent'=>env('CARD.MAX_ON_PERCENT',901),
                                 'transaction_limit_type'=>'limited',
                                 'transaction_limit_change_type'=>'increase',
                                 'transaction_limit'=>$v['money'],
                             ];
-                            if($resultProposal['is_cards'] == 2) continue;
-                            $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
 
-                            $key = 'account_audit_'.$v['id'];
-                            $redisValue = Cache::store('redis')->get($key);
-                            if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
-                                                        
-                            if(empty($cards)) {
-                                //TODO...
-                                throw new \Exception("未找到分配的卡");
-                            }else{
-                                Cache::store('redis')->set($key, '1', 180);
-                                $resultCards = (new CardsModel())->updateCard($cards,$param);
-                                Cache::store('redis')->delete($key);
-                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-                            }
+                            Cache::store('redis')->set($key, '1', 180);
+                            $resultCards = (new CardsModel())->updateCard($cards,$param);
+                            Cache::store('redis')->delete($key);
+                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         }
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time(),'open_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
