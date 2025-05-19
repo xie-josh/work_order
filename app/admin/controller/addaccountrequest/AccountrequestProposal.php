@@ -1021,57 +1021,7 @@ class AccountrequestProposal extends Backend
         if(in_array($nickname[0],[1,4]) && strlen($nickname) >= 16) $nickname = substr($nickname,0,15);
         return $nickname;
     }
-
-    public function batchAdd(): void
-    {
-        if ($this->request->isPost()) {
-            $data = $this->request->post();
-            if (!$data) $this->error(__('Parameter %s can not be empty', ['']));
-            
-            $result = false;
-            DB::startTrans();
-            try {
-                $list = $data['list'];
-
-                if(empty($list)) throw new \Exception('参数错误！');
-                if(count($list) > 30) throw new \Exception('批量添加不能超过30个！');
-
-                
-
-                foreach($list as $v)
-                {
-                    $accountId = $v['account_id'];
-                    $amount = $v['amount'];
-                    $type = $v['type'];
-
-                    $redis = Cache::store('redis')->handler();
-                    $lockKey = 'lock:recharge_'.$accountId;
-                    $lockValue = uniqid();  // 用唯一 ID 标识锁的持有者
-                    $expireTime = 10; // 锁的过期时间（秒）
-                    
-                    $acquired = $redis->set($lockKey, $lockValue, ['NX', 'EX' => $expireTime]);
-
-                    //删除
-                    $redis->del($lockKey);
-                }
-
-
-
-                
-                DB::commit();
-            } catch (Throwable $e) {
-                DB::rollback();
-                $this->error($e->getMessage());
-            }
-            if ($result !== false) {
-                $this->success(__('Added successfully'));
-            } else {
-                $this->error(__('No rows were added'));
-            }
-        }
-
-        $this->error(__('Parameter error'));
-    }
+    
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */

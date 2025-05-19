@@ -121,9 +121,9 @@ class FbAccountUnUpdate
                 }
                 foreach($accountStatusList as $k => $v){
                     if($k == 2) continue;
-                    DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
+                    //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
+                    DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 }
-                //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>1,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
             }
         } catch (\Throwable $th) {
             $logs = '错误info_cardUnfreeze_('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
@@ -131,7 +131,6 @@ class FbAccountUnUpdate
             DB::table('ba_fb_logs')->insert(
                 ['log_id'=>$id??'','type'=>'job_FbAccountUnUpdate','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
             );
-            //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
         }
         return true;   
     }
