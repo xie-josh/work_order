@@ -298,6 +298,7 @@ class AccountrequestProposal extends Backend
                         'type'=>$type,
                         'serial_number'=>$accountCount,
                         'bm_token_id'=>$bmTokenResult['id'],
+                        'account_status'=>1,
                         'create_time'=>time()
                     ];
                     $this->assignedUsersJob($v,$bmTokenId);
