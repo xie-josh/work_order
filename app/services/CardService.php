@@ -167,6 +167,40 @@ class CardService
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');
             }
+        }else if($params['transaction_is'] == 2){
+            $param['transaction_limit_type'] = 'limited';        
+            if($this->platform == 'photonpay'){
+                //TODO...
+                $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
+                if($cardInfo['code'] != 1) throw new \Exception($cardInfo['msg']);
+
+                $totalTransactionLimit = $cardInfo['data']['totalTransactionLimit']??0;
+                $availableTransactionLimit = $cardInfo['data']['availableTransactionLimit']??0;
+
+                $c = bcsub((string)$totalTransactionLimit,(string) $availableTransactionLimit,2);  
+                $param['transaction_limit'] = $params['transaction_limit'] + $c;                
+
+            }elseif($this->platform == 'lampay'){
+               
+            }elseif($this->platform == 'airwallex' || $this->platform == 'airwallexUs'){
+                $cardInfo = $this->cardGetLimits(['card_id'=>$params['card_id']]);
+                if($cardInfo['code'] != 1) throw new \Exception($cardInfo['msg']);
+                $totalTransactionLimit = $cardInfo['data']['limits']['ALL_TIME_AMOUNT']??0;
+                $perTransaction  = $cardInfo['data']['limits']['PER_TRANSACTION']??0;
+                $maxOnDaily = $cardInfo['data']['limits']['DAILY']??0;
+                $allTime = $cardInfo['data']['limits']['ALL_TIME']??0;
+
+                //使用
+                $c = bcsub((string)$totalTransactionLimit,(string) $allTime,2);  
+                $param['transaction_limit'] = $params['transaction_limit'] + $c;
+
+                if(empty($params['transaction_limit']) && !empty($allTime)) $param['transaction_limit'] = $totalTransactionLimit;
+                if(empty($params['max_on_percent']) && !empty($perTransaction)) $param['max_on_percent'] = $perTransaction;
+                if(empty($params['max_on_daily']) && !empty($maxOnDaily)) $param['max_on_daily'] = $maxOnDaily;
+            }else{
+                // return ['code'=>0,'msg'=>'未找到该平台！'];
+                throw new \Exception('未找到该平台！');
+            }
         }else{
             //叠加
             if($this->platform == 'photonpay'){

@@ -330,9 +330,8 @@ class Recharge
 
                     $param = [
                         'transaction_limit_type'=>'limited',
-                        'transaction_limit_change_type'=>'decrease',
                         'transaction_limit'=>"2000",
-                        'transaction_is'=>'1'
+                        'transaction_is'=>'2'
                     ];
                     $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
