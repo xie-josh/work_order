@@ -110,6 +110,29 @@ class AccountrequestProposal extends Backend
             array_push($where,['account.admin_id','=',$this->auth->id]);
         }
 
+        $openTime = '';
+        $endTime = '';
+        $is_  = true;
+        foreach($where as $k => $v){
+            if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
+            
+            if($v[0] == 'account.open_time'){
+                $openTime = date('Y-m-d H:i:s',$v[2][0]);
+                $endTime = date('Y-m-d H:i:s',$v[2][1]);
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 1){
+                array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+                unset($where[$k]);
+                continue;
+            }
+        }
+
+        if($is_) array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+
+        // dd($where);
+
         array_push($where,['account.account_id','<>','']);
         array_push($where,['account.status','in',[4]]);
 
@@ -158,8 +181,18 @@ class AccountrequestProposal extends Backend
                 $balance = '';
 //                $accountAmount = $v['money']??0;
                 $accountAmount = "0";
-                $openTime = date('Y-m-d',$v['open_time']);
-                $accountSpent = DB::table('ba_account_consumption')->where('account_id',$v['account_id'])->where('date_start','>=',$openTime)->sum('spend');                
+                $openAccountTime = date('Y-m-d',$v['open_time']);
+                
+                $consumptionWhere = [
+                    ['account_id','=',$v['account_id']],
+                    ['date_start','>=',$openAccountTime]
+                ];
+                if(!empty($openTime) && !empty($endTime)){
+                    array_push($consumptionWhere,['date_start','>=',$openTime]);
+                    array_push($consumptionWhere,['date_start','<=',$endTime]);
+                }
+                $accountSpent = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+
 
                 $accountAmount = bcadd((string)$totalRecharge , (string)$openMoney,2);
                 $accountAmount = bcsub((string)$accountAmount , (string)$totalDeductions,2) ;
