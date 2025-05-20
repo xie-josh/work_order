@@ -316,7 +316,7 @@ class Recharge
             $currency = $accountrequestProposal['currency'];
 
             if($accountrequestProposal['is_cards'] != 2) {
-                $cards = DB::table('ba_cards_info')->where('cards_id',$accountrequestProposal['cards_id']??0)->find();
+                $cards = DB::table('ba_cards_info')->where('cards_id',$accountrequestProposal['cards_id']??0)->find();                
                 if(empty($cards)) {
                     throw new \Exception("未找到分配的卡");
                 }else{
@@ -335,7 +335,6 @@ class Recharge
                     ];
                     $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-
 
                     if($cards['account_id'] == 1 || $cards['card_status'] == 'normal'){
                         $resultCards = (new \app\services\CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);

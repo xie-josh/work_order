@@ -168,7 +168,7 @@ class CardService
                 throw new \Exception('未找到该平台！');
             }
         }else if($params['transaction_is'] == 2){
-            $param['transaction_limit_type'] = 'limited';        
+            $param['transaction_limit_type'] = 'limited';   
             if($this->platform == 'photonpay'){
                 //TODO...
                 $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
@@ -177,9 +177,19 @@ class CardService
                 $totalTransactionLimit = $cardInfo['data']['totalTransactionLimit']??0;
                 $availableTransactionLimit = $cardInfo['data']['availableTransactionLimit']??0;
 
-                $c = bcsub((string)$totalTransactionLimit,(string) $availableTransactionLimit,2);  
-                $param['transaction_limit'] = $params['transaction_limit'] + $c;                
-
+                $c = bcsub((string)$totalTransactionLimit,(string) $availableTransactionLimit,2);
+                
+                $param['max_on_percent'] = $cardInfo['data']['maxOnPercent']??0;
+                if($availableTransactionLimit > $params['transaction_limit']){
+                    $param['transaction_limit_change_type'] = 'decrease';
+                    $param['transaction_limit'] = ($availableTransactionLimit - $params['transaction_limit']);
+                }elseif($availableTransactionLimit < $params['transaction_limit']){
+                    $param['transaction_limit_change_type'] = 'increase';
+                    $param['transaction_limit'] = ($params['transaction_limit'] - $availableTransactionLimit);
+                }else{
+                    $param['transaction_limit'] = 0;
+                }                
+                
             }elseif($this->platform == 'lampay'){
                
             }elseif($this->platform == 'airwallex' || $this->platform == 'airwallexUs'){
