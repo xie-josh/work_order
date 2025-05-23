@@ -129,7 +129,7 @@ class AccountrequestProposal extends Backend
             }
         }
 
-        if($is_) array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+        // if($is_) array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
 
         // dd($where);
 

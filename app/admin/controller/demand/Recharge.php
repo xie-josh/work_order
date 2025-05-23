@@ -27,7 +27,7 @@ class Recharge extends Backend
 
     protected string|array $quickSearchField = ['id'];
     protected array $withJoinTable = ['accountrequestProposal'];
-    protected array $noNeedPermission = ['edit','getRechargeAnnouncement','accountSpendDelete','accountSpendUp','export','getExportRecharge'];
+    protected array $noNeedPermission = ['batchAdd','edit','getRechargeAnnouncement','accountSpendDelete','accountSpendUp','export','getExportRecharge'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -102,7 +102,6 @@ class Recharge extends Backend
             //     'remark' => get_route_remark(),
             // ]);
     }
-
 
     public function add(): void
     {
@@ -744,6 +743,125 @@ class Recharge extends Backend
     {
         $progress = Cache::store('redis')->get('export_recharge'.'_'.$this->auth->id, 0);
         return $this->success('',['progress' => $progress]);
+    }
+
+    public function batchAdd(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) $this->error(__('Parameter %s can not be empty', ['']));
+
+            $list = $data['list'];
+
+            if(empty($list)) $this->error('参数错误');
+            if(count($list) > 30) $this->error('批量添加不能超过30条');
+
+            $lock = new \app\services\RedisLock();
+            
+            $wk = DB::table('ba_wk_account')->column('account_id');
+            
+            $errorList = [];
+            foreach($list as $v)
+            {
+                $accountId = $v['account_id'];
+                $amount = $v['amount'];
+                $type = $v['type'];
+                $lockValue = uniqid();
+                $expire = 180;
+                $data = [];
+                
+                try {
+                    $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
+                    if(empty($account)) throw new \Exception("未找到该账户或账户不可用！");                
+    
+                    $nOTConsumptionStatus = config('basics.NOT_consumption_status');
+                    $accountServerStatus = DB::table('ba_accountrequest_proposal')->where('account_id',$account['account_id'])->value('status');
+                    if(in_array($accountServerStatus,$nOTConsumptionStatus) && !in_array($type,[3,4])) throw new \Exception("该账号暂停使用，请联系管理员！");
+
+                    $recharge = $this->model->where('account_id',$accountId)->whereIn('type',[3,4])->where('status',0)->find();
+                    if(!empty($recharge)) throw new \Exception("有未完成的清零请求,请找客服处理!");
+
+                    if($type != 1 && $account['money'] <= 0) throw new \Exception("该账号余额是零，不需要处理！");
+
+                    $acquired = $lock->acquire($accountId, $lockValue, $expire);
+                    if($acquired){
+                        if($type == 1)
+                        {
+                            if($amount <= 0) throw new \Exception("充值金额不能小于零");
+
+                            $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
+                            $usableMoney = bcadd((string)$amount,(string)$admin['used_money'],2);
+                            if($usableMoney > $admin['money']) throw new \Exception("余额不足,请联系管理员！");
+                            DB::table('ba_admin')->where('id',$account['admin_id'])->update(['used_money'=>$usableMoney]);
+                        }else if($type == 2)
+                        {
+
+                        }else if(in_array($type,[3,4]))
+                        {
+                            $recharge = $this->model->where('account_id',$accountId)->where('status',1)->whereIn('type',[3,4])->order('id','desc')->find();
+
+                            if(!empty($recharge['id'])){
+                                $where = [
+                                    ['account_id','=',$accountId],
+                                    ['type','=',1],
+                                    ['id','>',$recharge['id']],
+                                    ['status','=',1]
+                                ];
+            
+                                $recharge2 = $this->model->where($where)->find();
+                                if(!empty($recharge) && empty($recharge2)) throw new \Exception("账号已经完成了清零请求,不可以在提交清零与扣款!");
+                            }
+
+                            $cards = DB::table('ba_accountrequest_proposal')
+                            ->field('cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id')
+                            ->alias('accountrequest_proposal')
+                            ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+                            ->where('accountrequest_proposal.account_id',$account['account_id'])
+                            ->find();
+                            if(!empty($cards) && $cards['card_status'] == 'normal') {
+                                $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                            }
+                        }
+                    }else{
+                        throw new \Exception('该账户暂时被锁定，请稍后再试！');
+                    }
+
+                    $data['create_time'] = time();
+                    $data['type'] = $type;
+                    $data['account_id'] = $accountId;
+                    $data['account_name'] = $account['name'];
+                    $data['admin_id'] = $this->auth->id;
+                    if(in_array($type,[3,4]))$data['number'] = 0;
+                    else $data['number'] = $amount;
+                    $rechargeId = DB::table('ba_recharge')->insertGetId($data);
+
+                    if ($rechargeId && !in_array($accountId,$wk)) {
+                        $this->rechargeJob2($rechargeId,$type);
+                    }
+
+                }catch(\Exception $e) {
+                    $errorList[] = ['account_id'=>$accountId,'msg'=>$e->getMessage()];
+                }finally {
+                    $lock->release($accountId, $lockValue);
+                }        
+
+            }
+            $this->success(__('Added successfully'),['error_list'=>$errorList]);
+        }
+
+        $this->error(__('Parameter error'));
+    }
+    
+    public function rechargeJob2($id,$type)
+    {
+        if(in_array($type,[3,4])){
+            $this->addDeleteJob($id);
+        }else if(in_array($type,[1])){
+            $this->addUpJob($id);
+        }
+        return true;
     }
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写

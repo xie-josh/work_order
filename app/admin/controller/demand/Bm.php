@@ -23,7 +23,7 @@ class Bm extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll'];
+    protected array $noNeedPermission = ['batchAdd','disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -703,7 +703,7 @@ class Bm extends Backend
         ]);
     }
 
-    public function batchAdd()
+    public function batchAdd2()
     {
         $this->error('该功能暂未开放');
         $result = false;
@@ -784,6 +784,109 @@ class Bm extends Backend
             $this->error(__('No rows were added'));
         }
     }
+
+    public function batchAdd(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) $this->error(__('Parameter %s can not be empty', ['']));
+
+            $accountList = $data['account_list'];
+            $bmList = $data['bm_list'];
+
+            $bmList = array_unique($bmList);
+
+            if(empty($accountList) || empty($bmList)) $this->error('参数错误');
+            if(count($accountList) > 100) $this->error('批量添加不能超过100条');
+
+            try {
+                $errorList = [];
+                $dataList = [];
+
+                $adminId = $this->auth->id;
+                $accountListC = DB::table('ba_account')->alias('account')
+                ->field('accountrequest_proposal.account_id,accountrequest_proposal.status')
+                ->whereIn('account.account_id',$accountList)
+                ->where('account.admin_id',$adminId)
+                ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+                ->select()
+                ->toArray();
+
+                $nOTConsumptionStatus = config('basics.NOT_consumption_status');
+
+                foreach($accountListC as $k => $v){
+                    if(in_array($v['status'],$nOTConsumptionStatus))
+                    {
+                        $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已经终止使用，不可操作，请联系管理员！'];
+                        unset($accountListC[$k]);
+                    }
+                }
+
+                $accountListC = array_column($accountListC,'account_id');
+
+                if(count($accountList) != count($accountListC)) $errorList[] = ['bm'=>'','msg'=>'你填写的账户ID我们只找到部分，未找到的已经跳过!'];
+
+                $bmListC = [];
+                foreach($bmList as $v){
+                    if(filter_var($v, FILTER_VALIDATE_EMAIL)){
+                        $bmListC[] = [
+                            'bm'=>$v,
+                            'bm_type'=>2
+                        ];
+                    }else if (preg_match('/^\d+$/', $v)) {
+                        $bmListC[] = [
+                            'bm'=>$v,
+                            'bm_type'=>1
+                        ];
+                    }else{
+                        $errorList[] = ['bm'=>$v,'msg'=>'BM格式错误,请填写正确的BM或邮箱!'];
+                    }
+                }
+                
+                foreach($accountListC as $v)
+                {
+                    foreach($bmListC as $v2)
+                    {
+                        $bm = Db::table('ba_bm')
+                            ->where('account_id', $v)
+                            ->where('bm', $v2['bm'])
+                            ->where(function($query) {
+                                $query->where(function($q) {
+                                    $q->where('status', '<>', '2')
+                                    ->where('dispose_type', '<>', '2');
+                                })->whereOr(function($q) {
+                                    $q->where('dispose_type', '1');
+                                });
+                            })
+                        ->value('bm');
+
+                        if(!empty($bm)) {
+                            $errorList[] = ['bm'=>'(账户)'.$v.' - (BM)'.$v2['bm'],'msg'=>'该BM已经提交过需求，不需要重复提交!'];
+                            continue;
+                        }
+
+                        $dataList[] = [
+                            'demand_type'=>1,
+                            'account_id'=>$v,
+                            'bm'=>$v2['bm'],
+                            'bm_type'=>$v2['bm_type'],
+                            'account_name'=>'',
+                            'admin_id'=>$adminId,
+                            'create_time'=>time()
+                        ];
+                    }      
+                }
+
+                DB::table('ba_bm')->insertAll($dataList);
+            } catch (\Exception $th) {
+                $this->error('参数错误!');
+            }
+            $this->success(__('Added successfully'),['error_list'=>$errorList]);
+        }
+
+        $this->error(__('Parameter error'));
+    }
+
 
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
