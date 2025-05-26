@@ -455,6 +455,7 @@ class AccountrequestProposal extends Backend
             'status',
             'nickname',
             'FB_account_status',
+            'currency',
             'card_no',
         ];
 
@@ -500,6 +501,7 @@ class AccountrequestProposal extends Backend
                     'status'=> $statusValue[$v['status']]??'未知的状态',
                     'nickname'=>$v['nickname'],
                     'FB_account_status'=>$accountStatus[$v['account_status']]??'未找到状态',
+                    'currency'=>$v['currency'],
                     'card_no'=>$v['card_no'],
                 ];
                 if(!empty($groupedCards[$v['account_id']])){
@@ -1056,6 +1058,23 @@ class AccountrequestProposal extends Backend
         return $nickname;
     }
     
+
+    function allEditBmRelevance()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $accountIds = $data['account_ids'] ?? [];
+            $bmId = $data['bm_id'] ?? 0;
+            if (empty($accountIds) || empty($bmId)) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+            $bmToken = DB::table('ba_fb_bm_token')->where('id', $bmId)->find();
+            if (empty($bmToken)) $this->error(__('BM not found'));
+            $this->model->whereIn('account_id',$accountIds)->update(['bm'=>$bmToken['name'],'bm_token_id'=>$bmToken['id']]);
+        }
+        return $this->success(__('Update successful'));
+    }
+
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */

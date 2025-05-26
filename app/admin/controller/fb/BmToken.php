@@ -5,6 +5,7 @@ namespace app\admin\controller\fb;
 use Throwable;
 use ba\Random;
 use app\common\controller\Backend;
+use think\facade\Db;
 use app\admin\model\User as UserModel;
 
 class BmToken extends Backend
@@ -69,6 +70,63 @@ class BmToken extends Backend
         }
 
         $this->error(__('Parameter error'));
+    }
+
+    /**
+     * 编辑
+     * @throws Throwable
+     */
+    public function edit(): void
+    {
+        $pk  = $this->model->getPk();
+        $id  = $this->request->param($pk);
+        $row = $this->model->find($id);
+        if (!$row) {
+            $this->error(__('Record not found'));
+        }
+
+        $dataLimitAdminIds = $this->getDataLimitAdminIds();
+        if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
+            $this->error(__('You have no permission'));
+        }
+
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $data   = $this->excludeFields($data);
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+                if ($this->modelValidate) {
+                    $validate = str_replace("\\model\\", "\\validate\\", get_class($this->model));
+                    if (class_exists($validate)) {
+                        $validate = new $validate();
+                        if ($this->modelSceneValidate) $validate->scene('edit');
+                        $data[$pk] = $row[$pk];
+                        $validate->check($data);
+                    }
+                }
+                DB::table('ba_accountrequest_proposal')->where('bm_token_id',$id)->update(['bm'=>$data['name']]);
+                $result = $row->save($data);
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+
+        $this->success('', [
+            'row' => $row
+        ]);
     }
 
     public function del(array $ids = []): void
