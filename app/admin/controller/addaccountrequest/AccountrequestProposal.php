@@ -187,11 +187,12 @@ class AccountrequestProposal extends Backend
                     ['account_id','=',$v['account_id']],
                     ['date_start','>=',$openAccountTime]
                 ];
+                $accountSpent = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
                 if(!empty($openTime) && !empty($endTime)){
                     array_push($consumptionWhere,['date_start','>=',$openTime]);
                     array_push($consumptionWhere,['date_start','<=',$endTime]);
                 }
-                $accountSpent = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+                $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
 
 
                 $accountAmount = bcadd((string)$totalRecharge , (string)$openMoney,2);
@@ -206,7 +207,7 @@ class AccountrequestProposal extends Backend
                 else $balance = bcsub((string)$accountAmount, (string)$accountSpent,2);
                 
                 $v['fb_balance'] = $balance;
-                $v['fb_spand'] = bcadd( (string)$accountSpent,'0',2);
+                $v['fb_spand'] = bcadd( (string)$accountSpent2,'0',2);
             }
         }
 
