@@ -604,26 +604,16 @@ class Recharge extends Backend
             ['expired_time','<',date("Y-m-d",strtotime("+6 day"))]
         ])->field('name,expired_time')->select()->toArray();
 
-        
-        $result = (new \app\admin\services\card\Cards())->accountSingle();
-        $realTimeBalance = $result['data']['row']['realTimeBalance']??'未查询到！';
-
-
         $accountReturn = DB::table('ba_account_return')->where('status',0)->count();
         
-        $deductionListtotal = 0;
-        if($realTimeBalance < 10000){
-            $deductionListtotal = 1;
-        }
-
         $this->success('', [
             'list'   =>$list,
             'deduction_list'=>$deductionList,
             'bm_token_list'=>$bmTokenList,
-            'balance'=>$realTimeBalance,
+            'balance'=>0,
             'total'=>$listTotal,
             'deduction_total'=>$deductionTotal,
-            'balance_total'=>$deductionListtotal,
+            'balance_total'=>0,
             'account_return'=>$accountReturn,
         ]);
     }

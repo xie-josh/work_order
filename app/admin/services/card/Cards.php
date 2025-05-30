@@ -17,11 +17,12 @@ class Cards
 
     public function accountSingle()
     {
-        $client = new Client(['verify' => false,'headers'=>[]]);
-        $response = $client->request('GET', 'http://8.218.77.200:10082/api/Cards/accountSingle?server=1',['query'=>['server'=>1]]);
-        $result = $response->getBody()->getContents();
-        $result = json_decode($result, true);
-        return $result;
+        // $client = new Client(['verify' => false,'headers'=>[]]);
+        // $response = $client->request('GET', 'http://8.218.77.200:10082/api/Cards/accountSingle?server=1',['query'=>['server'=>1]]);
+        // $result = $response->getBody()->getContents();
+        // $result = json_decode($result, true);
+        // return $result;
+        return [];
     }
 
 }
