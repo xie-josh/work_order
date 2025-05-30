@@ -330,7 +330,7 @@ class Recharge
 
                     $param = [
                         'transaction_limit_type'=>'limited',
-                        'transaction_limit'=>"2000",
+                        'transaction_limit'=>"5000",
                         'transaction_is'=>'2'
                     ];
                     $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
