@@ -383,6 +383,7 @@ class Bm extends Backend
                 $progressData = [];
                 $bmData = [];
                 $commentValue = '';
+                $adminId = $this->auth->id;
                 foreach($ids as $v){
 
                     $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
@@ -416,9 +417,9 @@ class Bm extends Backend
 
                     
                     if($status == 3){
-                        $bmData[] = ['id'=>$v['id'],'status'=>1,'dispose_type'=>1,'comment'=>$getTemplateValue,'update_time'=>time()];
+                        $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>1,'dispose_type'=>1,'comment'=>$getTemplateValue,'update_time'=>time()];
                     }else{
-                        $bmData[] = ['id'=>$v['id'],'status'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()];
+                        $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()];
                     }                
                 }
 
@@ -499,6 +500,7 @@ class Bm extends Backend
                 $progressData = [];
                 $commentValue = '';
                 $bmData = [];
+                $adminId = $this->auth->id;
                 foreach($ids as $v){
                     $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
 
@@ -515,7 +517,7 @@ class Bm extends Backend
                     ];
 
                     $bmData[] = [
-                        'id'=>$v['id'],'dispose_type'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()
+                        'operate_admin_id'=>$adminId,'id'=>$v['id'],'dispose_type'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()
                     ];
                 }
                 
@@ -577,10 +579,11 @@ class Bm extends Backend
                 $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,account_id')->select()->toArray(); 
                 $accountTypeIds = [];
                 $bmData = [];
+                $adminId = $this->auth->id;
                 foreach($bmList as $v){
                     $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
                     if($v['demand_type'] == 4) $accountTypeIds[] = $v['account_id'];
-                    $bmData[] = ['id'=>$v['id'],'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$getTemplateValue,'update_time'=>time()];
+                    $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$getTemplateValue,'update_time'=>time()];
                     
                     if($v['demand_type'] == 2 && $disposeStatus2 == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
                 }                  
@@ -630,7 +633,7 @@ class Bm extends Backend
                     ];
                 }
                 DB::table('ba_bm_progress')->insertAll($progressData);
-                $this->model->whereIn('id',array_column($ids,'id'))->update(['comment'=>$comment,'update_time'=>time()]);
+                $this->model->whereIn('id',array_column($ids,'id'))->update(['comment'=>$comment,'operate_admin_id'=>$this->auth->id,'update_time'=>time()]);
 
                 $result = true;
                 $this->model->commit();
