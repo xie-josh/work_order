@@ -1089,8 +1089,8 @@ class Account extends Backend
             $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
 
 
-            $accountType = DB::table('ba_account_type')->select()->toArray();
-            $accountTypeList = array_column($accountType,'id','name');
+            $accountType = config('basics.account_type');
+            $accountTypeList = array_flip($accountType);
 
 
             $timeList = [
@@ -1194,7 +1194,7 @@ class Account extends Backend
                         'money'=>$money,
                         'admin_id'=>$adminId,
                         'status'=>$authAdminId==1?1:0,
-                        'account_type'=>$accountTypeId,
+                        'type'=>$accountTypeId,
                         'create_time'=>time()
                     ];
                 }else{
@@ -1207,7 +1207,7 @@ class Account extends Backend
                         'money'=>$money,
                         'admin_id'=>$adminId,
                         'status'=>$authAdminId==1?1:0,
-                        'account_type'=>$accountTypeId,
+                        'type'=>$accountTypeId,
                         'create_time'=>time()
                     ];
                 }
