@@ -180,7 +180,10 @@ class Account extends Backend
                         $validate->check($data);
                     }
                 }
+                
                 $money = $data['money']??0;
+                if(empty($data['time_zone']) || empty($data['type'])) throw new \Exception("时区与投放类型不能为空!");
+                if($money < 200) throw new \Exception("开户金额不能小于200！");
 
                 if($data['bm_type'] == 1){
                     if(empty($data['bm'])) throw new \Exception("BM不能为空！");
