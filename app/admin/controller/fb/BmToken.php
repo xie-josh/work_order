@@ -85,6 +85,10 @@ class BmToken extends Backend
             $this->error(__('Record not found'));
         }
 
+        if($row['is_token'] == 2){
+            $row['token'] = (int)$row['token'];
+        }
+
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
             $this->error(__('You have no permission'));

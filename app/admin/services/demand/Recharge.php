@@ -46,7 +46,7 @@ class Recharge
 
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotNull('fb_bm_token.token')
@@ -54,7 +54,9 @@ class Recharge
             ->find();
 
             if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
-            $currency = $accountrequestProposal['currency'];            
+            $currency = $accountrequestProposal['currency'];    
+            
+            if($accountrequestProposal['is_token'] !=1) $accountrequestProposal['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['token']);
 
             $FacebookService = new \app\services\FacebookService();
             $result1 = $FacebookService->adAccounts($accountrequestProposal);
@@ -305,7 +307,7 @@ class Recharge
             //====================
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotNull('fb_bm_token.token')
@@ -314,6 +316,8 @@ class Recharge
 
             if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
             $currency = $accountrequestProposal['currency'];
+
+            if($accountrequestProposal['is_token'] !=1) $accountrequestProposal['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['token']);
 
             if($accountrequestProposal['is_cards'] != 2) {
                 $cards = DB::table('ba_cards_info')->where('cards_id',$accountrequestProposal['cards_id']??0)->find();                
