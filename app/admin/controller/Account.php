@@ -382,9 +382,9 @@ class Account extends Backend
                         $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->whereIn('status',config('basics.FH_status'))->find();
                         if(empty($accountrequestProposal)) throw new \Exception("请选择分配的账户！");
 
-                        if(!empty($v['account_type'])){
-                            $accountTypeList = DB::table('ba_association_account_type')->whereIn('admin_id',$accountrequestProposal['admin_id'])->column('account_type_id');
-                            if(!empty($accountTypeList) && !in_array($v['account_type'],$accountTypeList)) throw new \Exception("账户类型错误，请联系管理员！");
+                        if(!empty($v['type'])){
+                            $lableIds = explode(',',$accountrequestProposal['label_ids']??'');
+                            if(!empty($lableIds) && !in_array($v['type'],$lableIds)) throw new \Exception("标签映射错误，请调整！");
                         }
 
                         $data = [
@@ -617,16 +617,12 @@ class Account extends Backend
                 $ids = $data['ids'];
                 $accountrequestProposalId = $data['admin_id'];
                 $accountIds = $data['account_ids'];
-
-
-                $associationAccountTypeList = DB::table('ba_association_account_type')->where('admin_id',$accountrequestProposalId)->column('account_type_id');
                 
                 if(empty($accountIds)){
                     $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('status',config('basics.FH_status'))->select()->toArray();
                 }else{
                     $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('account_id',$accountIds)->whereIn('status',config('basics.FH_status'))->select()->toArray();
                 }
-
                 $resultAccountList = DB::table('ba_account')->whereIn('id',$ids)->where('status',1)->select()->toArray();
 
                 $bmDataList = [];
@@ -635,7 +631,8 @@ class Account extends Backend
                     $resultAccount = $resultAccountList[$k]??[];
                     if(empty($resultAccount)) continue;
                     
-                    if(!empty($associationAccountTypeList) && !empty($resultAccount['account_type']) && !in_array($resultAccount['account_type'],$associationAccountTypeList)) continue;
+                    $lableIds = explode(',',$v['label_ids']??'');
+                    if(!empty($lableIds) && !empty($resultAccount['type']) && !in_array($resultAccount['type'],$lableIds)) continue;
 
                     $data = [
                         'account_admin_id'=>$v['admin_id'],
@@ -694,7 +691,6 @@ class Account extends Backend
                     if(empty($v['time_zone']) && !empty($resultAccount['time_zone'])) $data['time_zone'] = $resultAccount['time_zone'];
                     DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->update($data);
                 }
-
                 if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
 
                 $result = true;

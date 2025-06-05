@@ -126,4 +126,15 @@ class AccountrequestProposal extends Model
             return '';
         }
     }
+
+    public function getLabelIdsAttr($value, $data): array
+    {
+        if(empty($value)) return [];
+        return array_map('intval', explode(',', $value));
+    }
+
+    public function setLabelIdsAttr($value): string
+    {
+        return implode(',', $value);
+    }
 }

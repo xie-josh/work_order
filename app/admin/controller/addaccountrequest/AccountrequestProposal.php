@@ -298,6 +298,7 @@ class AccountrequestProposal extends Backend
                 $timeZone = $data['timeZone'];
                 $adminId = $data['adminId'];
                 $isCards = $data['is_cards']??0;
+                $labelIds = $data['label_ids']??[];
                 $type = $data['type']??1;
                 $currency = $data['currency']??'';
                 $nameList = $data['name_list']??[];
@@ -328,6 +329,7 @@ class AccountrequestProposal extends Backend
                         'currency'=>$currency,
                         'account_id'=>$v,
                         'is_cards'=>$isCards,
+                        'label_ids'=>implode(',', $labelIds),
                         'name'=>$nameList[$k]??'',
                         'type'=>$type,
                         'serial_number'=>$accountCount,
@@ -1076,6 +1078,21 @@ class AccountrequestProposal extends Backend
         return $this->success(__('Update successful'));
     }
 
+    function allEditLabelRelevance()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $accountIds = $data['account_ids'] ?? [];
+            $labelIds = $data['label_ids'] ?? [];
+            if (empty($accountIds) || empty($labelIds)) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+            $this->model->whereIn('account_id',$accountIds)->update(['label_ids'=>implode(',', $labelIds)]);
+        }
+        return $this->success(__('Update successful'));
+    }
+
+    
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
