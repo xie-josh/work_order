@@ -65,7 +65,7 @@ class AccountrequestProposal extends Backend
             $this->dataLimit = false;
         }
 
-        //dd($this->request->get());
+        
         array_push($this->withJoinTable,'affiliationAdmin');
         array_push($this->withJoinTable,'cards');
         array_push($this->withJoinTable,'account');
@@ -76,7 +76,6 @@ class AccountrequestProposal extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-        
         if($status === "0") array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
 
         if($limit == 999) $limit = 2500;
@@ -89,11 +88,38 @@ class AccountrequestProposal extends Backend
             ->paginate($limit);
         $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no'],'account'=>['id','is_']]);
 
-        return [
-            'list'   => $res->items(),
+
+
+        // return [
+        //     'list'   => $res->items(),
+        //     'total'  => $res->total(),
+        //     'remark' => get_route_remark(),
+        // ];
+
+        $result = $res->toArray();
+        $dataList = [];
+        $account_easy = config('basics.account_easy');
+
+        if(!empty($result['data'])) {
+            $dataList = $result['data'];
+            foreach($dataList as &$v){
+                $v['label_name'] = '';
+                if(!empty($v['label_ids'])){ //标签处理
+                  $arr =  $v['label_ids']??[];
+                  $label_arr = [];
+                  foreach($arr as $vv){ 
+                     $label_arr[] =  $account_easy[$vv];
+                  }
+                  $v['label_name'] = implode(',',$label_arr);
+                }
+           }
+       }
+
+        $this->success('', [
+            'list'   => $dataList,
             'total'  => $res->total(),
             'remark' => get_route_remark(),
-        ];
+        ]);
     }
     public function userIndex3()
     {
