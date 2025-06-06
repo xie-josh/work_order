@@ -94,7 +94,7 @@ class AdminMoneyLog extends Backend
                 $rate = DB::table('ba_recharge_channel')->where('id',$data['recharge_channel_id'])->find();
                 if(!$rate) throw new \Exception("请选择汇率！");
 
-                $rateNumber = bcadd('1',(string)($rate['rate']),2);
+                $rateNumber = bcadd('1',(string)($rate['rate']),4);
                 
                 $rechargeMoney = bcdiv((string)($data['money']), (string)$rateNumber,2);
 
