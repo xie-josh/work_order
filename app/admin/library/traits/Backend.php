@@ -164,6 +164,7 @@ trait Backend
      */
     public function del(array $ids = []): void
     {
+        $this->error('功能暂停使用，请联系管理员！');
         if (!$this->request->isDelete() || !$ids) {
             $this->error(__('Parameter error'));
         }
