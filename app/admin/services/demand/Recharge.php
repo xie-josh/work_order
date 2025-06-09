@@ -4,6 +4,7 @@ namespace app\admin\services\demand;
 
 use think\facade\Db;
 use think\facade\Cache;
+use think\facade\Queue;
 use Throwable;
 
 class Recharge
@@ -46,7 +47,7 @@ class Recharge
 
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotNull('fb_bm_token.token')
@@ -152,6 +153,11 @@ class Recharge
                     if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$cards['card_id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                 }
  
+            }
+            if(isset($accountrequestProposal['is_permissions']) && $accountrequestProposal['is_permissions'] < 1){
+                (new \app\admin\services\addaccountrequest\AccountrequestProposal())->assignedUsersJob($accountrequestProposal['account_id'],$accountrequestProposal['bm_token_id']);
+                $this->addUpJob($id);
+                DB::table('ba_accountrequest_proposal')->where('account_id',$accountrequestProposal['account_id'])->update(['is_permissions'=>1]); 
             }
 
             return ['code'=>0,'msg'=>$th->getMessage()];
@@ -307,7 +313,7 @@ class Recharge
             //====================
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotNull('fb_bm_token.token')
@@ -406,6 +412,11 @@ class Recharge
                 $result = $this->model->where('id',$id)->update(['comment'=>$e->getMessage()]);
             }
 
+            if(isset($accountrequestProposal['is_permissions']) && $accountrequestProposal['is_permissions'] < 1){
+                (new \app\admin\services\addaccountrequest\AccountrequestProposal())->assignedUsersJob($accountrequestProposal['account_id'],$accountrequestProposal['bm_token_id']);
+                $this->addDeleteJob($id);
+                DB::table('ba_accountrequest_proposal')->where('account_id',$accountrequestProposal['account_id'])->update(['is_permissions'=>1]); 
+            }
             return ['code'=>0,'msg'=>$e->getMessage()];
         }
         if ($result !== false) {
@@ -413,5 +424,22 @@ class Recharge
         } else {
             return ['code'=>0,'msg'=>''];
         }
+    }
+
+
+    public function addUpJob($id)
+    {
+        $jobHandlerClassName = 'app\job\AccountSpendUp';
+        $jobQueueName = 'AccountSpendUp';
+        Queue::later(300, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        return true;
+    }
+
+    public function addDeleteJob($id)
+    {
+        $jobHandlerClassName = 'app\job\AccountSpendDelete';
+        $jobQueueName = 'AccountSpendDelete';
+        Queue::later(300, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        return true;
     }
 }

@@ -2,6 +2,7 @@
 namespace app\admin\services\addaccountrequest;
 
 use think\facade\Db;
+use think\facade\Queue;
 
 class AccountrequestProposal
 {
@@ -67,5 +68,13 @@ class AccountrequestProposal
         return isset($matches[2]) && $matches[2] !== '00' ? $matches[1] . ':' . $matches[2] : $matches[1];
     }
     
+    public function assignedUsersJob($accountId,$bmTokenId)
+    {
+        $jobHandlerClassName = 'app\job\AccountAssignedUsers';
+        $jobQueueName = 'AccountAssignedUsers';
+        Queue::later(1, $jobHandlerClassName, ['account_id'=>$accountId,'bm_token_id'=>$bmTokenId], $jobQueueName);
+        return true;
+    }
+
 
 }
