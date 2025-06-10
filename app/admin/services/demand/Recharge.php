@@ -313,7 +313,7 @@ class Recharge
             //====================
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotNull('fb_bm_token.token')
