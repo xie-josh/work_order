@@ -263,7 +263,7 @@ class CardService
                 if(!empty($params['max_on_percent']) || !empty($params['transaction_limit']))
                 {
                     $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
-                    if(empty($params['max_on_percent'])) $param['max_on_percent'] = $cardInfo['data']['maxOnPercent']??0;
+                    if(empty($params['max_on_percent'])) $param['max_on_percent'] = ($cardInfo['data']['maxOnPercent']??0) < 1 ? env('CARD.MAX_ON_PERCENT',901) : ($cardInfo['data']['maxOnPercent']??0);
 
                     if(empty($params['transaction_limit'])){
                         $param['transaction_limit'] = $cardInfo['data']['totalTransactionLimit']??0;
