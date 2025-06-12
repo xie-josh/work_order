@@ -12,6 +12,8 @@ class Backend
             $client = new Client(['verify' => false,'headers'=>$header]);
             if($method == 'GET' || $method == 'get'){
                 $response = $client->request('GET', $url,['query'=>$data]);
+            }elseif($method == 'GET2'){
+                $response = $client->request('GET', $url,['form_params'=>$data]);
             }elseif($method == 'POST'){
                 $response = $client->request('POST', $url,['body'=>json_encode($data)]);
             }elseif($method == 'POST1'){
@@ -22,14 +24,16 @@ class Backend
                 $response = $client->request('PUT', $url,['form_params'=>$data]);
             }elseif($method == 'DELETE'){
                 $response = $client->request('DELETE', $url,['body'=>json_encode($data)]);
+            }elseif($method == 'PATCH'){
+                $response = $client->request('PATCH', $url,['body'=>json_encode($data)]);
             }
-    
             $result = $response->getBody()->getContents();
 
             $result = json_decode($result, true);
             return $result;
 
         } catch (\Throwable $th) {
+            // dd($th->getResponse()->getBody()->getContents());
             //throw $th;
             return throw new \Exception($th->getMessage());
         }

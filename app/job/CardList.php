@@ -20,6 +20,8 @@ class CardList
                 $this->lampayCardList($data);
             }elseif($data['platform'] == 'airwallex' || $data['platform'] == 'airwallexUs'){
                 $this->airwallexCardList($data);
+            }elseif($data['platform'] == 'slash'){
+                $this->slashCardList($data);
             }
             $job->delete();
 
@@ -181,7 +183,7 @@ class CardList
                 if(in_array($v['cardBusinessId'],$resultListIds)) continue;
 
                 $dataList[] = [
-                    'account_id'=>$accountId,
+                    'account_id'=>$accountId, 
                     'created_at'=>date('Y-m-d H:i:s',($v['createdAt'] / 1000)),
                     'member_id'=>'',
                     'matrix_account'=>'',
@@ -303,6 +305,90 @@ class CardList
         }else{
             //return ['code'=>0,'msg'=>'拉取失败或者没有数据'];
         }
+    }
+
+    public function slashCardList($param)
+    {
+        $accountId = $param['id'];
+
+        $createdAtEnd = date('Y-m-d\TH:i:d', strtotime('-7 days'));
+        
+        $cardStatus = ['active'=>'normal','inactive'=>'frozen','closed'=>'cancelled','paused'=>'frozen'];
+        $pageSize = 100;
+        $is_ = true;
+        $result = true;
+        $time = -10;
+        $cursor = '';
+        while($is_){
+            try {
+                Db::startTrans();
+                $param = [
+                    'cursor'=>$cursor,
+                ];
+                $cardList = (new CardService($accountId))->cardList($param);
+                
+                $cardList = $cardList['data'];
+                $list = $cardList['data'];
+                if(empty($list)) 
+                {
+                    $is_ = false;
+                    continue;
+                }
+
+
+                $cardIds = array_column($list,'id');
+
+                $resultListIds = DB::table('ba_cards')->where('account_id',$accountId)->whereIn('card_id',$cardIds)->column('card_id');
+
+                       
+                $dataList = [];            
+                foreach($list as $v){
+
+                    if(in_array($v['id'],$resultListIds)) continue;
+
+                    $dataList[] = [
+                        'account_id'=>$accountId,
+                        'created_at'=> date('Y-m-d H:i:s',strtotime($v['createdAt'])),
+                        'member_id'=>'',
+                        'matrix_account'=>'',
+                        'card_id'=>$v['id'],
+                        'card_currency'=>'',
+                        'card_scheme'=>'VISA',
+                        'card_status'=>$cardStatus[$v['status']],
+                        'card_type'=>'',
+                        'mask_card_no'=>'',
+                        'nickname'=>$v['name'],
+                        'card_balance'=>'',
+                        'create_time'=>time(),
+                    ];
+                }
+
+                DB::table('ba_cards')->insertAll($dataList);
+    
+                if($pageSize > $cardList['total'] || !isset($cardList['cursor'])){
+                    $is_ = false;
+                }else $cursor = $cardList['cursor'];
+
+                Db::commit();
+            } catch (\Throwable $th) {
+                Db::rollback();
+                $logs = '错误:('.$th->getLine().')'.json_encode($th->getMessage());
+                $result = false;
+                $is_ = false;
+                DB::table('ba_card_account')->where('id',$accountId)->update(['status'=>2,'update_time'=>date('Y-m-d H:i:s',time()),'logs'=>$logs]);
+            }
+        }
+
+        if($result){
+            $updatedAtMin = date('Y-m-d H:i:d', strtotime($time.' hour'));
+            DB::table('ba_card_account')->where('id',$accountId)->update(['pull_time'=>$updatedAtMin,'update_time'=>date('Y-m-d H:i:s',time()),'logs'=>'']);
+            //return ['code'=>1,'msg'=>'拉取完成'];
+        }else{
+            //return ['code'=>0,'msg'=>'拉取失败或者没有数据'];
+        }
+
+        
+        
     }
 
 }

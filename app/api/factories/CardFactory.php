@@ -6,6 +6,7 @@ use app\api\interfaces\CardInterface;
 use app\api\cards\Lampay;
 use app\api\cards\Airwallex;
 use app\api\cards\AirwallexUs;
+use app\api\cards\Slash;
 
 class CardFactory
 {
@@ -21,6 +22,8 @@ class CardFactory
                 return new airwallex($cardAccount);
             case 'airwallexUs':
                 return new airwallex($cardAccount);
+            case 'slash':
+                return new Slash($cardAccount);
             default:
                 return throw new \Exception("账户不可使用!");
         }

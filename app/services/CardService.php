@@ -163,6 +163,8 @@ class CardService
                 }
             }elseif($this->platform == 'airwallex' || $this->platform == 'airwallexUs'){
                 
+            }elseif($this->platform == 'slash'){
+
             }else{
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');
@@ -207,6 +209,13 @@ class CardService
                 if(empty($params['transaction_limit']) && !empty($allTime)) $param['transaction_limit'] = $totalTransactionLimit;
                 if(empty($params['max_on_percent']) && !empty($perTransaction)) $param['max_on_percent'] = $perTransaction;
                 if(empty($params['max_on_daily']) && !empty($maxOnDaily)) $param['max_on_daily'] = $maxOnDaily;
+            }elseif($this->platform == 'slash'){
+                $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
+
+                $c = bcsub((string)$cardInfo['data']['totalTransactionLimit'],(string) $cardInfo['data']['availableTransactionLimit'],2);  
+                $param['transaction_limit'] = $params['transaction_limit'] + $c;
+
+                if(empty($params['max_on_percent'])) $param['max_on_percent'] = $cardInfo['data']['maxOnPercent']??0;
             }else{
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');
@@ -250,11 +259,24 @@ class CardService
                 if(empty($params['transaction_limit']) && !empty($totalTransactionLimit)) $param['transaction_limit'] = $totalTransactionLimit;
                 if(empty($params['max_on_percent']) && !empty($perTransaction)) $param['max_on_percent'] = $perTransaction;
                 if(empty($params['max_on_daily']) && !empty($maxOnDaily)) $param['max_on_daily'] = $maxOnDaily;
+            }elseif($this->platform == 'slash'){
+                if(!empty($params['max_on_percent']) || !empty($params['transaction_limit']))
+                {
+                    $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
+                    if(empty($params['max_on_percent'])) $param['max_on_percent'] = $cardInfo['data']['maxOnPercent']??0;
+
+                    if(empty($params['transaction_limit'])){
+                        $param['transaction_limit'] = $cardInfo['data']['totalTransactionLimit']??0;
+                    }else{
+                        $param['transaction_limit'] =  bcdiv((string)$params['transaction_limit'], '100', 2);
+                        $param['transaction_limit'] = bcadd((string)$params['transaction_limit'] ,(string)$cardInfo['data']['totalTransactionLimit'],2);
+                    }
+                }
             }else{
                 // return ['code'=>0,'msg'=>'未找到该平台！'];
                 throw new \Exception('未找到该平台！');
             }
-        }      
+        }
         return $param;
     }
     
