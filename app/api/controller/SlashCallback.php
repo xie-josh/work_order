@@ -7,7 +7,7 @@ use think\facade\Log;
 use app\common\controller\Frontend;
 use think\facade\Db;
 
-class AirwallexCallback extends Frontend
+class SlashCallback extends Frontend
 {
 
     protected array $noNeedLogin = ['handleCallback'];
@@ -21,10 +21,15 @@ class AirwallexCallback extends Frontend
     {
         //TODO...  该数据没有鉴权，后面补充
         // 获取参数
+        $post = $request->post();
         $params = $request->param();
         $header = $request->header();
-        // Log::info('Received callback:'.json_encode($params));
-        // Log::info('Received callback Header:'.json_encode($header));
+
+        Log::info('Received slash POST callback:'.json_encode($post));
+        Log::info('Received slash callback:'.json_encode($params));
+        Log::info('Received slash callback Header:'.json_encode($header));
+        
+        return json(['roger' => true]);
         try {
             $cardId =  0;
             $is_type = '';
@@ -45,9 +50,9 @@ class AirwallexCallback extends Frontend
             return json(['roger' => false],400);
         }
         // 记录日志
-        // Log::info('Received callback', $params);
-        // Log::info(json_encode($params));
-        // Log::info(json_encode($header));
+        Log::info('Received callback', $params);
+        Log::info(json_encode($params));
+        Log::info(json_encode($header));
         // 返回成功响应
         return json(['roger' => true]);
     }

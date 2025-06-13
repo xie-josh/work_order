@@ -98,9 +98,9 @@ class CardCallback extends Frontend
             return json(['roger' => false]);
         }
         // 记录日志
-        Log::info('Received callback', $params);
-        Log::info(json_encode($params));
-        Log::info(json_encode($header));
+        // Log::info('Received callback', $params);
+        // Log::info(json_encode($params));
+        // Log::info(json_encode($header));
         // 返回成功响应
         return json(['roger' => true]);
     }
