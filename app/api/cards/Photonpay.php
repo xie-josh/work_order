@@ -241,6 +241,38 @@ class Photonpay extends Backend implements CardInterface
         }
     }
 
+    public function cancelCard($params):array
+    {
+        $param = [
+            'cardId'=>$params['card_id'],
+        ];
+
+        $sign = $this->sign($param);
+
+        $url = "$this->url/vcc/openApi/v4/cancelCard";
+        $method = 'POST';
+        $header = [
+            'Content-Type'=>'application/json',
+            'X-PD-TOKEN'=>$this->token,
+            'X-PD-SIGN'=>$sign
+        ];
+        $result = $this->curlHttp($url,$method,$header,$param);
+
+        if($result['msg'] == 'succeed'){           
+            return $this->returnSucceed([
+                'cardStatus'=>'cancelled'
+            ]);
+        }else{
+            DB::table('ba_cards_logs')->insert([
+                'type'=>'cancel_card',
+                'data'=>json_encode($param),
+                'logs'=>$result['msg'],
+                'create_time'=>date('Y-m-d H:i:s',time())
+            ]);
+            return $this->returnError($result['msg']);
+        }
+    }
+
     public function cardUnfreeze($params):array
     {
         $UUID = $this->getUUID();
@@ -327,6 +359,19 @@ class Photonpay extends Backend implements CardInterface
     //https://x-api.photonpay.com/vcc/open/v2/sandBoxTransaction
     public function test($params):array
     {
+
+         if(!empty($params['type']) && $params['type'] == 'closed')
+        {
+            $this->cardUnfreeze($params);
+            sleep(3);
+            $result = $this->cancelCard($params);
+            if($result['code'] == 1){
+                return $result;
+            }else{
+                return $this->returnError($result['msg']);
+            }
+        }
+
         $UUID = $this->getUUID();
         $params = [
             'cardID'=>'XR1826914197393379328',
