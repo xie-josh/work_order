@@ -269,7 +269,11 @@ class CardService
                         $param['transaction_limit'] = $cardInfo['data']['totalTransactionLimit']??0;
                     }else{
                         $param['transaction_limit'] =  bcdiv((string)$params['transaction_limit'], '100', 2);
-                        $param['transaction_limit'] = bcadd((string)$params['transaction_limit'] ,(string)$cardInfo['data']['totalTransactionLimit'],2);
+                        if($params['transaction_limit_change_type'] == 'increase'){
+                            $param['transaction_limit'] = bcadd((string)$params['transaction_limit'] ,(string)$cardInfo['data']['totalTransactionLimit'],2);
+                        }elseif($params['transaction_limit_change_type'] == 'decrease'){
+                            $param['transaction_limit'] = bcsub((string)$cardInfo['data']['totalTransactionLimit'],(string)$params['transaction_limit'] ,2);
+                        }
                     }
                 }
             }else{
