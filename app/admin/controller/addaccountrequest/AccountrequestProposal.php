@@ -139,6 +139,8 @@ class AccountrequestProposal extends Backend
         $openTime = '';
         $endTime = '';
         $is_  = true;
+        $whereOr = [];
+        $noWhere = [];
         foreach($where as $k => $v){
             if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
             
@@ -150,6 +152,22 @@ class AccountrequestProposal extends Backend
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 1){
                 array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 2){
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 0){
+                array_push($whereOr,['accountrequest_proposal.account_status','=',0]);
+                array_push($whereOr,['accountrequest_proposal.status','=',96]);
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 97){
+                array_push($where,['accountrequest_proposal.status','=',97]);
                 unset($where[$k]);
                 continue;
             }
@@ -157,18 +175,22 @@ class AccountrequestProposal extends Backend
 
         // if($is_) array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
 
-        // dd($where);
 
         array_push($where,['account.account_id','<>','']);
         array_push($where,['account.status','in',[4]]);
 
         $res = DB::table('ba_account')
         ->alias('account')
-        ->field('account.*,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname')
+        ->field('account.*,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname,accountrequest_proposal.status accountrequest_proposal_status')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin','admin.id=account.admin_id')
         ->order($order)
         ->where($where)
+        ->where(function($query) use($whereOr){
+            if(!empty($whereOr)){
+                $query->whereOr($whereOr);
+            }
+        })  
         ->paginate($limit);
 
 
