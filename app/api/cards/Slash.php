@@ -262,80 +262,55 @@ class Slash extends Backend implements CardInterface
 
     public function transactionDetail($params):array
     {
-        return [];
-        $url = "$this->url/api/v1/issuing/transactions";
+        $url = "$this->url/transaction";
         $method = 'GET';
         $header = [
             'Content-Type'=>'application/json',
-            'Authorization'=>'Bearer '.$this->token
+            'X-API-Key'=>$this->token
         ];
-        $param = [
-            // 'from_created_at'=>'2024-07-09T11:05:00+0000',
-            // 'to_created_at'=>'2024-12-01T11:05:00+0000',
-            'card_id'=>$params['card_id'],
-            'page_num'=>$params['page_index']??0,
-            'page_size'=>$params['page_size']??200,
-        ];
-        $result = $this->curlHttp($url,$method,$header,$param);
+        $result = $this->curlHttp($url,$method,$header,$params); 
+
         if(isset($result['items'])){
-
-            $items = $result['items'];
-            $transactionType = ['AUTHORIZATION'=>'verification','CLEARING'=>'auth','REFUND'=>'refund','REVERSAL'=>'REVERSAL','ORIGINAL_CREDIT'=>'ORIGINAL_CREDIT'];
-            $status = ['APPROVED'=>'succeed','PENDING'=>'authorized','FAILED'=>'failed'];
-            $dataList = [];
-            foreach($items as $v){
-                $dataList[] = [
-                    'memberId'=>'',
-                    'matrixAccount'=>'',
-                    'createdAt'=>date('Y-m-d H:i:s',strtotime($v['posted_date'])),
-                    'cardId'=>$v['card_id']??'',
-                    'cardType'=>'share',
-                    'cardCurrency'=>'',
-                    'transactionId'=>$v['transaction_id']??'',
-                    'originTransactionId'=>'',
-                    'requestId'=>'',
-                    'transactionType'=> $transactionType[$v['transaction_type']]??'',
-                    'status'=>$status[$v['status']]??'',
-                    'code'=>'',
-                    'msg'=>'',
-                    'mcc'=>'',
-                    'authCode'=>$v['auth_code']??'',
-                    'settleStatus'=>'',
-                    'transactionAmount'=>str_replace('-','',$v['transaction_amount']),
-                    'transactionCurrency'=>$v['transaction_currency']??'',
-                    'txnPrincipalChangeAccount'=>'',
-                    'txnPrincipalChangeAmount'=>$v['billing_amount']??'',
-                    'txnPrincipalChangeCurrency'=>$v['billing_currency']??'',
-                    'txnPrincipalChangeSettledAmount'=>'',
-                    'settleSpreadChangeAccount'=>'',
-                    'settleSpreadChangeCurrency'=>'',
-                    'feeDeductionAccount'=>'',
-                    'feeDeductionAmount'=>'',
-                    'feeDeductionCurrency'=>'',
-                    'feeDetailJson'=>'',
-                    'feeReturnAccount'=>'',
-                    'feeReturnAmount'=>'',
-                    'feeReturnCurrency'=>'',
-                    'feeReturnDetailJson'=>'',
-                    'arrivalAccount'=>'',
-                    'arrivalAmount'=>'',
-                    'maskCardNo'=>$v['masked_card_number']??'',
-                    'merchantNameLocation'=>$v['merchant']['name'].','.$v['merchant']['city'].','.$v['merchant']['country'],
-                    'create_time'=>time()
-                ];
-            }
-
-            $data = [
-                'data' => $dataList,
-                'total' => '',
-                'pageSize' => $param['page_size'],
-                'pageIndex' => $param['page_num'],
-                'numbers' => count($dataList),
-            ];
-            return $this->returnSucceed($data);
+            return $this->returnSucceed($result);
         }else{
             return $this->returnError($result['msg']);
         }
+    }
+
+    public function transactionGetIdDetail($params):array
+    {
+        $url = "$this->url/transaction/".$params['entityId'];
+        $method = 'GET';
+        $header = [
+            'Content-Type'=>'application/json',
+            'X-API-Key'=>$this->token
+        ];
+        $result = $this->curlHttp($url,$method,$header,[]); 
+        //dd($result);
+
+        if(isset($result['id'])){
+            return $this->returnSucceed($result);
+        }else{
+            return $this->returnError($result['msg']);
+        }
+    }
+
+    public function getCardDetails($params):array
+    {
+        $url = "$this->url/card/".$params['entityId'];
+        $method = 'get';
+        $header = [
+            'Content-Type'=>'application/json',
+            'X-API-Key'=>$this->token
+        ];
+        // dd($url,$method,$header,$params);
+        $result = $this->curlHttp($url,$method,$header,[]); 
+        if(isset($result['id'])){
+            return $this->returnSucceed($result);
+        }else{
+            return $this->returnError($result['msg']);
+        }
+
     }
 
 

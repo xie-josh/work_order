@@ -21,6 +21,8 @@ class CardTransactions
             
         }elseif($data['platform'] == 'airwallex' || $data['platform'] == 'airwallexUs'){
             $this->airwallexCardTransactions($data);
+        }elseif($data['platform'] == 'slash'){
+            $this->slashCardTransactions($data);
         }
         $job->delete();
     }
@@ -297,6 +299,102 @@ class CardTransactions
                 $is_ = false;
                 DB::table('ba_cards_info')->where('cards_id',$cardsId)->update(['is_2'=>$logs]);
             }
+        }
+    }
+
+    public function slashCardTransactions($param)
+    {
+        $accountId = $param['account_id'];
+        $cardsId = $param['id'];
+        $cardId = $param['card_id'];
+        // pending, pending_approval, canceled, failed, settled, declined, refund, reversed, returned, dispute
+        $transactionType = ['pending'=>'auth','failed'=>'auth','settled'=>'auth','declined'=>'auth','reversed'=>'void','dispute'=>'corrective','returned'=>'void',
+        'pending_approval'=>'verification','canceled'=>'void','refund'=>'refund'];
+        $status = ['posted'=>'succeed','pending'=>'authorized','failed'=>'failed'];
+        $is_ = true;
+        while($is_){
+            try {
+                Db::startTrans();
+                $params = [
+                    'cursor'=>'',
+                    'filter:cardId'=>$cardId,
+                ];
+                $transactions = (new CardService($accountId))->transactionDetail($params);
+                if(empty($transactions['data'])){
+                    DB::table('ba_cards')->where('id',$cardsId)->update(['is_transactions'=>1]);
+                    $is_ = false;
+                    continue;
+                }
+
+                $transactionsList = $transactions['data']??'';                      
+                $list = $transactionsList['items']??'';
+                $transactionsIds = array_column($list,'id');
+
+                $resultListIds = DB::table('ba_cards_transactions')->where('account_id',$accountId)->whereIn('transaction_id',$transactionsIds)->column('transaction_id');
+
+                                    
+                $dataList = [];            
+                foreach($list as $k=>$v){
+                    if(in_array($v['id'],$resultListIds)) continue;
+                    $dataList[] = [
+                        'account_id'=>$accountId,
+                        'cards_id'=> $cardsId,
+                        'member_id'=>$v['memberId']??'',
+                        'matrix_account'=>$v['matrixAccount']??'',
+                        'created_at'=>date('Y-m-d H:i:s',strtotime($v['date'])),
+                        'card_id'=>$v['cardId']??'',
+                        'card_type'=>$v['cardType']??'',
+                        'card_currency'=>$v['cardCurrency']??'',
+                        'transaction_id'=>$v['id']??'',
+                        'origin_transaction_id'=>$v['originTransactionId']??'',
+                        'request_id'=>$v['requestId']??'',
+                        'transaction_type'=>$transactionType[$v['detailedStatus']]??'',
+                        'status'=>$status[$v['status']]??'',
+                        'code'=>$v['code']??'',
+                        'msg'=>$v['msg']??'',
+                        'mcc'=>$v['mcc']??'',
+                        'auth_code'=>$v['authCode']??'',
+                        'settle_status'=>$v['settleStatus']??'',
+                        'transaction_amount'=> (abs($v['amountCents'])/100)??0,
+                        'transaction_currency'=>"USD",
+                        'txn_principal_change_account'=>$v['txnPrincipalChangeAccount']??'',
+                        'txn_principal_change_amount'=>(abs($v['originalCurrency']['amountCents']??0)/100)??0,
+                        'txn_principal_change_currency'=>$v['originalCurrency']['code']??"",
+                        'txn_principal_change_settled_amount'=>$v['txnPrincipalChangeSettledAmount']??'',
+                        'settle_spread_change_account'=>$v['settleSpreadChangeAccount']??'',
+                        'settle_spread_change_currency'=>$v['settleSpreadChangeCurrency']??'',
+                        'fee_deduction_account'=>$v['feeDeductionAccount']??'',
+                        'fee_deduction_amount'=>$v['feeDeductionAmount']??'',
+                        'fee_deduction_currency'=>$v['feeDeductionCurrency']??'',
+                        'fee_detail_json'=>empty($v['feeDetailJson'])?'{}':json_encode($v['feeDetailJson']),
+                        'fee_return_account'=>$v['feeReturnAccount']??'',
+                        'fee_return_amount'=>$v['feeReturnAmount']??'',
+                        'fee_return_currency'=>$v['feeReturnCurrency']??'',
+                        'fee_return_detail_json'=>empty($v['feeReturnDetailJson'])?'{}':json_encode($v['feeReturnDetailJson']),
+                        'arrival_account'=>$v['arrivalAccount']??'',
+                        'arrival_amount'=>$v['arrivalAmount']??'',
+                        'mask_card_no'=>$v['maskCardNo']??'',
+                        'merchant_name_location'=>$v['merchantDescription'],
+                        'create_time'=>time()
+                    ];
+                }
+                DB::table('ba_cards_transactions')->insertAll($dataList);
+                DB::table('ba_cards')->where('id',$cardsId)->update(['is_transactions'=>1]);
+    
+                $metadata = $transactions['metadata'] ?? [];
+
+                $cursor = $metadata['nextCursor']??'';
+                $params['cursor'] = $metadata['nextCursor']??'';
+               if(empty($cursor))$is_ =false;
+                //echo $pageIndex;
+                Db::commit();
+            } catch (\Throwable $th) {
+                Db::rollback();
+                $logs = '错误:('.$th->getLine().')'.json_encode($th->getMessage());
+                $is_ = false;
+                DB::table('ba_cards')->where('id',$cardsId)->update(['is_transactions'=>2,'update_time'=>time(),'transactions_logs'=>$logs]);
+            }
+            return true;
         }
     }
 
