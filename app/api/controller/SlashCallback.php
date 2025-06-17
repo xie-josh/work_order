@@ -56,7 +56,7 @@ class SlashCallback extends Frontend
             $data = json_encode($header).json_encode($params);
             Db::table('ba_cards_logs')->insert(['type'=>'callback','data'=>$data,'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]);
             http_response_code(204);
-            exit;
+            return json(['roger' => true]);
         }
         // 记录日志
         // Log::info('Received callback', $params);
@@ -64,7 +64,7 @@ class SlashCallback extends Frontend
         // Log::info(json_encode($header));
         // 返回成功响应
         http_response_code(204);
-        exit;
+        return json(['roger' => true]);
     }
 
 
