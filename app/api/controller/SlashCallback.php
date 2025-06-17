@@ -55,8 +55,8 @@ class SlashCallback extends Frontend
             $logs = 'callback错误：'.'('.$th->getLine().')'.json_encode($th->getMessage());
             $data = json_encode($header).json_encode($params);
             Db::table('ba_cards_logs')->insert(['type'=>'callback','data'=>$data,'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]);
-            //if(!empty($cardId) && !empty($is_type))  DB::table('ba_cards')->where('card_id',$cardId)->update([$is_type=>2,'update_time'=>time(),'info_logs'=>$logs]);
-            return json(['roger' => false],400);
+            http_response_code(204);
+            exit;
         }
         // 记录日志
         // Log::info('Received callback', $params);
