@@ -128,7 +128,7 @@ class AccountReturn extends Backend
         $resultAdmin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
 
         $adminListValue = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
-        $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',6=>'开户异常',98=>'回收',99=>'终止使用'];
+        $statusValue = config('basics.ACCOUNT_STATUS');
         $typeListValue = [1=>"封户回来活跃",2=>"封户回来待支付",3=>"丢失回来活跃",4=>"丢失回来封户",5=>"丢失回来待支付"];
         $statusListValue = [0=>"未处理",1=>"处理完成"];
 

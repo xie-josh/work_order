@@ -65,7 +65,7 @@ class Consumption extends Backend
         ->where($where)
         ->order('account_consumption.id','asc');
 
-        $statusList = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',6=>'开户异常',98=>'回收',99=>'终止使用'];
+        $statusList = config('basics.ACCOUNT_STATUS');
 
         if($isCount == 1){
             $query->field('accountrequest_proposal.admin_id admin_channel,account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');

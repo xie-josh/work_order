@@ -483,7 +483,7 @@ class AccountrequestProposal extends Backend
 
         $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
-        $statusValue = [0=>'未分配',1=>'已分配',2=>'绑卡挂户',3=>'大BM挂',4=>'其他币种',5=>'丢失账户',6=>'开户异常',98=>'回收',99=>'终止使用'];
+        $statusValue = config('basics.ACCOUNT_STATUS');
 
         // $cardsList = DB::table('ba_account_card')->select()->toArray();
 
