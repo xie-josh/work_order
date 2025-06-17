@@ -281,6 +281,7 @@ class CardService
                 throw new \Exception('未找到该平台！');
             }
         }
+        if(isset($param['max_on_percent']) && $param['max_on_percent'] < 1) $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
         return $param;
     }
     
