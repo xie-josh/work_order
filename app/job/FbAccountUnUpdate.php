@@ -10,6 +10,7 @@ class FbAccountUnUpdate
 {
     public function fire(Job $job, $data)
     {
+        set_time_limit(300);
         //php think queue:listen --queue FbAccountUnUpdate
         sleep(1);
 
@@ -29,7 +30,6 @@ class FbAccountUnUpdate
 
     public function accountUpdate($params)
     {
-        set_time_limit(300);
         try {
             $businessId = $params['business_id'];
             $id = $params['id'];
@@ -120,7 +120,7 @@ class FbAccountUnUpdate
                     ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
                 }
                 foreach($accountStatusList as $k => $v){
-                    if($k == 2) continue;
+                    // if($k == 2) continue;
                     //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
                     DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 }

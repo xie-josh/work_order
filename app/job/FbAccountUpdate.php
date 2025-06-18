@@ -12,6 +12,7 @@ class FbAccountUpdate
 {
     public function fire(Job $job, $data)
     {
+        set_time_limit(300);
         //php think queue:listen --queue FbAccountUpdate
         //sleep(1);
 
@@ -127,8 +128,8 @@ class FbAccountUpdate
                     ->alias('accountrequest_proposal')
                     ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
                 }
-
-                $accountIds2 = DB::table('ba_accountrequest_proposal')->where('account_status',1)->where('affiliation_admin_id',21)->whereIn('account_id',$accountIds)->column('account_id');
+                
+                $accountIds2 = DB::table('ba_accountrequest_proposal')->where('account_status',1)->where('affiliation_admin_id',99)->whereIn('account_id',$accountIds)->column('account_id');
                 if(!empty($accountIds2)) $this->accountClear($accountIds2);
 
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
