@@ -152,6 +152,15 @@ class SlashCallback extends Frontend
             $transactionsId = $params['id']??0;
             $transactions = DB::table('ba_cards_transactions')->field('id')->where('account_id',$accountId)->where('transaction_id',$transactionsId)->find();
              if($transactions) return true;
+             $orAmountCents = 0;
+             if(isset($params['originalCurrency']['amountCents']))
+             {
+                if($params['originalCurrency']['amountCents']>0){
+                    $orAmountCents =  abs($params['originalCurrency']['amountCents'])/100;
+                 }else{
+                    $orAmountCents =  '-'.abs($params['originalCurrency']['amountCents'])/100;
+                 }
+             }
              $data = [
                  'account_id'=>$accountId,
                  'cards_id'=> $cardsId,
@@ -174,7 +183,7 @@ class SlashCallback extends Frontend
                  'transaction_amount'=> (abs($params['amountCents'])/100)??0,
                  'transaction_currency'=>"USD",
                  'txn_principal_change_account'=>$params['txnPrincipalChangeAccount']??'',
-                 'txn_principal_change_amount'=>(abs($params['originalCurrency']['amountCents']??0)/100)??0,
+                 'txn_principal_change_amount'=>$orAmountCents,
                  'txn_principal_change_currency'=>$params['originalCurrency']['code']??"",
                  'txn_principal_change_settled_amount'=>$params['txnPrincipalChangeSettledAmount']??'',
                  'settle_spread_change_account'=>$params['settleSpreadChangeAccount']??'',

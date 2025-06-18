@@ -331,7 +331,15 @@ class CardTransactions
                 $transactionsIds = array_column($list,'id');
 
                 $resultListIds = DB::table('ba_cards_transactions')->where('account_id',$accountId)->whereIn('transaction_id',$transactionsIds)->column('transaction_id');
-
+                $orAmountCents = 0;
+                if(isset($params['originalCurrency']['amountCents']))
+                {
+                   if($params['originalCurrency']['amountCents']>0){
+                       $orAmountCents =  abs($params['originalCurrency']['amountCents'])/100;
+                    }else{
+                       $orAmountCents =  '-'.abs($params['originalCurrency']['amountCents'])/100;
+                    }
+                }
                                     
                 $dataList = [];            
                 foreach($list as $k=>$v){
@@ -358,7 +366,7 @@ class CardTransactions
                         'transaction_amount'=> (abs($v['amountCents'])/100)??0,
                         'transaction_currency'=>"USD",
                         'txn_principal_change_account'=>$v['txnPrincipalChangeAccount']??'',
-                        'txn_principal_change_amount'=>(abs($v['originalCurrency']['amountCents']??0)/100)??0,
+                        'txn_principal_change_amount'=>$orAmountCents,
                         'txn_principal_change_currency'=>$v['originalCurrency']['code']??"",
                         'txn_principal_change_settled_amount'=>$v['txnPrincipalChangeSettledAmount']??'',
                         'settle_spread_change_account'=>$v['settleSpreadChangeAccount']??'',
