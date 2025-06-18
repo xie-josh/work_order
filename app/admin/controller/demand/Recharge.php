@@ -815,6 +815,7 @@ class Recharge extends Backend
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                                 if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                             }
+                            (new \app\admin\services\card\Cards())->allCardFreeze($account['account_id']);
                         }
                     }else{
                         throw new \Exception('该账户暂时被锁定，请稍后再试！');

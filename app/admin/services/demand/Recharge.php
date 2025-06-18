@@ -351,6 +351,7 @@ class Recharge
                         if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                     }
+                    (new \app\admin\services\card\Cards())->allCardFreeze($accountrequestProposal['account_id']);
                 }
             }
 
