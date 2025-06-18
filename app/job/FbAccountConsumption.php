@@ -77,6 +77,7 @@ class FbAccountConsumption
                     $result = (new CardService($accountrequestProposal['cards_account_id']))->cardFreeze(['card_id'=>$accountrequestProposal['card_id']]);
                     if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$accountrequestProposal['card_id'])->update(['card_status'=>$result['data']['cardStatus']]);
                 }
+                (new \app\admin\services\card\Cards())->allCardFreeze($accountId);
                 return true;
             }
             

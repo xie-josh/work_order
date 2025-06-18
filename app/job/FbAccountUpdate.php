@@ -113,6 +113,7 @@ class FbAccountUpdate
                             'create_time'=>date('Y-m-d H:i:s',time())
                         ]);
                     }
+                    (new \app\admin\services\card\Cards())->allCardFreeze($v['account_id']);
                 }
                 
                 foreach($currencyAccountList as $k => $v){
