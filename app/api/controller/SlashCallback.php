@@ -51,20 +51,18 @@ class SlashCallback extends Frontend
                 }
                 $this->transactionDetailCallback($cards,$transactions['data']);
             }
-        } catch (\Throwable $th) {       
+        } catch (\Throwable $th) {
             $logs = 'callback错误：'.'('.$th->getLine().')'.json_encode($th->getMessage());
             $data = json_encode($header).json_encode($params);
             Db::table('ba_cards_logs')->insert(['type'=>'callback','data'=>$data,'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]);
-            http_response_code(204);
-            return json(['roger' => true]);
+            return response('', 204);
         }
         // 记录日志
         // Log::info('Received callback', $params);
         // Log::info(json_encode($params));
         // Log::info(json_encode($header));
         // 返回成功响应
-        http_response_code(204);
-        return json(['roger' => true]);
+        return response('', 204);
     }
 
 
