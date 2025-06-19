@@ -338,13 +338,16 @@ class Recharge
                     //     sleep(3);
                     // }
 
-                    $param = [
-                        'transaction_limit_type'=>'limited',
-                        'transaction_limit'=>"5000",
-                        'transaction_is'=>'2'
-                    ];
-                    $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
-                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    if($cards['card_status'] != 'cancelled')
+                    {
+                        $param = [
+                            'transaction_limit_type'=>'limited',
+                            'transaction_limit'=>"5000",
+                            'transaction_is'=>'2'
+                        ];
+                        $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    }
 
                     if($cards['card_status'] == 'normal'){
                         $resultCards = (new \app\services\CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);

@@ -968,6 +968,16 @@ class AccountrequestProposal extends Backend
 
                 if(empty($cardsId)) throw new \Exception('参数错误！');
 
+                $cards = DB::table('ba_cards_info')->where('cards_id',$cardsId)->find();
+
+                $param = [];
+                $param['card_id'] = $cards['card_id'];
+                $param['nickname'] = 'remove';
+
+                $cardModel = new \app\admin\model\card\CardsModel();
+                $resultCards =  $cardModel->updateCard($cards,$param);
+                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+
                 $accountCard = new \app\admin\model\addaccountrequest\AccountCard();
                 $result = $accountCard->where('cards_id',$cardsId)->delete();
                 if(empty($result)) throw new \Exception('该户下未找到该卡号！');
@@ -993,7 +1003,7 @@ class AccountrequestProposal extends Backend
         if(empty($data['account_id'])) $this->error('参数错误！');
         $card = DB::table('ba_accountrequest_proposal')
         ->alias('accountrequest_proposal')
-        ->field('cards_info.card_no,cards_info.cards_id,card_platform.name card_platform_name')
+        ->field('cards_info.card_no,cards_info.cards_id,card_platform.name card_platform_name,cards_info.card_status')
         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
         ->leftJoin('ba_card_account card_account','card_account.id=cards_info.account_id')
         ->leftJoin('ba_card_platform card_platform','card_platform.id=card_account.card_platform_id')
@@ -1002,7 +1012,7 @@ class AccountrequestProposal extends Backend
         
         $cardList = DB::table('ba_account_card')
         ->alias('account_card')
-        ->field('cards_info.card_no,cards_info.cards_id,card_platform.name card_platform_name')
+        ->field('cards_info.card_no,cards_info.cards_id,card_platform.name card_platform_name,cards_info.card_status')
         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=account_card.cards_id')
         ->leftJoin('ba_card_account card_account','card_account.id=cards_info.account_id')
         ->leftJoin('ba_card_platform card_platform','card_platform.id=card_account.card_platform_id')
@@ -1035,7 +1045,7 @@ class AccountrequestProposal extends Backend
 
                 if(empty($data['account_id']) || empty($data['cards_id'])) $this->error('参数错误！');    
                 $accountId = $data['account_id'];
-                $cardsId = $data['cards_id'];                            
+                $cardsId = $data['cards_id'];
                 
                 $accountCardsId = $this->model->where('account_id',$accountId)->value('cards_id');
                 if(empty($accountCardsId)) throw new \Exception('未找到该账户的卡号！');
@@ -1063,13 +1073,13 @@ class AccountrequestProposal extends Backend
                         if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$v['id'])->update(['card_status'=>$result['data']['cardStatus']]);
                         continue;
                     }
-                    if($v['cards_id'] == $accountCardsId && $v['card_status'] == 'normal'){
-                        $cardService = new \app\services\CardService($v['account_id']);
-                        $result = $cardService->cardFreeze(['card_id'=>$v['card_id']]);
-                        if($result['code'] != 1) throw new \Exception($result['msg']);
-                        if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$v['id'])->update(['card_status'=>$result['data']['cardStatus']]);
-                        continue;
-                    }
+                    // if($v['cards_id'] == $accountCardsId && $v['card_status'] == 'normal'){
+                    //     $cardService = new \app\services\CardService($v['account_id']);
+                    //     $result = $cardService->cardFreeze(['card_id'=>$v['card_id']]);
+                    //     if($result['code'] != 1) throw new \Exception($result['msg']);
+                    //     if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$v['id'])->update(['card_status'=>$result['data']['cardStatus']]);
+                    //     continue;
+                    // }
                 }
 
                 DB::commit();
