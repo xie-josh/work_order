@@ -498,6 +498,26 @@ class Account extends Backend
                     //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['status'=>2,'affiliation_admin_id'=>null]);
 
                     DB::table('ba_bm')->whereIn('account_id',$accountIds)->update(['status'=>2]);
+
+                    if($accountrequestProposalStatus != 0)
+                    {
+                        $cardsList = DB::table('ba_accountrequest_proposal')
+                        ->field('cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id')
+                        ->alias('accountrequest_proposal')
+                        ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+                        ->whereIn('account_id',$accountIds)
+                        ->select()->toArray();
+    
+                        foreach($cardsList as $cards)
+                        {
+                            if(!empty($cards) && $cards['card_status'] == 'normal') {
+                                $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                            }
+                        }
+                    }
+                    //$cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                 }
                 //$this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
