@@ -73,10 +73,12 @@ class Recharge extends Backend
 
             $result = $res->toArray();
             $dataList = [];
+            $adminNameArr = DB::table('ba_admin')->column('username','id');
             if(!empty($result['data'])) {
                 $dataList = $result['data'];
-    
+                             
                 foreach($dataList as &$v){
+                    $v['username'] = $adminNameArr[$v['admin_id']]??"";
                     if(in_array($v['account_id'],$wk)){
                         $v['wk_type'] = 1;
                         $v['wk_comment'] = "注意，注意，注意：该账户需要您自己去卡平台调整限额！！！！！！！";
@@ -87,7 +89,7 @@ class Recharge extends Backend
                     //if(isset($v['accountrequestProposal']) && !in_array($v['accountrequestProposal']['bm_token_id'],[1,6,29,30,31,32])) $v['accountrequestProposal']['bm_token_id'] = null;
                 }
             }
-    
+
             $this->success('', [
                 'list'   => $dataList,
                 'total'  => $res->total(),
