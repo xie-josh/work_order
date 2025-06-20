@@ -75,9 +75,8 @@ class AccountrequestProposal extends Backend
          * 2. 以下的别名设置了主表别名，同时便于拼接查询参数等
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
-        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        list($where, $alias, $limit, $order) = $this->queryBuilder(); 
         if($status === "0") array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
-
         if($limit == 999) $limit = 2500;
 
         $res = $this->model
@@ -87,8 +86,6 @@ class AccountrequestProposal extends Backend
             ->order($order)
             ->paginate($limit);
         $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no'],'account'=>['id','is_']]);
-
-
 
         // return [
         //     'list'   => $res->items(),
@@ -455,9 +452,10 @@ class AccountrequestProposal extends Backend
     {
         set_time_limit(600);
         $where = [];
-        $ids = $this->request->post('ids');
+        $ids = $this->request->get('ids');
+   
         if($ids) array_push($where,['accountrequest_proposal.id','in',$ids]);
-        
+        else list($where, $alias, $limit, $order) = $this->queryBuilder(); 
         // $data = DB::table('ba_accountrequest_proposal')
         // ->alias('accountrequest_proposal')
         // ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no')
