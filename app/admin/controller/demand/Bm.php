@@ -581,7 +581,7 @@ class Bm extends Backend
                 $bmData = [];
                 $adminId = $this->auth->id;
                 foreach($bmList as $v){
-                     if($v['dispose_type']==1)continue; //处理完成跳过不允许处理
+                    //  if($v['dispose_type']==1)continue; //处理完成跳过不允许处理
                     $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
                     if($v['demand_type'] == 4 && $disposeStatus ==1){
                         DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]); //开户绑定类型已完成

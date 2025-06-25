@@ -194,12 +194,14 @@ class Account extends Backend
                 if(empty($data['time_zone']) || empty($data['type'])) throw new \Exception("时区与投放类型不能为空!");
                 if($money < 200) throw new \Exception("开户金额不能小于200！");
 
-                // if($data['bm_type'] == 1){
-                //     if(empty($data['bm'])) throw new \Exception("BM不能为空！");
-                //     if(strlen($data['bm']) > 20) throw new \Exception("BM长度不能超过20位！");
-                //     if(filter_var($data['bm'], FILTER_VALIDATE_EMAIL) !== false) throw new \Exception("BM类型不能填写邮箱！");
-                //     $data['email'] = '';
-                // }
+                $bmList = $data['bes']??[];
+                if($data['bm_type'] == 1){
+                    if(count($bmList) != 1) throw new \Exception("BM只能填一个！");
+                    // if(empty($data['bm'])) throw new \Exception("BM不能为空！");
+                    // if(strlen($data['bm']) > 20) throw new \Exception("BM长度不能超过20位！");
+                    // if(filter_var($data['bm'], FILTER_VALIDATE_EMAIL) !== false) throw new \Exception("BM类型不能填写邮箱！");
+                    // $data['email'] = '';
+                }
 
                 // if($data['bm_type'] == 2){
                 //     if(empty($data['email'])) throw new \Exception("email不能为空！");
@@ -207,7 +209,6 @@ class Account extends Backend
                 // }
 
                 
-                $bmList = $data['bes']??[];
                 if(!empty($bmList))foreach($bmList as $v){
                     if(filter_var($v, FILTER_VALIDATE_EMAIL) || preg_match('/^\d+$/', $v)){
                     }else throw new \Exception("BM格式错误,请填写正确的BM或邮箱!");                    
@@ -293,10 +294,14 @@ class Account extends Backend
                 if(!$this->auth->isSuperAdmin()){
                     unset($data['dispose_status']);
                 }
+               
+                if($data['bm_type'] == 1 ) if(count($data['bes']) != 1)   throw new \Exception("BM只能填一个！");
                 
-                if($data['bm_type'] == 1) $data['email'] = '';
-                if($data['bm_type'] == 2) $data['bm'] = '';
-                
+                 if(!empty($data['bes']))foreach($data['bes'] as $v){
+                    if(filter_var($v, FILTER_VALIDATE_EMAIL) || preg_match('/^\d+$/', $v)){
+                    }else throw new \Exception("BM格式错误,请填写正确的BM或邮箱!");                    
+                }else throw new \Exception("email不能为空!");
+                $data['bes'] = json_encode($data['bes']??[], true);
 
                 $result = $row->save($data);
                 $this->model->commit();
@@ -310,7 +315,7 @@ class Account extends Backend
                 $this->error(__('No rows updated'));
             }
         }
-
+        $row['bes'] =json_decode($row['bes']??'', true)??[];
         $this->success('', [
             'row' => $row
         ]);
@@ -1274,14 +1279,14 @@ class Account extends Backend
                 $i=5;
                 while ($i <= 100) {
                     if(!empty($v[$i])){
-                        if(filter_var($v[$i], FILTER_VALIDATE_EMAIL) || preg_match('/^\d+$/', $v[$i])) 
+                        if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)) 
                         $bes[] = $v[$i];
-                        else throw new \Exception($v[$i]."格式错误,请填写正确的BM或邮箱后重新导入！");
+                        else throw new \Exception($v[$i]."邮箱格式错误,请填写正确的邮箱后重新导入！");
                         $i++;  
                     }else{ break; }
                 }
            
-                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) || !is_numeric($money) ) continue;
+                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) ) continue;
 
                 $d = [
                     'name'=>$name,
