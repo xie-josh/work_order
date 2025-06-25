@@ -1294,7 +1294,7 @@ class Account extends Backend
                     // 'email'=>'',
                     // 'bm'=>$bm,
                     'bes'=>json_encode($bes??[]),
-                    'bm_type'=>1,
+                    'bm_type'=>2,
                     'money'=>$money,
                     'admin_id'=>$adminId,
                     'status'=>$authAdminId==1?1:0,
