@@ -37,5 +37,10 @@ class Bm extends Model
         return $this->ud.str_pad($data['id'], 6, '0', STR_PAD_LEFT);
     }
 
+    public function admin(): \think\model\relation\BelongsTo
+    {
+        return $this->belongsTo(\app\admin\model\Admin::class, 'admin_id', 'id');
+    }
+
 
 }

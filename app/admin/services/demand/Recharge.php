@@ -430,6 +430,116 @@ class Recharge
         }
     }
 
+    public function spendDeductions($params)
+    {
+        $result = false;
+        try {
+            $id = $params['id']??0;
+
+            $result = $this->model->where('id',$id)->where([['status','=',0],['type','=',2]])->find();
+            if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
+
+            $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();
+            if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+
+            $key = 'recharge_deductions_'.$id;
+            $redisValue = Cache::store('redis')->get($key);
+            if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+            Cache::store('redis')->set($key, '1', 180);
+
+            //====================
+            $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+            ->alias('accountrequest_proposal')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
+            ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+            ->where('fb_bm_token.status',1)
+            ->whereNotNull('fb_bm_token.token')
+            ->where('accountrequest_proposal.account_id',$result['account_id'])
+            ->find();
+
+            if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
+            $currency = $accountrequestProposal['currency'];
+
+            if($accountrequestProposal['is_token'] !=1) $accountrequestProposal['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['token']);
+
+            $accountMoney = DB::table('ba_account')->where('account_id',$accountrequestProposal['account_id'])->value('money');
+            
+            $FacebookService = new \app\services\FacebookService();
+            $result1 = $FacebookService->adAccounts($accountrequestProposal);
+            if($result1['code'] != 1) throw new \Exception($result1['msg']);
+            if(in_array($currency,$this->currency100)){
+                $result1['data']['balance_amount'] =  bcmul($result1['data']['balance_amount'], '100', 2);
+                $result1['data']['spend_cap'] =  bcmul($result1['data']['spend_cap'], '100', 2);
+            }
+
+            $money = $result1['data']['balance_amount'];
+            $fbBoney = $result1['data']['spend_cap'];
+            $fbNumber = $result['number'];
+
+            $spendCap = $fbBoney;
+            if(!empty($this->currencyRate[$currency])){
+                $fbNumber = bcmul((string)$fbNumber, $this->currencyRate[$currency],2);
+                $spendCap = bcdiv((string)$fbBoney, $this->currencyRate[$currency],2);
+            }
+
+            if($spendCap == 0.01) $spendCap = 0;
+            if($spendCap != $accountMoney) throw new \Exception("FB总限额与系统充值匹配错误！");
+
+            if($result['number'] < 1) throw new \Exception("无效金额，无法扣除！");
+            if($money < $result['number']) throw new \Exception("账户余额不足，无法扣除！");
+
+            $spendCap = bcsub((string)$fbBoney,(string)$fbNumber,2);
+            $accountrequestProposal['spend'] = $spendCap;
+            // dd($accountrequestProposal,$result1);
+            $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
+            if($result3['code'] != 1) throw new \Exception("FB限额扣除错误，请检查账户权限或联系管理员！");
+
+            if($accountrequestProposal['is_cards'] != 2) {
+                $cards = DB::table('ba_cards_info')->where('cards_id',$accountrequestProposal['cards_id']??0)->find();                
+                if(empty($cards)) {
+                    throw new \Exception("未找到分配的卡");
+                }else{
+                    if($cards['card_status'] != 'cancelled')
+                    {
+                        $param = [
+                            'transaction_limit_type'=>'limited',
+                            'transaction_limit_change_type'=>'decrease',
+                            'transaction_limit'=>$result['number'],
+                        ];
+
+                        $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    }
+                }
+            }
+    
+            DB::table('ba_account')->where('account_id',$result['account_id'])->dec('money',$result['number'])->update(['update_time'=>time()]);
+            DB::table('ba_admin')->where('id',$result['admin_id'])->dec('used_money',$result['number'])->update();
+
+            $data = [
+                'status'=>1,
+            ];
+            $this->model->where('id',$result['id'])->update($data);
+            Cache::store('redis')->delete($key);
+            $result = true;
+        } catch (Throwable $e) {
+            if(!empty($key)) Cache::store('redis')->delete($key);
+            
+            if(!empty($id)){
+                DB::table('ba_fb_logs')->insert(
+                    ['log_id'=>$id,'type'=>'services_error_spend_delete','data'=>json_encode($result),'logs'=>$e->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
+                );
+                $result = $this->model->where('id',$id)->update(['comment'=>$e->getMessage()]);
+            }
+
+            return ['code'=>0,'msg'=>$e->getMessage()];
+        }
+        if ($result !== false) {
+            return ['code'=>1,'msg'=>''];
+        } else {
+            return ['code'=>0,'msg'=>''];
+        }
+    }
 
     public function addUpJob($id)
     {

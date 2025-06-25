@@ -452,6 +452,35 @@ class Recharge extends Backend
         }
     }
 
+    public function accountSpendDeductions()
+    {
+        $this->error('禁用,请找客服！');
+        // sleep(5);
+        // $this->success(__('Update successful'));
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            //DB::startTrans();
+            try {
+                $id = $data['id'];
+
+                $result = (new \app\admin\services\demand\Recharge())->spendDeductions(['id'=>$id]);
+                if($result['code'] != 1) throw new \Exception($result['msg']);
+
+                $result = true;
+                //DB::commit();
+            } catch (Throwable $e) {
+                //DB::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
 
     public function accountSpendDelete222()
     {
@@ -635,6 +664,8 @@ class Recharge extends Backend
             $this->addDeleteJob($id);
         }else if(!empty($result['bm_token_id']) && in_array($result['type'],[1])){
             $this->addUpJob($id);
+        }else if(!empty($result['bm_token_id']) && in_array($result['type'],[2])){
+            $this->addDeductionsJob($id);
         }
         return true;
     }
@@ -652,6 +683,14 @@ class Recharge extends Backend
         $jobHandlerClassName = 'app\job\AccountSpendDelete';
         $jobQueueName = 'AccountSpendDelete';
         Queue::later(3600, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        return true;
+    }
+
+    public function addDeductionsJob($id)
+    {
+        $jobHandlerClassName = 'app\job\AccountSpendDeductions';
+        $jobQueueName = 'AccountSpendDeductions';
+        Queue::later(1, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
         return true;
     }
 

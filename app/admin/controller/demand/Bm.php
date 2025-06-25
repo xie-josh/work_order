@@ -23,6 +23,8 @@ class Bm extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
+    protected array $withJoinTable = ['admin'];
+
     protected array $noNeedPermission = ['batchAdd','disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -77,7 +79,7 @@ class Bm extends Backend
             // array_push($where,['bm.status','=',1]);
             // array_push($where,['bm.dispose_type','=',0]);
         }
-        
+       
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
@@ -100,7 +102,7 @@ class Bm extends Backend
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-
+        
         array_push($this->withJoinTable,'accountrequestProposal');
         //array_push($this->withJoinTable,'accountrequestProposalAdmin');
 
@@ -144,7 +146,6 @@ class Bm extends Backend
             array_push($where,['bm.status','=',0]);
             array_push($where,['bm.demand_type','=',4]);
         }
-        
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
@@ -152,10 +153,8 @@ class Bm extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
-
-
-
         $dataList = $res->toArray()['data'];
+        $adminNameArr = DB::table('ba_admin')->column('nickname','id');
         //dd($dataList);
         if($dataList){
             
@@ -172,6 +171,10 @@ class Bm extends Backend
            
             
             foreach($dataList as &$v){
+                $v['admin'] = [
+                    // 'username'=>$adminNameArr[$v['admin_id']]??"",
+                    'nickname'=>$adminNameArr[$v['admin_id']]??""
+                ];
                 $v['account_requestProposal_admin'] = $adminList[$v['accountrequestProposal']['admin_id']??0]??'';
                 if(in_array($v['bm'],$bmBlackList)) $v['blacklist'] = '黑名单';
                 else $v['blacklist'] = '';
@@ -189,7 +192,7 @@ class Bm extends Backend
 
 
     public function add(): void
-    {
+    { 
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
@@ -219,13 +222,13 @@ class Bm extends Backend
                 $bm = $data['bm']??'';
                 $bmType = $data['bm_type']??1;
                 $checkList = $data['checkList']??[];
-                
+             
                 if($bm) array_push($checkList,$bm);
 
                 $checkList = array_unique($checkList);
 
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
-                if(empty($account)) throw new \Exception("未找到该账户ID");
+                if(empty($account)) throw new \Exception("未找到该账户ID完成状态!"); //未完成开户绑定拦截
 
                 $notConsumptionStatus = config('basics.NOT_consumption_status');
                 $accountrequestProposal = Db::table('ba_accountrequest_proposal')->where('account_id',$accountId)->value('status');
@@ -376,7 +379,7 @@ class Bm extends Backend
                 $status = $data['status'];
                 $comment = $data['comment']??'';
 
-                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray(); 
+                $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                 $bmTemplate = new \app\admin\model\demand\BmTemplate();
                 $servicesBasics = new \app\services\Basics();
 
@@ -406,8 +409,8 @@ class Bm extends Backend
                     }
 
                     if($v['demand_type'] == 2 && $disposeStatus == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
-
-                    DB::table('ba_account')->where('account_id',$v['account_id'])->update(['dispose_status'=>$disposeStatus]);
+                    
+                    if($v['demand_type'] == 4 && $disposeStatus ==1) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
 
                     $progressData[] = [
                         'bm_id'=>$v['id'],
@@ -506,6 +509,7 @@ class Bm extends Backend
 
                     $accountIds[] = $v['account_id'];
                     if($v['demand_type'] == 2 && $status == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
+                    if($v['demand_type'] == 4 && $status ==1) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
                         
                     if($status == 1) $commentValue = '处理完成:'.$getTemplateValue;
                     else if($status == 2) $commentValue = '处理异常:'.$getTemplateValue;
@@ -523,10 +527,6 @@ class Bm extends Backend
                 
                 //$this->model->whereIn('id',array_column($ids,'id'))->update(['dispose_type'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()]);
                 $servicesBasics->dbBatchUpdate('ba_bm',$bmData, 'id');
-
-                if($status == 1)$disposeStatus  = 1;
-                else $disposeStatus = 4;
-                DB::table('ba_account')->whereIn('account_id',$accountIds)->update(['dispose_status'=>$disposeStatus]);
 
                 DB::table('ba_bm_progress')->insertAll($progressData);
 
@@ -575,22 +575,25 @@ class Bm extends Backend
                 }else{
                     $disposeStatus2 = 0;
                 }
-
-                $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,account_id')->select()->toArray(); 
+       
+                $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,dispose_type,account_id')->select()->toArray(); 
                 $accountTypeIds = [];
                 $bmData = [];
                 $adminId = $this->auth->id;
                 foreach($bmList as $v){
+                     if($v['dispose_type']==1)continue; //处理完成跳过不允许处理
                     $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
-                    if($v['demand_type'] == 4) $accountTypeIds[] = $v['account_id'];
+                    if($v['demand_type'] == 4 && $disposeStatus ==1){
+                        DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]); //开户绑定类型已完成
+                    }
                     $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$getTemplateValue,'update_time'=>time()];
                     
                     if($v['demand_type'] == 2 && $disposeStatus2 == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
                 }                  
 
-                $servicesBasics->dbBatchUpdate('ba_bm',$bmData, 'id');
+                if(!empty($bmData))$servicesBasics->dbBatchUpdate('ba_bm',$bmData, 'id');
                 // $this->model->whereIn('id',array_column($bmList,'id'))->update(['new_status'=>$newStatus,'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$comment,'update_time'=>time()]);                
-                if(!empty($accountTypeIds)) DB::table('ba_account')->whereIn('account_id',$accountTypeIds)->update(['dispose_status'=>$disposeStatus2]);
+                // if(!empty($accountTypeIds)) DB::table('ba_account')->whereIn('account_id',$accountTypeIds)->update(['dispose_status'=>$disposeStatus2]);
 
                 $result = true;
                 $this->model->commit();

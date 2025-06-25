@@ -674,9 +674,19 @@ class AccountrequestProposal extends Backend
         $result = $this->accountConsumption($accountrequestProposal);
         if($result['code'] != 1) throw new \Exception($result['msg']);
         $currency = $accountrequestProposal['currency'];    
-        $account = DB::table('ba_account')->field('money,account_id,open_time')->where('account_id',$accountrequestProposal['account_id'])->find();
+        $account = DB::table('ba_account')->field('money,open_money,account_id,open_time')->where('account_id',$accountrequestProposal['account_id'])->find();
 
-        $accountAmount = $account['money']??0;
+        $openMoney = $account['open_money']??0;
+        $totalRecharge = DB::table('ba_recharge')->where('account_id',$accountrequestProposal['account_id'])->where('type',1)->where('status',1)->sum('number');
+        $totalDeductions = DB::table('ba_recharge')->where('account_id',$accountrequestProposal['account_id'])->where('type',2)->where('status',1)->sum('number');
+        $totalReset = DB::table('ba_recharge')->where('account_id',$accountrequestProposal['account_id'])->whereIn('type',[3,4])->where('status',1)->sum('number');
+        
+        $accountAmount = "0";
+        $accountAmount = bcadd((string)$totalRecharge , (string)$openMoney,2);
+        $accountAmount = bcsub((string)$accountAmount , (string)$totalDeductions,2) ;
+        $accountAmount = bcsub((string)$accountAmount , (string)$totalReset,2) ;
+
+        // $accountAmount = $account['money']??0;
         $openTime = date('Y-m-d',$account['open_time']);                        
 
         $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountrequestProposal['account_id'])->where('date_start','>=',$openTime)->sum('spend');

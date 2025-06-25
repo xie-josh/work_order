@@ -100,12 +100,12 @@ class Account extends Backend
             }
         }
         if($status == 1){
-            array_push($where,['account.status','in',[1,3,4,5]]);
+            array_push($where,['account.status','in',[1,3,4,5,6]]);
         }elseif($status == 3){
             //array_push($where,['account.status','in',[3,4]]);
             array_push($where,['account.status','in',[4]]);
         }
-
+   
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -115,7 +115,7 @@ class Account extends Backend
             })
             ->order('id','desc')
             ->paginate($limit);
-
+           
         $dataList = $res->toArray()['data'];
         if($dataList){
             $resultTypeList = DB::table('ba_account_type')->select()->toArray();
@@ -139,6 +139,15 @@ class Account extends Backend
                 if($v['status'] != 4 && $status != 1) $v['account_id'] = '';
                 if(!empty($typeList[$v['account_type']])) $v['account_type_name'] = $typeList[$v['account_type']];
                 $v['bm_list'] = $bmList[$v['account_id']]??[];
+                if(empty($v['bes'])){
+                    $bes =[];
+                    if(!empty($v['email'])) $bes[]=$v['email'];
+                    if(!empty($v['bm'])) $bes[]=$v['bm'];                    
+                    $v['bes'] = $bes;
+                }else{
+                    $v['bes'] = json_decode($v['bes']??'',true);
+                }
+                
                 $v['admin'] = [
                     'username'=>$v['admin']['username']??"",
                     'nickname'=>$v['admin']['nickname']??""
@@ -185,23 +194,26 @@ class Account extends Backend
                 if(empty($data['time_zone']) || empty($data['type'])) throw new \Exception("时区与投放类型不能为空!");
                 if($money < 200) throw new \Exception("开户金额不能小于200！");
 
-                if($data['bm_type'] == 1){
-                    if(empty($data['bm'])) throw new \Exception("BM不能为空！");
-                    if(strlen($data['bm']) > 20) throw new \Exception("BM长度不能超过20位！");
-                    if(filter_var($data['bm'], FILTER_VALIDATE_EMAIL) !== false) throw new \Exception("BM类型不能填写邮箱！");
-                    $data['email'] = '';
-                }
+                // if($data['bm_type'] == 1){
+                //     if(empty($data['bm'])) throw new \Exception("BM不能为空！");
+                //     if(strlen($data['bm']) > 20) throw new \Exception("BM长度不能超过20位！");
+                //     if(filter_var($data['bm'], FILTER_VALIDATE_EMAIL) !== false) throw new \Exception("BM类型不能填写邮箱！");
+                //     $data['email'] = '';
+                // }
 
-                if($data['bm_type'] == 2){
-                    if(empty($data['email'])) throw new \Exception("email不能为空！");
-                    $data['bm'] = '';
-                }
+                // if($data['bm_type'] == 2){
+                //     if(empty($data['email'])) throw new \Exception("email不能为空！");
+                //     $data['bm'] = '';
+                // }
 
                 
-                if($money < 0)  throw new \Exception("开户金额不能小于0！");
-
-
-                if($data['bm_type'] == 3 && (empty($data['email']) || empty($data['bm'])))  throw new \Exception("BM 与 Email不能为空！");
+                $bmList = $data['bes']??[];
+                if(!empty($bmList))foreach($bmList as $v){
+                    if(filter_var($v, FILTER_VALIDATE_EMAIL) || preg_match('/^\d+$/', $v)){
+                    }else throw new \Exception("BM格式错误,请填写正确的BM或邮箱!");                    
+                }else throw new \Exception("BM|email不能为空!");
+                $data['bes'] = json_encode($bmList??[], true);
+                // if($data['bm_type'] == 3 && (empty($data['email']) || empty($data['bm'])))  throw new \Exception("BM 与 Email不能为空！");
 
                 $admin = Db::table('ba_admin')->where('id',$this->auth->id)->find();
                 $accountNumber = $admin['account_number'];
@@ -218,7 +230,6 @@ class Account extends Backend
                 DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
 
                 $data['admin_id'] = $this->auth->id;
-
                 // $data['account_id'] = $this->generateUniqueNumber();
                 $result = $this->model->save($data);
                 $this->model->commit();
@@ -416,18 +427,18 @@ class Account extends Backend
 
                     //     //if(!empty($v['money'])) DB::table('ba_recharge')->insert(['account_name'=>$v['name'],'account_id'=>$accountId,'type'=>1,'number'=>$v['money'],'status'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()]);
 
-                        if(!empty($v['bm']) || !empty($v['email'])){
-                            $bmDataList = [];
-                            if($v['bm_type'] == 3){
-                                $bmDataList[] = ['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'bm_type'=>1,'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()];
-                                $bmDataList[] = ['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['email'],'bm_type'=>2,'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()];
-                            }else{
-                                $bm = empty($v['bm'])?$v['email']:$v['bm'];
-                                $bmDataList[] = ['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$bm,'bm_type'=>$v['bm_type'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()];
-                            }
-                            DB::table('ba_bm')->insertAll($bmDataList);
-                            if(env('IS_ENV',false)) (new QYWXService())->bmSend(['account_id'=>$accountId],4);
-                        }
+                        // if(!empty($v['bm']) || !empty($v['email'])){
+                        //     $bmDataList = [];
+                        //     if($v['bm_type'] == 3){
+                        //         $bmDataList[] = ['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['bm'],'bm_type'=>1,'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()];
+                        //         $bmDataList[] = ['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$v['email'],'bm_type'=>2,'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()];
+                        //     }else{
+                        //         $bm = empty($v['bm'])?$v['email']:$v['bm'];
+                        //         $bmDataList[] = ['account_name'=>$v['name'],'account_id'=>$accountId,'bm'=>$bm,'bm_type'=>$v['bm_type'],'demand_type'=>4,'status'=>0,'dispose_type'=>0,'admin_id'=>$v['admin_id'],'create_time'=>time()];
+                        //     }
+                        //     DB::table('ba_bm')->insertAll($bmDataList);
+                        //     if(env('IS_ENV',false)) (new QYWXService())->bmSend(['account_id'=>$accountId],4);
+                        // }
                     }
                 }elseif($status == 4){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
@@ -457,7 +468,7 @@ class Account extends Backend
                                                     
                         if(empty($cards)) {
                             //TODO...
-                            throw new \Exception("未找到分配的卡或把账户设置成无卡！");
+                               throw new \Exception("未找到分配的卡或把账户设置成无卡！");
                         }else if($v['money'] > 0){
                             $param = [
                                 //'max_on_percent'=>env('CARD.MAX_ON_PERCENT',901),
@@ -471,8 +482,76 @@ class Account extends Backend
                             Cache::store('redis')->delete($key);
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         }
-                    }
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>4,'update_time'=>time(),'open_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
+
+                        //根据bes生成对等个数的开户绑定条数
+                        $besArr =  json_decode($v['bes']??'', true)??[];
+                        $bmDataList = [];
+                        if(!empty($besArr))foreach($besArr as $be){
+                            if(filter_var($be, FILTER_VALIDATE_EMAIL)){
+                                $strBes = $be;
+                                $bmType = 2;
+                            }else if (preg_match('/^\d+$/', $be)){
+                                $strBes = $be;
+                                $bmType = 1;
+                            }
+                            $bmDataList[] = [
+                                'account_name'=>$v['name'],
+                                'account_id'=>$v['account_id'],
+                                'bm'=>$strBes,
+                                'demand_type'=>4,
+                                'bm_type'=>$bmType,
+                                'status'=>0,
+                                'dispose_type'=>0,
+                                'admin_id'=>$v['admin_id'],
+                                'create_time'=>time(),
+                            ];
+                        }else{
+                            //旧数据
+                            if(!empty($v['bm']) || !empty($v['email'])){
+                                    
+                                    if($v['bm_type'] == 3){
+                                        $bmDataList[] = [
+                                            'account_name'=>$v['name'],
+                                            'account_id'=>$v['account_id'],
+                                            'bm'=>$v['bm'],
+                                            'bm_type'=>1,
+                                            'demand_type'=>4,
+                                            'status'=>0,
+                                            'dispose_type'=>0,
+                                            'admin_id'=>$v['admin_id'],
+                                            'create_time'=>time(),
+                                        ];
+                                        $bmDataList[] = [
+                                            'account_name'=>$v['name'],
+                                            'account_id'=>$v['account_id'],
+                                            'bm'=>$v['email'],
+                                            'bm_type'=>2,
+                                            'demand_type'=>4,
+                                            'status'=>0,
+                                            'dispose_type'=>0,
+                                            'admin_id'=>$v['admin_id'],
+                                            'create_time'=>time(),
+                                        ];
+                                    }else{
+                                        $bmDataList[] = [
+                                            'account_name'=>$v['name'],
+                                            'account_id'=>$v['account_id'],
+                                            'bm'=>empty($v['bm'])?$v['email']:$v['bm'],   //$resultAccount['bm'],
+                                            'bm_type'=>$v['bm_type'],
+                                            'demand_type'=>4,
+                                            'status'=>0,
+                                            'dispose_type'=>0,
+                                            'admin_id'=>$v['admin_id'],
+                                            'create_time'=>time(),
+                                        ];
+                                    }
+                                }
+
+                        }
+                        if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
+
+                    }                                                                     //4开户完成->6待开户绑定
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>6,'update_time'=>time(),'open_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
 
 
                 }elseif($status == 5){
@@ -643,9 +722,8 @@ class Account extends Backend
                 }else{
                     $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('account_id',$accountIds)->whereIn('status',config('basics.FH_status'))->select()->toArray();
                 }
-                $resultAccountList = DB::table('ba_account')->whereIn('id',$ids)->where('status',1)->select()->toArray();
-
-                $bmDataList = [];
+                $resultAccountList = DB::table('ba_account')->whereIn('id',$ids)->where('status',1)->select()->toArray();                
+                // $bmDataList = [];
                 foreach($accountIds as $k => $v)
                 {
                     $resultAccount = $resultAccountList[$k]??[];
@@ -653,7 +731,7 @@ class Account extends Backend
                     
                     $lableIds = explode(',',$v['label_ids']??'');
                     if(!empty($lableIds) && !empty($resultAccount['type']) && !in_array($resultAccount['type'],$lableIds)) continue;
-
+                   
                     $data = [
                         'account_admin_id'=>$v['admin_id'],
                         'status'=>3,
@@ -662,46 +740,46 @@ class Account extends Backend
                         'update_time'=>time()
                     ];                    
 
-                    if(!empty($v['bm']) || !empty($v['email'])){
+                    // if(!empty($v['bm']) || !empty($v['email'])){
                         
-                        if($resultAccount['bm_type'] == 3){
-                            $bmDataList[] = [
-                                'account_name'=>$resultAccount['name'],
-                                'account_id'=>$v['account_id'],
-                                'bm'=>$resultAccount['bm'],
-                                'bm_type'=>1,
-                                'demand_type'=>4,
-                                'status'=>0,
-                                'dispose_type'=>0,
-                                'admin_id'=>$resultAccount['admin_id'],
-                                'create_time'=>time(),
-                            ];
-                            $bmDataList[] = [
-                                'account_name'=>$resultAccount['name'],
-                                'account_id'=>$v['account_id'],
-                                'bm'=>$resultAccount['email'],
-                                'bm_type'=>2,
-                                'demand_type'=>4,
-                                'status'=>0,
-                                'dispose_type'=>0,
-                                'admin_id'=>$resultAccount['admin_id'],
-                                'create_time'=>time(),
-                            ];
-                        }else{
-                            $bmDataList[] = [
-                                'account_name'=>$resultAccount['name'],
-                                'account_id'=>$v['account_id'],
-                                'bm'=>empty($resultAccount['bm'])?$resultAccount['email']:$resultAccount['bm'],   //$resultAccount['bm'],
-                                'bm_type'=>$resultAccount['bm_type'],
-                                'demand_type'=>4,
-                                'status'=>0,
-                                'dispose_type'=>0,
-                                'admin_id'=>$resultAccount['admin_id'],
-                                'create_time'=>time(),
-                            ];
-                        }
-                    }
-                    
+                    //     if($resultAccount['bm_type'] == 3){
+                    //         $bmDataList[] = [
+                    //             'account_name'=>$resultAccount['name'],
+                    //             'account_id'=>$v['account_id'],
+                    //             'bm'=>$resultAccount['bm'],
+                    //             'bm_type'=>1,
+                    //             'demand_type'=>4,
+                    //             'status'=>0,
+                    //             'dispose_type'=>0,
+                    //             'admin_id'=>$resultAccount['admin_id'],
+                    //             'create_time'=>time(),
+                    //         ];
+                    //         $bmDataList[] = [
+                    //             'account_name'=>$resultAccount['name'],
+                    //             'account_id'=>$v['account_id'],
+                    //             'bm'=>$resultAccount['email'],
+                    //             'bm_type'=>2,
+                    //             'demand_type'=>4,
+                    //             'status'=>0,
+                    //             'dispose_type'=>0,
+                    //             'admin_id'=>$resultAccount['admin_id'],
+                    //             'create_time'=>time(),
+                    //         ];
+                    //     }else{
+                    //         $bmDataList[] = [
+                    //             'account_name'=>$resultAccount['name'],
+                    //             'account_id'=>$v['account_id'],
+                    //             'bm'=>empty($resultAccount['bm'])?$resultAccount['email']:$resultAccount['bm'],   //$resultAccount['bm'],
+                    //             'bm_type'=>$resultAccount['bm_type'],
+                    //             'demand_type'=>4,
+                    //             'status'=>0,
+                    //             'dispose_type'=>0,
+                    //             'admin_id'=>$resultAccount['admin_id'],
+                    //             'create_time'=>time(),
+                    //         ];
+                    //     }
+                    // }
+                   
                     if(!empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
                     DB::table('ba_account')->where('id',$resultAccount['id'])->update($data);
                     $allocateTime = date('md',time());
@@ -711,7 +789,7 @@ class Account extends Backend
                     if(empty($v['time_zone']) && !empty($resultAccount['time_zone'])) $data['time_zone'] = $resultAccount['time_zone'];
                     DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->update($data);
                 }
-                if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
+                // if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
 
                 $result = true;
                 Db::commit();
@@ -1142,7 +1220,8 @@ class Account extends Backend
             unset($fileObject[0],$fileObject[1]);
             $authAdminId = $this->auth->id;
             if($this->auth->isSuperAdmin()){
-                $adminId = 0;
+                // $adminId = 0;
+                throw new \Exception("管理员不可申请！");
             }else{
                 $adminId = $this->auth->id;
             }
@@ -1185,48 +1264,40 @@ class Account extends Backend
                 $accountTypeId = $accountTypeList[$v[0]]??'';
                 $time = $timeList[(String)$v[1]]??'';
                 $name = $v[2];
-                $bm = $v[3];
-                //$money = $v[4];
-                //$money = 0;
+                // $adminId = empty($adminId)?($v[5]??0):$adminId;
 
-                $adminId = empty($adminId)?($v[5]??0):$adminId;
-
-                if(in_array($adminId,$notMoneyAdminList)) $money = $v[4];
+                if(in_array($adminId,$notMoneyAdminList)) $money = $v[3];
                 else $money = 0;
-                    
-                
-               
-                
-                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bm) || !is_numeric($money) || empty($adminId)) continue;
+                $currency = $v[4];
 
-
-                if(filter_var($bm, FILTER_VALIDATE_EMAIL) !== false){
-                    $d = [
-                        'name'=>$name,
-                        'time_zone'=>$time,
-                        'email'=>$bm,
-                        'bm'=>'',
-                        'bm_type'=>2,
-                        'money'=>$money,
-                        'admin_id'=>$adminId,
-                        'status'=>$authAdminId==1?1:0,
-                        'type'=>$accountTypeId,
-                        'create_time'=>time()
-                    ];
-                }else{
-                    $d = [
-                        'name'=>$name,
-                        'time_zone'=>$time,
-                        'email'=>'',
-                        'bm'=>$bm,
-                        'bm_type'=>1,
-                        'money'=>$money,
-                        'admin_id'=>$adminId,
-                        'status'=>$authAdminId==1?1:0,
-                        'type'=>$accountTypeId,
-                        'create_time'=>time()
-                    ];
+                $bes = [];
+                $i=5;
+                while ($i <= 100) {
+                    if(!empty($v[$i])){
+                        if(filter_var($v[$i], FILTER_VALIDATE_EMAIL) || preg_match('/^\d+$/', $v[$i])) 
+                        $bes[] = $v[$i];
+                        else throw new \Exception($v[$i]."格式错误,请填写正确的BM或邮箱后重新导入！");
+                        $i++;  
+                    }else{ break; }
                 }
+           
+                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) || !is_numeric($money) ) continue;
+
+                $d = [
+                    'name'=>$name,
+                    'time_zone'=>$time,
+                    // 'email'=>'',
+                    // 'bm'=>$bm,
+                    'bes'=>json_encode($bes??[]),
+                    'bm_type'=>1,
+                    'money'=>$money,
+                    'admin_id'=>$adminId,
+                    'status'=>$authAdminId==1?1:0,
+                    'currency'=>$currency,
+                    'type'=>$accountTypeId,
+                    'create_time'=>time()
+                ];
+        
 
                 $data[] = $d;
             }
