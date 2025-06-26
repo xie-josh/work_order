@@ -1096,8 +1096,8 @@ class Account extends Backend
 
         $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
-        $statusValue = [0=>'待审核',1=>'审核通过',2=>'审核拒绝',3=>'分配账户',4=>'完成',5=>'开户失败'];
-        $disposeStatusValue = [0=>'待处理',1=>'处理完成',2=>'已提交',3=>'提交异常',4=>'处理异常'];
+        $statusValue = config('basics.OPEN_ACCOUNT_STATUS');
+        // $disposeStatusValue = [0=>'待处理',1=>'处理完成',2=>'已提交',3=>'提交异常',4=>'处理异常'];
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
@@ -1109,7 +1109,7 @@ class Account extends Backend
             '时区',
             '绑定BM',
             '首充金额',
-            'BM绑定',
+            // 'BM绑定',
             '开户状态',
             '账户类型',
             '创建时间',
@@ -1139,7 +1139,7 @@ class Account extends Backend
                     $v['time_zone'],
                     $v['bm'],
                     $v['open_money'],
-                    $disposeStatusValue[$v['dispose_status']],
+                    // $disposeStatusValue[$v['dispose_status']],
                     $statusValue[$v['status']],
                     $accountTypeListValue[$v['account_type']]??'',
                     $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
