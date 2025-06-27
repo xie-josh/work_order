@@ -410,7 +410,7 @@ class Bm extends Backend
 
                     if($v['demand_type'] == 2 && $disposeStatus == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
                     
-                    if($v['demand_type'] == 4 && $disposeStatus ==1) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
+                    if($v['demand_type'] == 4 && in_array($disposeStatus,[1,3])) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
 
                     $progressData[] = [
                         'bm_id'=>$v['id'],
@@ -509,8 +509,8 @@ class Bm extends Backend
 
                     $accountIds[] = $v['account_id'];
                     if($v['demand_type'] == 2 && $status == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
-                    if($v['demand_type'] == 4 && $status ==1) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
-                        
+                    if($v['demand_type'] == 4 && in_array($status,[1,2])) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
+                    
                     if($status == 1) $commentValue = '处理完成:'.$getTemplateValue;
                     else if($status == 2) $commentValue = '处理异常:'.$getTemplateValue;
 
@@ -583,7 +583,7 @@ class Bm extends Backend
                 foreach($bmList as $v){
                     //  if($v['dispose_type']==1)continue; //处理完成跳过不允许处理
                     $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
-                    if($v['demand_type'] == 4 && $disposeStatus ==1){
+                    if($v['demand_type'] == 4 && (in_array($disposeStatus,[1,2]) || $status == 2)){
                         DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]); //开户绑定类型已完成
                     }
                     $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$getTemplateValue,'update_time'=>time()];
