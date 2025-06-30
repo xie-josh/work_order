@@ -464,29 +464,7 @@ class Account extends Backend
 
                         $this->model->whereIn('id',$v['id'])->update(['open_money'=>$v['money']]);
                         
-                        if($resultProposal['is_cards'] == 2) continue;
-                        $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
 
-                        $key = 'account_audit_'.$v['id'];
-                        $redisValue = Cache::store('redis')->get($key);
-                        if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
-                                                    
-                        if(empty($cards)) {
-                            //TODO...
-                               throw new \Exception("未找到分配的卡或把账户设置成无卡！");
-                        }else if($v['money'] > 0){
-                            $param = [
-                                //'max_on_percent'=>env('CARD.MAX_ON_PERCENT',901),
-                                'transaction_limit_type'=>'limited',
-                                'transaction_limit_change_type'=>'increase',
-                                'transaction_limit'=>$v['money'],
-                            ];
-
-                            Cache::store('redis')->set($key, '1', 180);
-                            $resultCards = (new CardsModel())->updateCard($cards,$param);
-                            Cache::store('redis')->delete($key);
-                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-                        }
 
                         //根据bes生成对等个数的开户绑定条数
                         $besArr =  json_decode($v['bes']??'', true)??[];
@@ -553,7 +531,32 @@ class Account extends Backend
                                 }
 
                         }
+
                         if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
+
+                        if($resultProposal['is_cards'] == 2) continue;
+                        $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+
+                        $key = 'account_audit_'.$v['id'];
+                        $redisValue = Cache::store('redis')->get($key);
+                        if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+                                                    
+                        if(empty($cards)) {
+                            //TODO...
+                               throw new \Exception("未找到分配的卡或把账户设置成无卡！");
+                        }else if($v['money'] > 0){
+                            $param = [
+                                //'max_on_percent'=>env('CARD.MAX_ON_PERCENT',901),
+                                'transaction_limit_type'=>'limited',
+                                'transaction_limit_change_type'=>'increase',
+                                'transaction_limit'=>$v['money'],
+                            ];
+
+                            Cache::store('redis')->set($key, '1', 180);
+                            $resultCards = (new CardsModel())->updateCard($cards,$param);
+                            Cache::store('redis')->delete($key);
+                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        }
 
                     }                                                                     //4开户完成->6待开户绑定
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>6,'update_time'=>time(),'open_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
@@ -1271,7 +1274,7 @@ class Account extends Backend
                 $name = $v[2];
                 // $adminId = empty($adminId)?($v[5]??0):$adminId;
 
-                if(in_array($adminId,$notMoneyAdminList)) $money = $v[3];
+                if(in_array($adminId,$notMoneyAdminList) && !empty($v[3])) $money = $v[3];
                 else $money = 0;
                 $currency = $v[4];
 
