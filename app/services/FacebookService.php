@@ -23,7 +23,7 @@ class FacebookService
             if(empty($businessId)) throw new \Exception("未找到管理BM");
             
             $param = [
-                'fields'=>'id,name,account_status,amount_spent,currency,created_time,timezone_offset_hours_utc',
+                'fields'=>'id,name,account_status,amount_spent,currency,created_time,timezone_offset_hours_utc,business_country_code',
                 'limit'=>200
             ];
             if($accountStatus == 1){

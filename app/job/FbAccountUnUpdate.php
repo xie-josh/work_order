@@ -66,6 +66,7 @@ class FbAccountUnUpdate
                 $accountStatusList = [];
                 $accountNameList = [];
                 $accountTimeZoneList = [];
+                $accountCountryCodeList = [];
                 foreach($result['data']['data'] as $item)
                 {  
                     $item['id'] = str_replace('act_', '', $item['id']);
@@ -74,6 +75,7 @@ class FbAccountUnUpdate
                         'serial_name'=>$item['name']
                     ];
                     $accountTimeZoneList[(string)$item['timezone_offset_hours_utc']][] = $item['id'];
+                    $accountCountryCodeList[(string)$item['business_country_code']][] = $item['id'];
                     $accountStatusList[$item['account_status']][] = $item['id'];
                     if(!in_array($item['account_status'],[1,3])) continue;
                     $accountList[] = $item;
@@ -105,9 +107,12 @@ class FbAccountUnUpdate
 
                 if(!empty($accountTimeZoneList)) $this->updateTimeZone($accountTimeZoneList);
                 
+                if(!empty($accountCountryCodeList)) $this->updateCountryCode($accountCountryCodeList);
+                
                 if(!empty($accountNameList)) $this->updateSerialName($accountIds,$accountNameList);                
 
                 if(!empty($accountStatusList)) $this->accountReturn($accountStatusList);
+                
 
                 foreach($currencyAccountList as $k => $v){
                     $where = [
@@ -168,6 +173,20 @@ class FbAccountUnUpdate
             DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
             ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.time_zone'=>$timeZone]);
+        }
+        return true;
+    }
+
+    public function updateCountryCode($accountCountryCodeList)
+    {
+        foreach($accountCountryCodeList as $k => $v){
+            $where = [
+                ['accountrequest_proposal.account_id','IN',$v],
+                ['account.status','=',4],
+            ];
+            DB::table('ba_accountrequest_proposal')
+            ->alias('accountrequest_proposal')
+            ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.country_code'=>$k]);
         }
         return true;
     }
