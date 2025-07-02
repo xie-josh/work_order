@@ -454,8 +454,6 @@ class Recharge extends Backend
 
     public function accountSpendDeductions()
     {
-        $this->error('禁用,请找客服！');
-        // sleep(5);
         // $this->success(__('Update successful'));
         if ($this->request->isPost()) {
             $data = $this->request->post();
