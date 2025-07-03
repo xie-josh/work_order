@@ -499,9 +499,9 @@ class AccountrequestProposal extends Backend
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
+            'account_id',
             'bm',
             'time_zone',
-            'account_id',
             'account_name',
             'affiliation_bm',
             'affiliation_admin_name',
@@ -547,9 +547,9 @@ class AccountrequestProposal extends Backend
             $excelData = [];
             foreach($data as $v){
                 $excelData  = [
+                    'account_id'=>$v['account_id'],
                     'bm'=>$v['bm'],
                     'time_zone'=>$v['time_zone'],
-                    'account_id'=>$v['account_id'],
                     'account_name'=>$v['serial_name'],
                     'affiliation_bm'=>$v['affiliation_bm'],
                     'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
