@@ -75,7 +75,7 @@ class FbAccountUnUpdate
                         'serial_name'=>$item['name']
                     ];
                     $accountTimeZoneList[(string)$item['timezone_offset_hours_utc']][] = $item['id'];
-                    $accountCountryCodeList[(string)$item['business_country_code']][] = $item['id'];
+                    if(isset($item['business_country_code'])) $accountCountryCodeList[(string)$item['business_country_code']][] = $item['id'];
                     $accountStatusList[$item['account_status']][] = $item['id'];
                     if(!in_array($item['account_status'],[1,3])) continue;
                     $accountList[] = $item;
