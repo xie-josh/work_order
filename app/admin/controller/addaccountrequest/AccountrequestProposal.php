@@ -453,6 +453,11 @@ class AccountrequestProposal extends Backend
         set_time_limit(600);
         $where = [];
         $ids = $this->request->get('ids');
+
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId == 2) {
+            $this->dataLimit = false;
+        }
    
         if($ids) array_push($where,['accountrequest_proposal.id','in',$ids]);
         else list($where, $alias, $limit, $order) = $this->queryBuilder(); 
