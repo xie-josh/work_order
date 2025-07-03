@@ -179,6 +179,7 @@ class FbAccountUnUpdate
 
     public function updateCountryCode($accountCountryCodeList)
     {
+        $countryCode = config('basics.country_code');
         foreach($accountCountryCodeList as $k => $v){
             $where = [
                 ['accountrequest_proposal.account_id','IN',$v],
@@ -186,7 +187,7 @@ class FbAccountUnUpdate
             ];
             DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.country_code'=>$k]);
+            ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.country_code'=>$k,'accountrequest_proposal.country_name'=>$countryCode[$k]??'']);
         }
         return true;
     }
