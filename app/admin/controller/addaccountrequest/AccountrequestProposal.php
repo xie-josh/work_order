@@ -506,6 +506,7 @@ class AccountrequestProposal extends Backend
             'FB_account_status',
             'currency',
             'country_code',
+            'country_name',
             'card_no',
         ];
 
@@ -553,6 +554,7 @@ class AccountrequestProposal extends Backend
                     'FB_account_status'=>$accountStatus[$v['account_status']]??'未找到状态',
                     'currency'=>$v['currency'],
                     'country_code'=>$v['country_code'],
+                    'country_name'=>$v['country_name'],
                     'card_no'=>$v['card_no'],
                 ];
                 if(!empty($groupedCards[$v['account_id']])){
