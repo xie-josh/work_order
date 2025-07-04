@@ -410,7 +410,10 @@ class Bm extends Backend
 
                     if($v['demand_type'] == 2 && $disposeStatus == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
                     
-                    if($v['demand_type'] == 4 && in_array($disposeStatus,[1,3])) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
+                    if($v['demand_type'] == 4 && in_array($disposeStatus,[1,3])){
+                        $v['comment'] = $comment;
+                        $this->bmOperation($v);
+                    }
 
                     $progressData[] = [
                         'bm_id'=>$v['id'],
@@ -509,7 +512,10 @@ class Bm extends Backend
 
                     $accountIds[] = $v['account_id'];
                     if($v['demand_type'] == 2 && $status == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
-                    if($v['demand_type'] == 4 && in_array($status,[1,2])) DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);
+                    if($v['demand_type'] == 4 && in_array($status,[1,2])){
+                        $v['comment'] = $comment;
+                        $this->bmOperation($v);
+                    } 
                     
                     if($status == 1) $commentValue = '处理完成:'.$getTemplateValue;
                     else if($status == 2) $commentValue = '处理异常:'.$getTemplateValue;
@@ -576,7 +582,7 @@ class Bm extends Backend
                     $disposeStatus2 = 0;
                 }
        
-                $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,dispose_type,account_id')->select()->toArray(); 
+                $bmList = $this->model->whereIn('id',$ids)->field('id,demand_type,dispose_type,account_id,account_name,bm,admin_id')->select()->toArray(); 
                 $accountTypeIds = [];
                 $bmData = [];
                 $adminId = $this->auth->id;
@@ -584,7 +590,8 @@ class Bm extends Backend
                     //  if($v['dispose_type']==1)continue; //处理完成跳过不允许处理
                     $getTemplateValue = $bmTemplate->getTemplateValue($comment,$v['account_id']);
                     if($v['demand_type'] == 4 && (in_array($disposeStatus,[1,2]) || $status == 2)){
-                        DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]); //开户绑定类型已完成
+                        $v['comment'] = $comment;
+                        $this->bmOperation($v);
                     }
                     $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'dispose_type'=>$disposeStatus,'comment'=>$getTemplateValue,'update_time'=>time()];
                     
@@ -897,4 +904,16 @@ class Bm extends Backend
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
+
+    //bm状态修改和发送消息
+    public function bmOperation($v=[])
+    {
+        $noticeGroup = Db::table('ba_admin')->where('id',$v['admin_id'])->value('notice_group');
+        $value =  DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);//开户绑定类型处理完成
+        if(!empty($noticeGroup)){
+            $v['notice_group'] =  $noticeGroup;
+            if($value) (new QYWXService())->send_notification($v);
+        }
+    }
+
 }
