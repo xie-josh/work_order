@@ -863,6 +863,8 @@ class Bm extends Backend
                         $bm = Db::table('ba_bm')
                             ->where('account_id', $v)
                             ->where('bm', $v2['bm'])
+                            ->where('demand_type', 1)
+                            ->where('new_status', 1) 
                             ->where(function($query) {
                                 $query->where(function($q) {
                                     $q->where('status', '<>', '2')
@@ -872,6 +874,14 @@ class Bm extends Backend
                                 });
                             })
                         ->value('bm');
+
+                        // $bm = Db::table('ba_bm')
+                        //     ->where('account_id', $v)
+                        //     ->where('bm', $v2['bm'])
+                        //     ->where('demand_type', 1)
+                        //     ->where('new_status', 1)                            
+                        //     ->where('dispose_type', 1)
+                        // ->value('bm');
 
                         if(!empty($bm)) {
                             $errorList[] = ['bm'=>'(账户)'.$v.' - (BM)'.$v2['bm'],'msg'=>'该BM已经提交过需求，不需要重复提交!'];
