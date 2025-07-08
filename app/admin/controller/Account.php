@@ -349,6 +349,10 @@ class Account extends Backend
     {   
         if ($this->request->isPost()) {
             $data = $this->request->post();
+            
+            $redisLock = new \app\services\RedisLock();
+            $redisLockList = $data['ids'];
+
             $result = false;
             $this->model->startTrans();
             try {
@@ -357,13 +361,12 @@ class Account extends Backend
                 $status = $data['status'];
                 $accountrequestProposalStatus = $data['accountrequest_proposal_status']??2;
                 $timeZone = $data['time_zone']??'';
-
-                // foreach($ids as $k => $v){
-                //     $key = 'account_audit_'.$v['id'];
-                //     $redisValue = Cache::store('redis')->get($key);
-                //     if(!empty($redisValue)) unset($ids[$k]);
-                //     Cache::store('redis')->set($key, '1', 120);
-                // }
+                
+                foreach($redisLockList as $v){
+                    $key = 'account_audit_'.$v['id'];
+                    $acquired = $redisLock->acquire($accountId, 'audit', 180);
+                    if(!$acquired) throw new \Exception($v['id'].":该需求被锁定，在处理中！");               
+                }
 
                 if($status == 1){
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
@@ -611,7 +614,16 @@ class Account extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
+                foreach($redisLockList as $v){
+                    $key = 'account_audit_'.$v['id'];
+                    $redisLock->release($key, 'audit');
+                }
                 $this->error($e->getMessage());
+            }
+
+            foreach($redisLockList as $v){
+                $key = 'account_audit_'.$v['id'];
+                $redisLock->release($key, 'audit');
             }
             if ($result !== false) {
                 $this->success(__('Update successful'));
