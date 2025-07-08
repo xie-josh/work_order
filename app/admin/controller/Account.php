@@ -363,9 +363,9 @@ class Account extends Backend
                 $timeZone = $data['time_zone']??'';
                 
                 foreach($redisLockList as $v){
-                    $key = 'account_audit_'.$v['id'];
+                    $key = 'account_audit_'.$v;
                     $acquired = $redisLock->acquire($accountId, 'audit', 180);
-                    if(!$acquired) throw new \Exception($v['id'].":该需求被锁定，在处理中！");               
+                    if(!$acquired) throw new \Exception($v.":该需求被锁定，在处理中！");               
                 }
 
                 if($status == 1){
@@ -615,14 +615,14 @@ class Account extends Backend
             } catch (Throwable $e) {
                 $this->model->rollback();
                 foreach($redisLockList as $v){
-                    $key = 'account_audit_'.$v['id'];
+                    $key = 'account_audit_'.$v;
                     $redisLock->release($key, 'audit');
                 }
                 $this->error($e->getMessage());
             }
 
             foreach($redisLockList as $v){
-                $key = 'account_audit_'.$v['id'];
+                $key = 'account_audit_'.$v;
                 $redisLock->release($key, 'audit');
             }
             if ($result !== false) {
