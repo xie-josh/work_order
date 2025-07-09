@@ -364,7 +364,7 @@ class Account extends Backend
                 
                 foreach($redisLockList as $v){
                     $key = 'account_audit_'.$v;
-                    $acquired = $redisLock->acquire($accountId, 'audit', 180);
+                    $acquired = $redisLock->acquire($key, 'audit', 180);
                     if(!$acquired) throw new \Exception($v.":该需求被锁定，在处理中！");               
                 }
 
@@ -540,8 +540,8 @@ class Account extends Backend
                         if($resultProposal['is_cards'] == 2) continue;
                         $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
 
-                        $key = 'account_audit_'.$v['id'];
-                        $redisValue = Cache::store('redis')->get($key);
+                        // $key = 'account_audit_'.$v['id'];
+                        // $redisValue = Cache::store('redis')->get($key);
                         if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
                                                     
                         if(empty($cards)) {
@@ -555,9 +555,9 @@ class Account extends Backend
                                 'transaction_limit'=>$v['money'],
                             ];
 
-                            Cache::store('redis')->set($key, '1', 180);
+                            // Cache::store('redis')->set($key, '1', 180);
                             $resultCards = (new CardsModel())->updateCard($cards,$param);
-                            Cache::store('redis')->delete($key);
+                            // Cache::store('redis')->delete($key);
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         }
 
