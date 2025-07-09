@@ -63,9 +63,15 @@ class CardService
     public function updateCard($params)
     {
         try {
-            $params = $this->updateCardParams($params);
+            $params = $this->updateCardParams($params);            
             return $this->apiClient->updateCard($params);
         } catch (\Throwable $th) {
+            DB::table('ba_cards_logs')->insert([
+                'type'=>'card_update',
+                'data'=>json_encode($params),
+                'logs'=>$th->getMessage(),
+                'create_time'=>date('Y-m-d H:i:s',time())
+            ]);
             $logs = '错误(service):'.json_encode($th->getMessage());
             return ['code'=>0,'msg'=>$logs];
         }
@@ -213,7 +219,7 @@ class CardService
                 $cardInfo = $this->cardInfo(['card_id'=>$params['card_id']]);
 
                 $c = bcsub((string)$cardInfo['data']['totalTransactionLimit'],(string) $cardInfo['data']['availableTransactionLimit'],2);  
-                $param['transaction_limit'] = $params['transaction_limit'] + $c;
+                $param['transaction_limit'] = bcadd((string)$params['transaction_limit'],$c,2);
 
                 if(empty($params['max_on_percent'])) $param['max_on_percent'] = $cardInfo['data']['maxOnPercent']??0;
             }else{
@@ -282,6 +288,7 @@ class CardService
             }
         }
         if(isset($param['max_on_percent']) && $param['max_on_percent'] < 1) $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+        if($this->platform == 'slash' && isset($param['transaction_limit'])) $param['transaction_limit'] = (int)$param['transaction_limit'];
         return $param;
     }
     
