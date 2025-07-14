@@ -92,17 +92,18 @@ class FbAccountConsumption
             $accountList = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,open_time,admin_id')->where('status',4)->select()->toArray();
             $accountRecycleList = DB::table('ba_account_recycle')->where('account_id',$accountId)->field('account_id,open_time,admin_id')->where('status',4)->order('open_time','asc')->select()->toArray();
 
-            if(!empty($accountList)) $accountList = array_merge($accountRecycleList,$accountList);
+            $accountList = array_merge($accountRecycleList,$accountList);
 
-            foreach($accountList as $k => &$v)
-            {    
-                $v['strat_open_time'] = date('Y-m-d',$v['open_time']);
-                $v['end_open_time'] = '';
-                if(isset($accountList[$k+1])) $v['end_open_time'] = date('Y-m-d',$accountList[$k+1]['open_time']);
-                else $v['end_open_time'] = date('Y-m-d',strtotime('+1 day',time()));
+            $accountTimeList = [];
+            foreach($accountList as $k => &$item)
+            {                    
+                $item['strat_open_time'] = date('Y-m-d',$item['open_time']);
+                $item['end_open_time'] = '';
+                if(isset($accountList[$k+1])) $item['end_open_time'] = date('Y-m-d',$accountList[$k+1]['open_time']);
+                else $item['end_open_time'] = date('Y-m-d',strtotime('+1 day',time()));
+                $accountTimeList[] = $item;
             }
-            $accountTimeList = array_reverse($accountList);
-
+            $accountTimeList = array_reverse($accountList);         
 
             $data = [];
 
@@ -110,7 +111,7 @@ class FbAccountConsumption
 
                 $adminId = '';
                 foreach($accountTimeList as $v1)
-                {   
+                {
                     if($v >= $v1['strat_open_time'] && $v <= $v1['end_open_time']){
                         $adminId = $v1['admin_id'];
                         break;
