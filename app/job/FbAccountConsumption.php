@@ -33,7 +33,7 @@ class FbAccountConsumption
         try {
             $accountId = $params['account_id'];
             $businessId = $params['business_id']??'';
-            $params['stort_time'] = date('Y-m-d', strtotime('-30 days'));
+            $params['stort_time'] = date('Y-m-d', strtotime('-15 days'));
             // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = date('Y-m-d',time());
 
@@ -88,9 +88,35 @@ class FbAccountConsumption
 
             DB::table('ba_account_consumption')->where('account_id',$accountId)->whereIn('date_start',$sSTimeList)->delete();
 
+
+            $accountList = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,open_time,admin_id')->where('status',4)->select()->toArray();
+            $accountRecycleList = DB::table('ba_account_recycle')->where('account_id',$accountId)->field('account_id,open_time,admin_id')->where('status',4)->order('open_time','asc')->select()->toArray();
+
+            if(!empty($accountList)) $accountList = array_merge($accountRecycleList,$accountList);
+
+            foreach($accountList as $k => &$v)
+            {    
+                $v['strat_open_time'] = date('Y-m-d',$v['open_time']);
+                $v['end_open_time'] = '';
+                if(isset($accountList[$k+1])) $v['end_open_time'] = date('Y-m-d',$accountList[$k+1]['open_time']);
+                else $v['end_open_time'] = date('Y-m-d',strtotime('+1 day',time()));
+            }
+            $accountTimeList = array_reverse($accountList);
+
+
             $data = [];
 
             foreach($sSTimeList as $v){
+
+                $adminId = '';
+                foreach($accountTimeList as $v1)
+                {   
+                    if($v >= $v1['strat_open_time'] && $v <= $v1['end_open_time']){
+                        $adminId = $v1['admin_id'];
+                        break;
+                    }
+                }
+
                 $consumption = $accountConsumption[$v]??[];
                 if(empty($consumption)){
                     $data[] = [
@@ -98,6 +124,7 @@ class FbAccountConsumption
                         'spend'=>0,
                         'date_start'=>$v,
                         'date_stop'=>$v,
+                        'admin_id'=>$adminId,
                         'create_time'=>time(),
                     ];
                 }else{
@@ -106,6 +133,7 @@ class FbAccountConsumption
                         'spend'=>$consumption['spend'],
                         'date_start'=>$consumption['date_start'],
                         'date_stop'=>$consumption['date_stop'],
+                        'admin_id'=>$adminId,
                         'create_time'=>time(),
                     ];
                 }
