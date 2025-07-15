@@ -68,17 +68,20 @@ class Consumption extends Backend
         $statusList = config('basics.ACCOUNT_STATUS');
 
         if($isCount == 1){
-            $query->field('accountrequest_proposal.admin_id admin_channel,account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
+            $query->field('account.status open_account_status,accountrequest_proposal.admin_id admin_channel,account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
             $query->group('account_id');
             $accountRecycleList = $this->accountRecycle2($accountRecycleWhere);
         }else{
             $accountRecycleWhere = [];
-            $query->field('accountrequest_proposal.admin_id admin_channel,account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
+            $query->field('account.status open_account_status,accountrequest_proposal.admin_id admin_channel,account.open_time,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status
+            ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
+            ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
             $accountRecycleList = $this->accountRecycle($accountRecycleWhere);
         }
 
         $adminChannelList = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
         $adminChannelList = array_column($adminChannelList,'nickname','id');
+        $openAccountStatusValue = config('basics.OPEN_ACCOUNT_STATUS');
         
         $total = $query->count();
 
@@ -95,6 +98,7 @@ class Consumption extends Backend
             '管理BM',
             '归属BM',
             '系统状态',
+            '开户状态',
             '渠道'
         ];
 
@@ -155,6 +159,7 @@ class Consumption extends Backend
                                 $v['bm'],
                                 $v['affiliation_bm'],
                                 $statusValue,
+                                $openAccountStatusValue[$v['open_account_status']]??'未知的状态',
                                 $adminChannel,
                             ];
                             $spend = bcsub((string)$spend ,(string)$recycle['spend'],2);
@@ -212,6 +217,7 @@ class Consumption extends Backend
                     $v['bm'],
                     $v['affiliation_bm'],
                     $statusValue,
+                    $openAccountStatusValue[$v['open_account_status']]??'未知的状态',
                     $adminChannel,
                     $openTime,
                 ];  
