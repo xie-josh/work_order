@@ -542,7 +542,7 @@ class Consumption extends Backend
                     }
                 }else{
                     if($endOpenTime < $startTime) continue;
-                    if($value2['open_time'] < $startTime)
+                    if($value2['open_time'] <= $startTime)
                     {
                         if($endOpenTime < $endTime)
                         {
