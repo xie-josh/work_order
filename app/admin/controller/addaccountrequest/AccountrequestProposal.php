@@ -474,7 +474,7 @@ class AccountrequestProposal extends Backend
 
         $query = $this->model
         ->alias('accountrequest_proposal')
-        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no')
+        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no,account.status open_account_status')
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
         ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
@@ -487,6 +487,7 @@ class AccountrequestProposal extends Backend
         $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
         $statusValue = config('basics.ACCOUNT_STATUS');
+        $openAccountStatusValue = config('basics.OPEN_ACCOUNT_STATUS');
 
         // $cardsList = DB::table('ba_account_card')->select()->toArray();
 
@@ -507,6 +508,7 @@ class AccountrequestProposal extends Backend
             'affiliation_admin_name',
             'account_bm',
             'status',
+            'open_account_status',
             'nickname',
             'FB_account_status',
             'currency',
@@ -555,6 +557,7 @@ class AccountrequestProposal extends Backend
                     'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
                     'account_bm'=> $v['account_bm'],
                     'status'=> $statusValue[$v['status']]??'未知的状态',
+                    'open_account_status'=> $openAccountStatusValue[$v['open_account_status']]??'未知的状态',
                     'nickname'=>$v['nickname'],
                     'FB_account_status'=>$accountStatus[$v['account_status']]??'未找到状态',
                     'currency'=>$v['currency'],
