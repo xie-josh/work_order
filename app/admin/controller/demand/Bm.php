@@ -229,7 +229,28 @@ class Bm extends Backend
 
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID完成状态!"); //未完成开户绑定拦截
-
+// //-----------------------------------------
+//                 $result =  DB::table('ba_bm')
+//                 ->where('account_id',$accountId)
+//                 ->whereIn('demand_type',[1,4])
+//                 ->whereIn('bm',$checkList)
+//                 ->where('dispose_type',1)
+//                 ->where('new_status',1)
+//                 ->group('account_id,bm')
+//                 ->select()->toArray();
+//                 if(empty($result)){
+//                     //不能解绑
+//                      array_column($result,'bm');
+//                 }else{
+//                     //可以解绑 但是要查是否已经有解绑记录
+//                     $result =  DB::table('ba_bm')
+//                     ->where('account_id',$accountId)
+//                     ->whereIn('demand_type',[1,4])
+//                     ->whereIn('bm',array_column($result,'bm'))
+//                     ->where('new_status',2);
+//                 }
+//                 dd(array_column($result,'bm','bm'));
+// //------------------------------------------
                 $notConsumptionStatus = config('basics.NOT_consumption_status');
                 $accountrequestProposal = Db::table('ba_accountrequest_proposal')->where('account_id',$accountId)->value('status');
                 if(empty($accountrequestProposal) || in_array($accountrequestProposal,$notConsumptionStatus)) throw new \Exception("未找到账户或该账户已经终止使用，不可操作，请联系管理员！");
@@ -257,6 +278,7 @@ class Bm extends Backend
                         if($demandType == 1 && $bmType == 1 && preg_match('/[a-zA-Z]/', $v)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         if($demandType == 1 && $bmType == 2 && !filter_var($v, FILTER_VALIDATE_EMAIL)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
 
+                        if($demandType == 2 && !is_numeric($v) && !filter_var($v, FILTER_VALIDATE_EMAIL))throw new \Exception("提交格式错误,请重新填写！");
                         //if (filter_var($v, FILTER_VALIDATE_EMAIL) && $demandType == 1 && $bmType != 2) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         // dd($checkList,!filter_var($v, FILTER_VALIDATE_EMAIL));
                         $dataList[] = [
@@ -349,6 +371,8 @@ class Bm extends Backend
 
                 if($data['demand_type'] == 1 && $data['bm_type'] == 1 && preg_match('/[a-zA-Z]/', $data['bm'])) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                 if($data['demand_type'] == 1 && $data['bm_type'] == 2 && !filter_var($data['bm'], FILTER_VALIDATE_EMAIL)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
+
+                if($data['demand_type'] == 2 && !is_numeric($data['bm']) && !filter_var($data['bm'], FILTER_VALIDATE_EMAIL))throw new \Exception("提交格式错误,请重新填写！");
 
                 $result = $row->save($data);
                 $this->model->commit();
@@ -863,7 +887,7 @@ class Bm extends Backend
                         $bm = Db::table('ba_bm')
                             ->where('account_id', $v)
                             ->where('bm', $v2['bm'])
-                            ->where('demand_type', 1)
+                            ->whereIn('demand_type', [1,4])
                             ->where('new_status', 1) 
                             ->where(function($query) {
                                 $query->where(function($q) {
