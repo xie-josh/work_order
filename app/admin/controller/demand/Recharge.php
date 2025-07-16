@@ -119,6 +119,15 @@ class Recharge extends Backend
                 $data[$this->dataLimitField] = $this->auth->id;
             }
 
+            $lock = new \app\services\RedisLock();
+            $lockValue = uniqid();
+            $expire = 180;
+            $lockKey = $data['account_id'];
+
+            $acquired = $lock->acquire($lockKey, $lockValue, $expire);
+            if(!$acquired) $this->error("该账户暂时被锁定，请稍后再试！");
+            
+
             $result = false;
             $this->model->startTrans();
             try {
@@ -199,7 +208,9 @@ class Recharge extends Backend
             } catch (Throwable $e) {
                 $this->model->rollback();
                 $this->error($e->getMessage());
-            }
+            }finally {
+                $lock->release($lockKey, $lockValue);
+            }  
             if ($result !== false) {
                 $this->success(__('Added successfully'));
             } else {
@@ -271,6 +282,16 @@ class Recharge extends Backend
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
+
+            $redisLock = new \app\services\RedisLock();
+            $redisLockList = $data['ids'];
+
+            foreach($redisLockList as $v){
+                $key = 'recharge_audit_'.$v;
+                $acquired = $redisLock->acquire($key, 'audit', 180);
+                if(!$acquired)  $this->error($v.":该需求被锁定，处理中！");               
+            }
+
             $result = false;
             DB::startTrans();
             try {
@@ -287,10 +308,10 @@ class Recharge extends Backend
                 if($status == 1){
                     foreach($ids as $v){
 
-                        $key = 'recharge_audit_'.$v['id'];
-                        $redisValue = Cache::store('redis')->get($key);
-                        if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
-                        Cache::store('redis')->set($key, '1', 180);
+                        // $key = 'recharge_audit_'.$v['id'];
+                        // $redisValue = Cache::store('redis')->get($key);
+                        // if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+                        // Cache::store('redis')->set($key, '1', 180);
 
                         $accountIs_ = DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->value('is_');
                         if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
@@ -368,7 +389,7 @@ class Recharge extends Backend
                                 }
                             }
                         }
-                        Cache::store('redis')->delete($key);
+                        // Cache::store('redis')->delete($key);
                     }
                 }else{
                     foreach($ids as $v){
@@ -380,14 +401,18 @@ class Recharge extends Backend
                 }
 
                 $result = $this->model->whereIn('id',array_column($ids,'id'))->where('status',0)->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
-
                 $result = true;
                 DB::commit();
             } catch (Throwable $e) {
                 DB::rollback();
-                Cache::store('redis')->delete($key);
+                // Cache::store('redis')->delete($key);
                 $this->error($e->getMessage());
-            }
+            }finally {
+                foreach($redisLockList as $v){
+                    $key = 'recharge_audit_'.$v;
+                    $redisLock->release($key, 'audit');
+                }
+            } 
             if ($result !== false) {
                 $this->success(__('Update successful'));
             } else {

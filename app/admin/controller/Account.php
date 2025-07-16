@@ -346,12 +346,18 @@ class Account extends Backend
 
 
     public function audit(): void
-    {   
+    {
         if ($this->request->isPost()) {
             $data = $this->request->post();
             
             $redisLock = new \app\services\RedisLock();
             $redisLockList = $data['ids'];
+
+            foreach($redisLockList as $v){
+                $key = 'account_audit_'.$v;
+                $acquired = $redisLock->acquire($key, 'audit', 180);
+                if(!$acquired) $this->error($v.":该需求被锁定，在处理中！");               
+            }
 
             $result = false;
             $this->model->startTrans();
@@ -361,13 +367,7 @@ class Account extends Backend
                 $status = $data['status'];
                 $accountrequestProposalStatus = $data['accountrequest_proposal_status']??2;
                 $timeZone = $data['time_zone']??'';
-                
-                foreach($redisLockList as $v){
-                    $key = 'account_audit_'.$v;
-                    $acquired = $redisLock->acquire($key, 'audit', 180);
-                    if(!$acquired) throw new \Exception($v.":该需求被锁定，在处理中！");               
-                }
-
+                                
                 if($status == 1){
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
@@ -614,17 +614,14 @@ class Account extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                foreach($redisLockList as $v){
+                $this->error($e->getMessage());
+            }finally {
+               foreach($redisLockList as $v){
                     $key = 'account_audit_'.$v;
                     $redisLock->release($key, 'audit');
                 }
-                $this->error($e->getMessage());
             }
-
-            foreach($redisLockList as $v){
-                $key = 'account_audit_'.$v;
-                $redisLock->release($key, 'audit');
-            }
+            
             if ($result !== false) {
                 $this->success(__('Update successful'));
             } else {
