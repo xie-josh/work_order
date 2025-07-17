@@ -28,8 +28,8 @@ class EmailService
             $mail->Password   = $data['smtp_pass'];
             $mail->SMTPSecure = $data['smtp_verification'] == 'SSL' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = $data['smtp_port'];
-
-            $mail->setFrom($data['smtp_sender_mail'], $data['smtp_user']);
+            // $data['smtp_sender_mail'] = 'WEWALL ADS';
+            $mail->setFrom($data['smtp_sender_mail'], 'WEWALL ADS');
 
             $mail->isSMTP();
             $mail->addAddress($testMail);
