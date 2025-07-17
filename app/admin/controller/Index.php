@@ -271,8 +271,9 @@ class Index extends Backend
                 $this->error('您输入的两次密码不一致！');
         }
         $register['email']   =  $email;
-        $register['company'] =  $company;
         $register['username']=  $email;
+        $register['nickname']=  $email;
+        $register['company'] =  $company;
         $salt = Random::build('alnum', 16);
         $register['salt']     = $salt;
         $register['password'] = encrypt_password($password, $salt);
