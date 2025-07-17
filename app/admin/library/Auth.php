@@ -87,7 +87,7 @@ class Auth extends \ba\Auth
      * 允许输出的字段
      * @var array
      */
-    protected array $allowFields = ['id', 'username', 'nickname', 'avatar', 'last_login_time'];
+    protected array $allowFields = ['id', 'username', 'nickname','email', 'avatar', 'last_login_time'];
 
     public function __construct(array $config = [])
     {
@@ -165,9 +165,10 @@ class Auth extends \ba\Auth
      * @return bool
      * @throws Throwable
      */
-    public function login(string $username, string $password, bool $keep = false): bool
+    public function login(string $username, string $password,$code, bool $keep = false): bool
     {
-        $this->model = Admin::where('username', $username)->find();
+        if (filter_var($username, FILTER_VALIDATE_EMAIL)) $this->model = Admin::where('email', $username)->find();
+        else $this->model = Admin::where('username', $username)->find();
         if (!$this->model) {
             $this->setError('Username is incorrect');
             return false;
@@ -181,11 +182,26 @@ class Auth extends \ba\Auth
             $this->setError('Please try again after 1 day');
             return false;
         }
-        if ($this->model->password != encrypt_password($password, $this->model->salt)) {
-            $this->loginFailed();
-            $this->setError('Password is incorrect');
-            return false;
+
+        if(empty($code))
+        {
+            if ($this->model->password != encrypt_password($password, $this->model->salt)) {
+                $this->loginFailed();
+                $this->setError('Password is incorrect');
+                return false;
+            }
+        }else{
+            $redisLock = new \app\services\RedisLock();
+            $redisCode = $redisLock->get('sendEmailCode_'.$this->model->id);
+            if($redisCode != $code)
+            {
+                $this->loginFailed();
+                $this->setError('Email code is incorrect');
+                return false;
+            }
+            $redisLock->delete('sendEmailCode_'.$this->model->id);
         }
+        
         if (Config::get('buildadmin.admin_sso')) {
             Token::clear(self::TOKEN_TYPE, $this->model->id);
             Token::clear(self::TOKEN_TYPE . '-refresh', $this->model->id);

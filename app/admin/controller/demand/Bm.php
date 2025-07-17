@@ -142,6 +142,8 @@ class Bm extends Backend
         }elseif($disposeType == 3){
             array_push($where,['bm.status','=',0]);
             array_push($where,['bm.demand_type','<>',4]);
+            $bmShieldList = DB::table('ba_bm_shield')->column('bm');
+            if(!empty($bmShieldList)) array_push($where,['accountrequestProposal.bm','not in',$bmShieldList]);
         }elseif($disposeType == 4){
             array_push($where,['bm.status','=',0]);
             array_push($where,['bm.demand_type','=',4]);
@@ -720,17 +722,20 @@ class Bm extends Backend
         // $whereOr = [];
         //array_push($whereOr,['bm.update_time','<',(time() - 3600)]);
         //array_push($whereOr,['bm.update_time', 'null', null]);
+        
+        $bmShieldList = DB::table('ba_bm_shield')->column('bm');
+
+        if(!empty($bmShieldList)) array_push($where,['accountrequest_proposal.bm','not in',$bmShieldList]);
 
         $res = $this->model
-            ->field($this->indexField)
-            ->withJoin($this->withJoinTable, $this->withJoinType)
-            ->alias($alias)
+            ->field('bm.id,accountrequest_proposal.serial_name account_name')
+            ->alias('bm')
+            ->leftJoin('ba_accountrequest_proposal accountrequest_proposal', 'accountrequest_proposal.account_id = bm.account_id')
             ->where($where)
             ->where(function ($query){
                 $query->where('bm.update_time', 'null', null)
                 ->whereOr('bm.update_time', '<', (time() - 3600));
             })
-            ->order($order)
             ->paginate();
 
         $this->success('', [

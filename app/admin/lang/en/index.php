@@ -6,4 +6,6 @@ return [
     'Incorrect user name or password!'                              => 'Incorrect username or password!',
     'Login'                                                         => 'Login',
     'Logout'                                                        => 'Logout',
+    'Send email code succeeded!'                                    => 'Send email code succeeded!',
+    'Send email error!'                                             => 'Send email error!',
 ];

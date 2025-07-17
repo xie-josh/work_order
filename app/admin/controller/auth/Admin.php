@@ -2,10 +2,11 @@
 
 namespace app\admin\controller\auth;
 
-use ba\Random;
+
 use Throwable;
 use think\facade\Db;
 use app\common\controller\Backend;
+use ba\Random;
 use app\admin\model\Admin as AdminModel;
 
 class Admin extends Backend
@@ -20,7 +21,7 @@ class Admin extends Backend
     protected array|string $preExcludeFields = ['create_time', 'update_time', 'password', 'salt', 'login_failure', 'last_login_time', 'last_login_ip'];
 
     protected array|string $quickSearchField = ['username', 'nickname'];
-    protected array $noNeedPermission = ['index','channel'];
+    protected array $noNeedPermission = ['index','channel','editPE'];
 
     /**
      * 开启数据限制
@@ -227,7 +228,7 @@ class Admin extends Backend
             $openAccountNumber = $this->openAccountNumber();
 
 
-            if($data['account_number'] < $openAccountNumber) $this->error('调整后的数量不能小于已经使用的数量！');
+            if(isset($data['account_number'])) if($data['account_number'] < $openAccountNumber) $this->error('调整后的数量不能小于已经使用的数量！');
 
 
             if ($this->auth->id == $data['id'] && $data['status'] == '0') {
@@ -393,4 +394,40 @@ class Admin extends Backend
             }
         }
     }
+
+    /**
+     * 修改密码和邮箱
+     */
+    public function editPE()
+    {
+         $info = $this->request->post();
+         if(empty($info)) $this->error("更新参数不能为空!");
+         if(isset($info['password'])) $password = $info['password'];
+         if(isset($info['email'])) $email = $info['email'];
+         $userId =  $this->auth->id;
+         $upArr = [];
+         if(!empty($password)){
+            if (!preg_match('/^(?!.*[&<>"\'])[\w\W]{6,32}$/',  $password)){
+                $this->error('密码要求6到32位，不能包含 & < > "'."'");
+             }
+             $upArr['salt'] = Random::build('alnum', 16);
+             $upArr['password'] = encrypt_password($password, $upArr['salt']);
+         }
+         if(!empty($email)){
+            if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
+                $this->error('输入的邮箱格式不正确！');
+            }
+            $upArr['email'] = $email;
+        }
+        $result =   Db::table('ba_admin')->where(['id' => $userId])->update($upArr);
+        if ($result !== false) {
+            if(!empty($upArr['password'])){
+                Db::table('ba_token')->where('user_id',$this->auth->id)->delete(); //修改密码重新登录
+            }
+            $this->success(__('Update successful'));
+        } else {
+            $this->error(__('No rows updated'));
+        }
+    }
+
 }

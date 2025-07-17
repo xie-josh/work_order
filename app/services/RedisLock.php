@@ -31,7 +31,7 @@ class RedisLock
      * @param string $key
      * @param string $value
      * @return bool
-     */
+     */ 
     public function release(string $key, string $value): bool
     {
         // 使用 Lua 脚本原子性释放锁
@@ -45,5 +45,20 @@ class RedisLock
             LUA;
 
         return (bool) $this->redis->eval($luaScript, [$key, $value], 1);
+    }
+
+    public function set(string $key, string $value, int $expire = 10): bool
+    {
+        return $this->redis->set($key, $value, ['EX' => $expire]);
+    }
+
+    public function get(string $key): ?string
+    {
+        return $this->redis->get($key);
+    }
+
+    public function delete(string $key): bool
+    {
+        return (bool) $this->redis->del($key);
     }
 }

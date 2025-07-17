@@ -43,4 +43,20 @@ class Basics
         $res = Db::execute($sql);
         return $res;
     }
+    public function returnError(String $msg='error',Array $data = [])
+    {
+        return [
+            'code'=>0,
+            'msg'=>$msg,
+            'data'=>$data
+        ];
+    }
+     public function returnSucceed(Array $data = [])
+    {
+        return [
+            'code'=>1,
+            'msg'=>'succeed',
+            'data'=>$data
+        ];
+    }
 }
