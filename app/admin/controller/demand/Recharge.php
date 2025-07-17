@@ -825,6 +825,9 @@ class Recharge extends Backend
                 $lockValue = uniqid();
                 $expire = 180;
                 $data = [];
+
+                $acquired = $lock->acquire($accountId, $lockValue, $expire);
+                if(!$acquired) $this->error($accountId.":该需求被锁定，处理中！");
                 
                 try {
                     $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
@@ -839,7 +842,7 @@ class Recharge extends Backend
 
                     if($type != 1 && $account['money'] <= 0) throw new \Exception("该账号余额是零，不需要处理！");
 
-                    $acquired = $lock->acquire($accountId, $lockValue, $expire);
+                    
                     if($acquired){
                         if($type == 1)
                         {
