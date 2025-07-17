@@ -191,7 +191,7 @@ class Index extends Backend
 
             $admin = Admin::where('email', $username)->find();
             if (!$admin) {
-                $this->error('The user was not found！');
+                $this->error('未找到该用户!');
                 return false;
             }
             $res = (new EmailService())->sendEmail($username);
