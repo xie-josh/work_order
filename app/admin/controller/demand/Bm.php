@@ -231,6 +231,8 @@ class Bm extends Backend
 
                 $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID完成状态!"); //未完成开户绑定拦截
+
+                if($demandType == 4) throw new \Exception("该类型不可以手动添加!");
 // //-----------------------------------------
 //                 $result =  DB::table('ba_bm')
 //                 ->where('account_id',$accountId)
@@ -375,6 +377,8 @@ class Bm extends Backend
                 if($data['demand_type'] == 1 && $data['bm_type'] == 2 && !filter_var($data['bm'], FILTER_VALIDATE_EMAIL)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
 
                 if($data['demand_type'] == 2 && !is_numeric($data['bm']) && !filter_var($data['bm'], FILTER_VALIDATE_EMAIL))throw new \Exception("提交格式错误,请重新填写！");
+
+                if($row['demand_type'] == 4 || $data['demand_type'] == 4) unset($data['demand_type']);
 
                 $result = $row->save($data);
                 $this->model->commit();
