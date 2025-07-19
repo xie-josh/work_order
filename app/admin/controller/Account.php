@@ -287,9 +287,11 @@ class Account extends Backend
                         $validate->check($data);
                     }
                 }
-
+                
+                if($row['status'] != 0) unset($data['is_keep']);
                 unset($data['status']);
                 unset($data['money']);
+                
 
                 if(!$this->auth->isSuperAdmin()){
                     unset($data['dispose_status']);
