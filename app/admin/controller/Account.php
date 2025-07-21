@@ -291,7 +291,6 @@ class Account extends Backend
                     }
                 }
                 
-                if($row['status'] != 0) unset($data['is_keep']);
                 unset($data['status']);
                 unset($data['money']);
                 
