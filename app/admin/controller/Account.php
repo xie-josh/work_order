@@ -229,6 +229,9 @@ class Account extends Backend
 
                 // DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
                 DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
+                
+                if(isset($data['is_keep']) && in_array($data['type'],[1,3]) && $data['is_keep'] == 1) $data['is_keep'] = 1;
+                else $data['is_keep'] = 0;
 
                 $data['admin_id'] = $this->auth->id;
                 // $data['account_id'] = $this->generateUniqueNumber();
@@ -1283,14 +1286,18 @@ class Account extends Backend
                 $accountTypeId = $accountTypeList[$v[0]]??'';
                 $time = $timeList[(String)$v[1]]??'';
                 $name = $v[2];
+                $isKeep = 0;
                 // $adminId = empty($adminId)?($v[5]??0):$adminId;
 
                 if(in_array($adminId,$notMoneyAdminList) && !empty($v[3])) $money = $v[3];
                 else $money = 0;
+
+                if(in_array($accountTypeId,[1,3]) && $v[5] == 1) $isKeep = 1;
+
                 $currency = $v[4];
 
                 $bes = [];
-                $i=5;
+                $i=6;
                 while ($i <= 100) {
                     if(!empty($v[$i])){
                         if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)) 
@@ -1314,6 +1321,7 @@ class Account extends Backend
                     'status'=>$authAdminId==1?1:0,
                     'currency'=>$currency,
                     'type'=>$accountTypeId,
+                    'is_keep'=>$isKeep, 
                     'create_time'=>time()
                 ];
         
