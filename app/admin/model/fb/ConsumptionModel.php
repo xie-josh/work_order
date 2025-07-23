@@ -48,8 +48,9 @@ class ConsumptionModel extends Model
             $currentDate = date('Y-m-d', $ts);
             if(isset($listData[$currentDate]))
             {
+                $totalDollar = bcadd((string)$listData[$currentDate]['total_dollar'],'0',4);
                 $list[] = [
-                    "total_dollar" => $listData[$currentDate]['total_dollar'],
+                    "total_dollar" => $totalDollar,
                     "admin_id" => $adminId,
                     "date_start" => $currentDate
                 ];
@@ -98,8 +99,9 @@ class ConsumptionModel extends Model
             $currentMonth = date('Y-m', $ts);
             if(isset($listData[$currentMonth]))
             {
+                $totalDollar = bcadd((string)$listData[$currentMonth]['total_dollar'],'0',4);
                 $list[] = [
-                    "total_dollar" => $listData[$currentMonth]['total_dollar'],
+                    "total_dollar" => $totalDollar,
                     "admin_id" => $adminId,
                     "date_start" => $currentMonth
                 ];
