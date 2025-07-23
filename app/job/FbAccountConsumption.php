@@ -33,6 +33,7 @@ class FbAccountConsumption
         try {
             $accountId = $params['account_id'];
             $businessId = $params['business_id']??'';
+            $currency  =  $params['currency']??'';
             $params['stort_time'] = date('Y-m-d', strtotime('-15 days'));
             // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = date('Y-m-d',time());
@@ -103,13 +104,21 @@ class FbAccountConsumption
                 else $item['end_open_time'] = date('Y-m-d',strtotime('+1 day',time()));
                 $accountTimeList[] = $item;
             }
-            $accountTimeList = array_reverse($accountList);         
+            $accountTimeList = array_reverse($accountList);    
+            
+            $exchangeRate = [];
+            if(!empty($currency) && $currency != 'USD' && $currency != '其他')
+            {
+                $exchangeRate = DB::table('ba_exchange_rate')->whereIn('time',$sSTimeList)->where('currency',$currency)->field('time,rate')->select()->toArray();
+                $exchangeRate = array_column($exchangeRate,'rate','time');
+            }
 
             $data = [];
 
             foreach($sSTimeList as $v){
 
                 $adminId = '';
+                $dollar = 0;
                 foreach($accountTimeList as $v1)
                 {
                     if($v >= $v1['strat_open_time'] && $v <= $v1['end_open_time']){
@@ -117,21 +126,36 @@ class FbAccountConsumption
                         break;
                     }
                 }
-
+            
                 $consumption = $accountConsumption[$v]??[];
+                
                 if(empty($consumption)){
                     $data[] = [
                         'account_id'=>$accountId,
                         'spend'=>0,
+                        'dollar'=>$dollar,
                         'date_start'=>$v,
                         'date_stop'=>$v,
                         'admin_id'=>$adminId,
                         'create_time'=>time(),
                     ];
                 }else{
+                    if($currency == 'USD')
+                    {
+                        $dollar = $consumption['spend'];
+                    }else{
+                        if(empty($currency) || $currency == '其他')
+                        {
+                            $dollar = 0;
+                        }elseif(isset($exchangeRate[$v]) && $consumption['spend'] != 0){
+                           $dollar =  bcdiv((string)$consumption['spend'],(string)$exchangeRate[$v],4);
+                        }
+                    }                    
+
                     $data[] = [
                         'account_id'=>$accountId,
                         'spend'=>$consumption['spend'],
+                        'dollar'=>$dollar,
                         'date_start'=>$consumption['date_start'],
                         'date_stop'=>$consumption['date_stop'],
                         'admin_id'=>$adminId,
