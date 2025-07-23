@@ -953,9 +953,55 @@ class Bm extends Backend
     {
         $noticeGroup = Db::table('ba_admin')->where('id',$v['admin_id'])->value('notice_group');
         $value =  DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);//开户绑定类型处理完成
-        if(!empty($noticeGroup)){
-            $v['notice_group'] =  $noticeGroup;
-            if($value) (new QYWXService())->send_notification($v);
+        // if(!empty($noticeGroup)){
+        //     $v['notice_group'] =  $noticeGroup;
+        //     if($value) (new QYWXService())->send_notification($v);
+        // }
+    }
+
+
+    public function bmAllUnbinding()
+     {
+        if(!$this->auth->isSuperAdmin()) $this->error('请找管理员处理！');
+        $accountIds = $this->request->param('account_list');    
+
+        $bmList = Db::table('ba_bm')
+        ->alias('b')
+        ->field('id, admin_id, account_id, bm,bm_type')
+        ->whereIn('b.account_id', $accountIds)
+        ->whereIn('b.demand_type', [1, 4])
+        ->where('b.new_status', 1)
+        ->where('b.dispose_type', 1)
+        ->whereNotExists(function ($subQuery) use ($accountIds) {
+            $subQuery->table('ba_bm')
+                ->alias('n')
+                ->whereColumn('n.account_id', 'b.account_id')
+                ->whereColumn('n.bm', 'b.bm')
+                ->whereIn('n.account_id', $accountIds)
+                ->where('n.demand_type', 2)
+                ->where('n.status', '<>', 2)
+                ->where('n.dispose_type', '<>', 2);
+        })->select()->toArray();
+
+
+        $dataList = [];
+        foreach($bmList as $item){
+            $dataList[] = [
+                'demand_type'=>2,
+                'account_id'=>$item['account_id'],
+                'bm'=>$item['bm'],
+                'bm_type'=>$item['bm_type'],
+                'account_name'=>'',
+                'admin_id'=>$item['admin_id'],
+                'create_time'=>time()
+            ];
+        }
+        $result = DB::table('ba_bm')->insertAll($dataList);
+        
+        if($result){
+            $this->success('成功！',[]);
+        }else{
+            $this->error('没有找到可以解绑的需求！',[]);
         }
     }
 
