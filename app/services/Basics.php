@@ -59,4 +59,20 @@ class Basics
             'data'=>$data
         ];
     }
+
+    static function logs(String $type = '',array $data = [], String $logs = '')
+    {
+        DB::table('ba_logs')->insert([
+            'type' => $type,
+            'data' => json_encode($data, JSON_UNESCAPED_UNICODE),
+            'logs' => $logs,
+            'create_time' => date('Y-m-d H:i:s')
+        ]);
+        return [
+            'code'=>1,
+            'msg'=>'succeed',
+            'data'=>$data
+        ];
+    }
+
 }

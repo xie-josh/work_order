@@ -15,5 +15,6 @@ return [
         'FbAccountConsumptionTask' => 'app\command\FbAccountConsumptionTask',
         'AccountListBackupTask' => 'app\command\AccountListBackupTask',
         'AuditExceptionTask' => 'app\command\AuditExceptionTask',
+        'GetRateTask' => 'app\command\GetRateTask',
     ],
 ];
