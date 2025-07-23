@@ -666,4 +666,62 @@ class Consumption extends Backend
         return $this->success('',['progress' => $progress]);
     }
 
+    public function consumptionList()
+    {
+        $data = $this->request->param();
+        $adminId = $data['id'];
+
+        $dayList = $this->model->dayConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
+        $monthList = $this->model->monthConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
+
+        $list = [];
+        foreach($monthList as $value)
+        {
+            $list['month'][] = [
+                'total_dollar'=>$value['total_dollar'],
+                "date_start"=>$value['date_start'],
+            ];
+        }
+
+        foreach($dayList as $value2)
+        {
+            $list['day'][] = [
+               'total_dollar'=>$value2['total_dollar'],
+                "date_start"=>$value2['date_start'],
+            ];
+        }
+         $list['day'] = array_reverse($list['day']);
+        return $this->success('',$list);
+
+
+        // dd($list);
+
+        // $folders = (new \app\common\service\Utils)->getExcelFolders();
+
+        // $header = [
+        //     '账单日期',
+        //     '账单金额',
+        //     '总付款金额',
+        //     '可用金额'
+        // ];
+
+        // $config = [
+        //     'path' => $folders['path']
+        // ];
+        // $excel  = new \Vtiful\Kernel\Excel($config);
+        // $name = $folders['name'].'.xlsx';      
+
+        // $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+        //     ->header($header)
+        //     ->data($list);
+
+        // $excel->output();
+
+        // $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+
+
+        // $this->success('', ['list' => $list]);
+
+    }
+
 }

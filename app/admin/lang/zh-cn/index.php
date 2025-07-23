@@ -6,4 +6,6 @@ return [
     'Incorrect user name or password!'                              => '用户名或密码不正确！',
     'Login'                                                         => '登录',
     'Logout'                                                        => '注销登录',
+    'Send email code succeeded!'                                    => '发送邮件验证码成功！',
+    'Send email error!'                                             => '发送邮件验证码失败！',
 ];
