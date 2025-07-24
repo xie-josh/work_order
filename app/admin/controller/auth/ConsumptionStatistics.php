@@ -33,6 +33,7 @@ class ConsumptionStatistics extends Backend
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
         array_push($where,['admin_group_access.group_id','in',[3]]);
+        array_push($where,['admin.status','=',1]);
         
         $res = DB::table('ba_admin')
             ->alias('admin')

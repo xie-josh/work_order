@@ -233,29 +233,22 @@ class Bm extends Backend
                 if(empty($account)) throw new \Exception("未找到该账户ID完成状态!"); //未完成开户绑定拦截
 
                 if($demandType == 4) throw new \Exception("该类型不可以手动添加!");
-// //-----------------------------------------
-//                 $result =  DB::table('ba_bm')
-//                 ->where('account_id',$accountId)
-//                 ->whereIn('demand_type',[1,4])
-//                 ->whereIn('bm',$checkList)
-//                 ->where('dispose_type',1)
-//                 ->where('new_status',1)
-//                 ->group('account_id,bm')
-//                 ->select()->toArray();
-//                 if(empty($result)){
-//                     //不能解绑
-//                      array_column($result,'bm');
-//                 }else{
-//                     //可以解绑 但是要查是否已经有解绑记录
-//                     $result =  DB::table('ba_bm')
-//                     ->where('account_id',$accountId)
-//                     ->whereIn('demand_type',[1,4])
-//                     ->whereIn('bm',array_column($result,'bm'))
-//                     ->where('new_status',2);
-//                 }
-//                 dd(array_column($result,'bm','bm'));
-// //------------------------------------------
-                $notConsumptionStatus = config('basics.NOT_consumption_status');
+                //-----------------------------------------
+                $bmArr = DB::table('ba_bm')
+                ->where('account_id',$accountId)
+                ->whereIn('demand_type',[1,4])
+                ->whereIn('bm',$checkList)
+                ->where('dispose_type',1)
+                ->where('new_status',1)
+                ->group('account_id,bm')
+                ->select()->toArray();  
+
+                $bm =  array_column($bmArr,'bm');
+                if($demandType == 2 && !empty(array_diff($checkList,$bm))){   //验证不存在的解绑
+                    throw new \Exception(implode(',',array_diff($checkList,$bm))."没有绑定记录不能解绑！");
+                }
+                //------------------------------------------
+                $notConsumptionStatus   = config('basics.NOT_consumption_status');
                 $accountrequestProposal = Db::table('ba_accountrequest_proposal')->where('account_id',$accountId)->value('status');
                 if(empty($accountrequestProposal) || in_array($accountrequestProposal,$notConsumptionStatus)) throw new \Exception("未找到账户或该账户已经终止使用，不可操作，请联系管理员！");
 
@@ -277,6 +270,16 @@ class Bm extends Backend
                             array_push($error,[$v,'该BM需求在处理中,不需要重复提交!!!']);
                             continue;
                         } 
+                       
+                        if(!empty($bmArr))
+                        {
+                            if($demandType == 1 && in_array($v,$bm))
+                            {  //验证存在的重复绑定
+                                array_push($error,[$v,'该BM需求已绑定不可重复绑定!!!']);
+                                continue;
+                            }
+                        }
+
                         if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v) > 0) throw new \Exception("BM不能包含中文");
 
                         if($demandType == 1 && $bmType == 1 && preg_match('/[a-zA-Z]/', $v)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
@@ -847,7 +850,7 @@ class Bm extends Backend
 
             try {
                 $errorList = [];
-                $dataList = [];
+                $dataList  = [];
 
                 $adminId = $this->auth->id;
                 $accountListC = DB::table('ba_account')->alias('account')

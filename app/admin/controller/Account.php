@@ -49,6 +49,7 @@ class Account extends Backend
         }
 
         $status = $this->request->get('status');
+        $conserve = $this->request->get('conserve')??0;
 
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
@@ -146,6 +147,12 @@ class Account extends Backend
                     $v['bes'] = $bes;
                 }else{
                     $v['bes'] = json_decode($v['bes']??'',true);
+                }
+                
+                if($conserve && $v['is_keep'] == 1 && $v['keep_succeed'] != 1 && $v['status'] == 4){
+                    //养护未完成账户id不显示&&状态是3分配账户
+                    $v['account_id'] = '';
+                    $v['status'] = 3;
                 }
                 
                 $v['admin'] = [
@@ -454,6 +461,7 @@ class Account extends Backend
                     }
                 }elseif($status == 4){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
+                    $keepStatus = 6; 
                     foreach($ids as $v){
                         //$this->model->where('id',$v['id'])->update(['status'=>4,'update_time'=>time()]);
                         // if(!empty($v['bm'])){
@@ -538,9 +546,14 @@ class Account extends Backend
                                 }
 
                         }
-
-                        if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
-
+                        //养护类型完成不生成bm需求&&原本完成到待绑定的状态直接到完成
+                        if($v['is_keep'] == 1){
+                            $keepStatus = 4; 
+                        }else{
+                            if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
+                            $keepStatus = 6; 
+                        } 
+                      
                         if($resultProposal['is_cards'] == 2) continue;
                         $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
 
@@ -550,7 +563,7 @@ class Account extends Backend
                                                     
                         if(empty($cards)) {
                             //TODO...
-                               throw new \Exception("未找到分配的卡或把账户设置成无卡！");
+                                throw new \Exception("未找到分配的卡或把账户设置成无卡！");
                         }else if($v['money'] > 0){
                             $param = [
                                 //'max_on_percent'=>env('CARD.MAX_ON_PERCENT',901),
@@ -566,9 +579,7 @@ class Account extends Backend
                         }
 
                     }                                                                     //4开户完成->6待开户绑定
-                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>6,'update_time'=>time(),'open_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
-
-
+                    $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$keepStatus,'update_time'=>time(),'open_time'=>time(),'operate_admin_id'=>$this->auth->id,'is_'=>1]);
                 }elseif($status == 5){
                     $ids = $this->model->whereIn('id',$ids)->where('status',3)->select()->toArray();
                     $accountIds = array_column($ids,'account_id');
@@ -612,6 +623,39 @@ class Account extends Backend
                         }
                     }
                     //$cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+                }else if($status == 7){
+                    //养护完成生成bm需求
+                    $keep['status']=4;
+                    $keep['keep_succeed']=0;
+                    $keep['is_keep']=1;
+                    $ids = $this->model->whereIn('id',$ids)->where($keep)->select()->toArray();
+                    foreach($ids as $v){
+                            //根据bes生成对等个数的开户绑定条数
+                            $besArr =  json_decode($v['bes']??'', true)??[];
+                            $bmDataList = [];
+                            if(!empty($besArr))foreach($besArr as $be){
+                                if(filter_var($be, FILTER_VALIDATE_EMAIL)){
+                                    $strBes = $be;
+                                    $bmType = 2;
+                                }else if (preg_match('/^\d+$/', $be)){
+                                    $strBes = $be;
+                                    $bmType = 1;
+                                }
+                                $bmDataList[] = [
+                                    'account_name'=>$v['name'],
+                                    'account_id'=>$v['account_id'],
+                                    'bm'=>$strBes,
+                                    'demand_type'=>4,
+                                    'bm_type'=>$bmType,
+                                    'status'=>0,
+                                    'dispose_type'=>0,
+                                    'admin_id'=>$v['admin_id'],
+                                    'create_time'=>time(),
+                                ];
+                            }
+                            if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
+                    }
+                    if(!empty($ids)) $this->model->whereIn('id',array_column($ids,'id'))->update(['keep_succeed'=>1,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                 }
                 //$this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
