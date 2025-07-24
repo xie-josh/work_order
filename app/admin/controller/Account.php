@@ -49,7 +49,8 @@ class Account extends Backend
         }
 
         $status = $this->request->get('status');
-        $conserve = $this->request->get('conserve')??0;
+        $conserve = $this->request->get('conserve');
+        $isConserve = $this->request->get('is_conserve');
 
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
@@ -60,6 +61,8 @@ class Account extends Backend
         $whereOr = [];
 
         array_push($this->withJoinTable,'accountrequestProposal');
+
+        
         
         foreach($where as $k => &$v){
             if($v[0] == 'account.id' && $v[1] == 'IN'){
@@ -99,7 +102,29 @@ class Account extends Backend
                 unset($where[$k]);
                 continue;
             }
+            if($v[0] == 'account.is_conserve'){
+                switch ($v[2]) {
+                    case '1':
+                        array_push($where,['account.is_keep','=',1]);
+                        break;
+                    case '2':
+                        array_push($where,['account.is_keep','=',1]);
+                        array_push($where,['account.keep_succeed','=',0]);
+                        break;            
+                    case '3':
+                        array_push($where,['account.is_keep','=',1]);
+                        array_push($where,['account.keep_succeed','=',1]);
+                        break;       
+                }
+
+                // $whereOr[] = ['account.time_zone',$v[1],$v[2]];
+                // $whereOr[] = ['accountrequestProposal.time_zone',$v[1],$v[2]];
+                unset($where[$k]);
+                continue;
+            }
         }
+
+        
         if($status == 1){
             array_push($where,['account.status','in',[1,3,4,5,6]]);
         }elseif($status == 3){
