@@ -133,7 +133,7 @@ class Recharge
             // if(!empty($key)) Cache::store('redis')->delete($key);
             if(!empty($id)){
                 DB::table('ba_fb_logs')->insert(
-                    ['log_id'=>$id,'type'=>'services_error_spend_up','data'=>json_encode($result),'logs'=>$th->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
+                    ['log_id'=>$id,'type'=>'services_error_spend_up','data'=>json_encode($result),'logs'=>$th->getMessage().':'.$th->getFile().':'.$th->getLine(),'create_time'=>date('Y-m-d H:i:s',time())]
                 );
                 $result = $this->model->where('id',$id)->update(['comment'=>$th->getMessage()]);
             }
@@ -411,7 +411,7 @@ class Recharge
             
             if(!empty($id)){
                 DB::table('ba_fb_logs')->insert(
-                    ['log_id'=>$id,'type'=>'services_error_spend_delete','data'=>json_encode($result),'logs'=>$e->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
+                    ['log_id'=>$id,'type'=>'services_error_spend_delete','data'=>json_encode($result),'logs'=>$e->getMessage().':'.$e->getFile().':'.$e->getLine(),'create_time'=>date('Y-m-d H:i:s',time())]
                 );
                 $result = $this->model->where('id',$id)->update(['comment'=>$e->getMessage()]);
             }
