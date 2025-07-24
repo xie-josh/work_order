@@ -182,13 +182,14 @@ class AccountrequestProposal extends Backend
         ->leftJoin('ba_admin admin','admin.id=account.admin_id')
         ->order($order)
         ->where($where)
-        ->where(function($query) {
-            $query->where('account.status', 4)
-                  ->where('account.is_keep', 0);
-        })
-        ->whereOr(function($query) {
-            $query->where('account.status', 4)
-                  ->where('account.keep_succeed', 1);
+        ->where(function($query) {       
+            $query->where(function ($q) {
+                $q->where('account.status', '=', '4')
+                ->where('account.is_keep', '=', '0');
+            })->whereOr(function ($q) {
+                $q->where('account.status', '=', '4')
+                ->where('account.keep_succeed', '=', '1');
+            });
         })
         ->where(function($query) use($whereOr){
             if(!empty($whereOr)){
@@ -196,7 +197,6 @@ class AccountrequestProposal extends Backend
             }
         })  
         ->paginate($limit);
-        
         $result = $res->toArray();
         $dataList = [];
         if(!empty($result['data'])) {
