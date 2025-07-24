@@ -55,7 +55,7 @@ class ConsumptionStatistics extends Backend
                     'id' => $v['id'],
                     'nickname' => $v['nickname'],
                     'money' => $money,
-                    'total_dollar' => $totalDollar,
+                    'total_dollar' => bcadd((string)$totalDollar,'0',2),
                     'remaining_amount' => $remainingAmount,
                 ];
             }
