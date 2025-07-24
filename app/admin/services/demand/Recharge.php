@@ -39,7 +39,7 @@ class Recharge
             $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();
             if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
-            $key = 'recharge_spendUp_'.$id;
+            $key = 'recharge_spendUp_automatic_'.$id;
             $redis = Cache::store('redis')->handler(); 
             
             $lock = $redis->set($key, 1, ['nx', 'ex' => 180]);
@@ -130,7 +130,7 @@ class Recharge
             Cache::store('redis')->delete($key);
             $result = true;
         } catch (Throwable $th) {
-            if(!empty($key)) Cache::store('redis')->delete($key);
+            // if(!empty($key)) Cache::store('redis')->delete($key);
             if(!empty($id)){
                 DB::table('ba_fb_logs')->insert(
                     ['log_id'=>$id,'type'=>'services_error_spend_up','data'=>json_encode($result),'logs'=>$th->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
@@ -305,7 +305,7 @@ class Recharge
             $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[3,4]]])->find();
             if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
 
-            $key = 'recharge_audit_'.$id;
+            $key = 'recharge_delete_automatic_'.$id;
             $redisValue = Cache::store('redis')->get($key);
             if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
             Cache::store('redis')->set($key, '1', 180);
@@ -407,7 +407,7 @@ class Recharge
             Cache::store('redis')->delete($key);
             $result = true;
         } catch (Throwable $e) {
-            if(!empty($key)) Cache::store('redis')->delete($key);
+            //if(!empty($key)) Cache::store('redis')->delete($key);
             
             if(!empty($id)){
                 DB::table('ba_fb_logs')->insert(
@@ -442,7 +442,7 @@ class Recharge
             $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();
             if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
-            $key = 'recharge_deductions_'.$id;
+            $key = 'recharge_deductions_automatic_'.$id;
             $redisValue = Cache::store('redis')->get($key);
             if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
             Cache::store('redis')->set($key, '1', 180);
@@ -523,7 +523,7 @@ class Recharge
             Cache::store('redis')->delete($key);
             $result = true;
         } catch (Throwable $e) {
-            if(!empty($key)) Cache::store('redis')->delete($key);
+            //if(!empty($key)) Cache::store('redis')->delete($key);
             
             if(!empty($id)){
                 DB::table('ba_fb_logs')->insert(
