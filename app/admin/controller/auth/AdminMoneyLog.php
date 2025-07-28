@@ -143,6 +143,40 @@ class AdminMoneyLog extends Backend
         $this->error(__('Parameter error'));
     }
 
+
+    public function moneyLogList()
+    {
+        // 如果是 select 则转发到 select 方法，若未重写该方法，其实还是继续执行 index
+
+        $this->withJoinTable = [];
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+        $adminId = $this->request->get('id');
+        
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $limit = 999;
+        array_push($where,['admin_id','=',$adminId]);
+        $res = $this->model
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+        // $res->visible(['admin' => ['username']]);
+
+        $this->success('', [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
+
+    public function moneyLogItem()
+    {
+
+    }
+
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
