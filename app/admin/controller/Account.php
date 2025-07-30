@@ -632,7 +632,7 @@ class Account extends Backend
                     if($accountrequestProposalStatus != 0)
                     {
                         $cardsList = DB::table('ba_accountrequest_proposal')
-                        ->field('cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id')
+                        ->field('accountrequest_proposal.account_id accountrequest_proposal_account_id,cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id')
                         ->alias('accountrequest_proposal')
                         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
                         ->whereIn('accountrequest_proposal.account_id',$accountIds)
@@ -645,6 +645,7 @@ class Account extends Backend
                                 if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                                 if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                             }
+                            (new \app\admin\services\card\Cards())->allCardFreeze($cards['accountrequest_proposal_account_id']);
                         }
                     }
                     //$cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
