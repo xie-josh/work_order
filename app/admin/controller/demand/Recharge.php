@@ -147,7 +147,7 @@ class Recharge extends Backend
                 // if(!empty($recharge) && in_array($recharge['type'],[3,4]) && $recharge['status'] == 0) throw new \Exception("有未完成的清零请求,请找客服处理!");
 
                 $recharge = $this->model->where('account_id',$data['account_id'])->whereIn('type',[3,4])->where('status',0)->find();
-                if(!empty($recharge)) throw new \Exception("有未完成的清零请求,请找客服处理!");
+                if(!empty($recharge)) throw new \Exception("已收到清零需求，请勿重复提交，如需加急，请联系客服!");
                 
                 if($data['type'] == 1){
                     if($data['number'] <= 0) throw new \Exception("充值金额不能小于零");
@@ -838,7 +838,7 @@ class Recharge extends Backend
                     if(in_array($accountServerStatus,$nOTConsumptionStatus) && !in_array($type,[3,4])) throw new \Exception("该账号暂停使用，请联系管理员！");
 
                     $recharge = $this->model->where('account_id',$accountId)->whereIn('type',[3,4])->where('status',0)->find();
-                    if(!empty($recharge)) throw new \Exception("有未完成的清零请求,请找客服处理!");
+                    if(!empty($recharge)) throw new \Exception("已收到清零需求，请勿重复提交，如需加急，请联系客服!");
 
                     if($type != 1 && $account['money'] <= 0) throw new \Exception("该账号余额是零，不需要处理！");
 

@@ -724,4 +724,183 @@ class Consumption extends Backend
 
     }
 
+    public function export3()
+    {
+        set_time_limit(600);
+
+        $data = $this->request->post();
+
+        // if(empty($data['status']) || $data['status'] != '99') $this->error('导出功能维护中!');
+
+        $isCount = $data['is_count']??2;
+        $startTime = $data['start_time']??'';
+        $endTime = $data['end_time']??'';
+
+        if(empty($startTime) || empty($endTime)) $this->error('请选择时间！');
+
+        $accountRecycleWhere = [
+            'start_time'=>$startTime,
+            'end_time'=>$endTime
+        ];
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        $batchSize = 3000;
+        $processedCount = 0;
+        $redisKey = 'export3_consumpotion'.'_'.$this->auth->id;
+        
+        $accountRecycleWhere = [];
+        array_push($where,['date_start','>=',$startTime]);
+        array_push($where,['date_stop','<=',$endTime]);
+       
+        $query =  $this->model
+        ->alias('account_consumption')        
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
+        ->leftJoin('ba_account account','account.account_id=account_consumption.account_id')
+        ->leftJoin('ba_admin admin','admin.id=account_consumption.admin_id')
+        ->where($where)
+        ->order('account_consumption.id','asc');
+
+        $statusList = config('basics.ACCOUNT_STATUS');
+
+        if($isCount == 1){
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
+            $query->group('account_consumption.admin_id,account_id');
+        }else{
+            $accountRecycleWhere = [];
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status
+            ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
+            ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
+
+            $accountIskeepList = $this->accountIskeepList($accountRecycleWhere);
+        }
+
+        $adminChannelList = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
+        $adminChannelList = array_column($adminChannelList,'nickname','id');
+        $openAccountStatusValue = config('basics.OPEN_ACCOUNT_STATUS');
+        
+        $total = $query->count();
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            '账户状态',
+            '账户名称',
+            '账户ID',
+            '货币',
+            '消耗',
+            '开始时间',
+            '结束时间',
+            '归属用户',
+            '管理BM',
+            '归属BM',
+            '系统状态',
+            '开户状态',
+            '渠道',
+        ];
+
+        if($isCount != 1){
+            $header[] = '开户时间';
+            $header[] = '养户消耗(是)';
+        }
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $name = $folders['name'].'.xlsx';
+        
+        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
+            $dataList=[];
+            foreach($data as $v){
+                
+                if($isCount != 1) $openTime = date('Y-m-d H:i:s',$v['account_open_time']);
+                else $openTime = '';
+                
+                $openStatus = $openAccountStatusValue[$v['open_account_status']]??'未知的状态';               
+                $adminChannel = $adminChannelList[$v['admin_channel']]??'';
+                $statusValue = $statusList[$v['status']]??'未找到状态';
+                
+                $nickname = $v['nickname'];                
+                $serialName = $v['serial_name'];
+                $spend = $v['spend']??0;
+                $dateStart =  $v['date_start'];
+                $isKeep = '';
+
+                if($isCount != 1 && isset($accountIskeepList[$v['account_id']])){
+                    $cc = $accountIskeepList[$v['account_id']];
+                    foreach($cc as $item)
+                    {
+                        if($item['open_time'] <= $v['date_start'] &&  $item['keep_time'] >= $v['date_start']) $isKeep = '是';
+                    }
+                }
+                
+                $dataList[] = [
+                    $accountStatus[$v['account_status']]??'未找到状态',
+                    $serialName,                    
+                    $v['account_id'],
+                    $v['currency'],
+                    (float)$spend,
+                    $dateStart,
+                    $v['date_stop'],
+                    $nickname,
+                    $v['bm'],
+                    $v['affiliation_bm'],
+                    $statusValue,
+                    $openStatus,
+                    $adminChannel,
+                    $openTime,
+                    $isKeep
+                ];
+                $processedCount++;
+            }
+            $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+    public function accountIskeepList($accountRecycleWhere)
+    {
+        //TODO...
+        #如果每一次多要查询全部，太消耗性能了，获取  养户完成时间 > 导出开始时间 中开户时间最大的
+        // $startTime = $accountRecycleWhere['start_time'];
+        // $endTime = $accountRecycleWhere['end_time'];
+
+        $where = [
+            ['is_keep','=',1]
+        ];
+        $accountList = DB::table('ba_account')->field('account_id,open_time,keep_time')->where($where)->order('id','asc')->select()->toArray();
+        array_push($where,['open_time','<>','NULL']);
+        array_push($where,['keep_time','<>','NULL']);
+        $accountRecycleList = DB::table('ba_account_recycle')->field('account_id,open_time,keep_time')->where($where)->order('id','asc')->select()->toArray();
+
+
+        $list = array_merge($accountRecycleList,$accountList);
+
+        $data = [];
+        foreach($list as $v)
+        {
+            if(empty($v['keep_time'])) $v['keep_time'] = time();
+            $v['open_time'] = date('Y-m-d',$v['open_time']);
+            $v['keep_time'] = date('Y-m-d',$v['keep_time']);
+            $data[$v['account_id']][] = $v;
+        }
+        return $data;
+    }
+
+    public function getExport3Progress()
+    {
+        $progress = Cache::store('redis')->get('export3_consumpotion'.'_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
+    }
 }
