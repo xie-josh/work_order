@@ -340,12 +340,13 @@ class AccountrequestProposal extends Backend
        
         if ($this->request->isPost()) {
             $data = $this->request->post();
+            $affiliationBm = $this->request->param(false)['affiliationBm'];
             $result = false;
             $this->model->startTrans();
             try {
                 $ids = $data['ids'];
                 $bm = $data['bm'];
-                $affiliationBm = $data['affiliationBm'];
+                // $affiliationBm = $data['affiliationBm'];
                 $timeZone = $data['timeZone'];
                 $adminId = $data['adminId'];
                 $isCards = $data['is_cards']??0;
