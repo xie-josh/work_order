@@ -837,13 +837,13 @@ class Consumption extends Backend
         $statusList = config('basics.ACCOUNT_STATUS');
 
         if($isCount == 1){
-            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend');
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
             $query->group('account_consumption.admin_id,account_id');
         }else{
             $accountRecycleWhere = [];
             $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status
             ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
-            ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm');
+            ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');
 
             $accountIskeepList = $this->accountIskeepList($accountRecycleWhere);
         }
@@ -869,6 +869,7 @@ class Consumption extends Backend
             '系统状态',
             '开户状态',
             '渠道',
+            '时区',
         ];
 
         if($isCount != 1){
@@ -924,6 +925,7 @@ class Consumption extends Backend
                     $statusValue,
                     $openStatus,
                     $adminChannel,
+                    $v['time_zone'],
                     $openTime,
                     $isKeep
                 ];
