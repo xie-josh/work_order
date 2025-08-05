@@ -56,7 +56,7 @@ class ConsumptionModel extends Model
                 ];
             }else{
                 $list[] = [
-                    "total_dollar" => 0,
+                    "total_dollar" => "0.0000",
                     "admin_id" => $adminId,
                     "date_start" => $currentDate
                 ];
@@ -107,7 +107,7 @@ class ConsumptionModel extends Model
                 ];
             }else{
                 $list[] = [
-                    "total_dollar" => 0,
+                    "total_dollar" => "0.0000",
                     "admin_id" => $adminId,
                     "date_start" => $currentMonth
                 ];

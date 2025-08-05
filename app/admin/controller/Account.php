@@ -1417,6 +1417,36 @@ class Account extends Backend
         $this->success('',['row'=>['path'=>'/storage/default/申请账户模板.xlsx']]);
     }
 
+    public function updateStatus()
+    {
+        $data = $this->request->param();
+        // $status = $data['status'];
+        $ids = $data['ids'];
+
+        //开户时间是3天内
+        //且只能是养户
+        //未充值的
+
+        $where = [
+            // ['is_keep','=',1],
+            ['status','IN',[4,6]],
+            ['account_id','IN',$ids],
+            ['open_time','>',strtotime('-3 days')]
+        ];
+
+        $accountIds = DB::table('ba_account')->where($where)->column('account_id');
+        if(empty($accountIds)) $this->error('未找到可以修改的数据，请先确实在条件内[(待绑定/完成) + 开户三天内]');
+
+        $accountRechargeCIds = DB::table('ba_recharge')->whereIn('account_id',$accountIds)->column('account_id');
+        if(!empty($accountRechargeCIds)) $this->error('你选择的数据有充值需求，不可变更!'.implode(',',$accountRechargeCIds));
+        
+        $result = DB::table('ba_account')->whereIn('account_id',$accountIds)->update(['status'=>3,'operate_admin_id'=>$this->auth->id]);
+        if ($result !== false) {
+            $this->success(__('Update successful'));
+        } else {
+            $this->error(__('No rows updated'));
+        }
+    }
 
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写

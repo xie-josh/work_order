@@ -666,6 +666,79 @@ class Consumption extends Backend
         return $this->success('',['progress' => $progress]);
     }
 
+    //新统计
+    public function newStatistics()
+    {
+        $data = $this->request->post();
+        $adminId  = $data['id'];
+        $v = DB::table('ba_admin')
+            ->alias('admin')
+            ->field('admin.id,admin.nickname,admin.money,admin_group_access.group_id')
+            ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
+            ->where(['id'=>$adminId])->find();
+        $dataList = [];
+        if($v) {
+               $consumptionService = new \app\admin\services\fb\Consumption();
+                $totalDollar = $consumptionService->getTotalDollar($v['id']);
+                $money = $v['money'] ?? 0;
+                $remainingAmount = bcsub((string)$money,(string)$totalDollar,'2');
+                $dataList[] = [
+                    'id' => $v['id'],
+                    // 'nickname' => $v['nickname'],
+                    'money' => $money,
+                    // 'total_dollar' => bcadd((string)$totalDollar,'0',2),
+                    'remaining_amount' => $remainingAmount,
+                ];
+        }
+        //--------------------------------------------------------------------------------------------
+        $dayList = $this->model->dayConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
+        $monthList = $this->model->monthConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
+        $list = [];
+        foreach($monthList as $value)
+        {
+            $list['month'][] = [
+                'total_dollar'=>$value['total_dollar'],
+                "date_start"=>$value['date_start'],
+            ];
+        }
+        foreach($dayList as $value2)
+        {
+            $list['day'][] = [
+               'total_dollar'=>$value2['total_dollar'],
+                "date_start"=>$value2['date_start'],
+            ];
+        }
+        // $list['day'] = array_reverse($list['day']);
+        $list['all'] = $list['day'];
+        // array_merge($list['month'],$list['day']);
+        //---------------------------------------------------------------------------------------------
+
+        $this->withJoinTable = [];
+        $where = [];
+        // $alias = ['ba_admin_money_log'=>'admin_money_log'];
+        // $order = ['id'=>"desc"];
+        $limit = 999;
+        array_push($where,['admin_id','=',$adminId]);
+        $res = DB::table('ba_admin_money_log')
+            // ->withJoin($this->withJoinTable, "LEFT")
+            // ->alias($alias)
+            ->where($where)->select()->toArray();
+        // $res->visible(['admin' => ['username']]);
+        foreach($list['all'] AS $k => &$v){
+             $v['money'] = $dataList[$k]['money']??'';
+             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';
+             $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
+             $v['month_date_start'] = $list['month'][$k]['date_start']??'';
+             $v['money1'] = $res[$k]['money']??'';
+             $v['raw_money'] = $res[$k]['raw_money']??'';
+             if(isset($res[$k]['create_time']))$v['create_time'] = date('Y-m-d H:i',$res[$k]['create_time']);
+             else $v['create_time'] = '';
+        }
+        unset($list['day']);
+        unset($list['month']);
+        return $this->success('',$list);
+    }
+
     public function consumptionList()
     {
         $data = $this->request->param();
@@ -690,7 +763,7 @@ class Consumption extends Backend
                 "date_start"=>$value2['date_start'],
             ];
         }
-         $list['day'] = array_reverse($list['day']);
+        $list['day'] = array_reverse($list['day']);
         return $this->success('',$list);
 
 
