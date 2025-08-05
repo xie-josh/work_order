@@ -684,7 +684,7 @@ class Consumption extends Backend
                 $remainingAmount = bcsub((string)$money,(string)$totalDollar,'2');
                 $dataList[] = [
                     'id' => $v['id'],
-                    // 'nickname' => $v['nickname'],
+                    'nickname' => $v['nickname'],
                     'money' => $money,
                     // 'total_dollar' => bcadd((string)$totalDollar,'0',2),
                     'remaining_amount' => $remainingAmount,
@@ -708,7 +708,7 @@ class Consumption extends Backend
                 "date_start"=>$value2['date_start'],
             ];
         }
-        // $list['day'] = array_reverse($list['day']);
+        $list['day'] = array_reverse($list['day']);
         $list['all'] = $list['day'];
         // array_merge($list['month'],$list['day']);
         //---------------------------------------------------------------------------------------------
