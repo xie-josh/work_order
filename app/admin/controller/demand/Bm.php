@@ -244,6 +244,7 @@ class Bm extends Backend
                 ->select()->toArray();  
 
                 $bm =  array_column($bmArr,'bm');
+                $bmBmType =  array_column($bmArr,'bm_type','bm');
                 if($demandType == 2 && !empty(array_diff($checkList,$bm))){   //验证不存在的解绑
                     throw new \Exception(implode(',',array_diff($checkList,$bm))."没有绑定记录不能解绑！");
                 }
@@ -261,11 +262,12 @@ class Bm extends Backend
                 })
                 ->where([['dispose_type','=',0]])->column('bm');
                 $error = [];
-
-                
+       
                 $dataList = [];
-                if(!empty($checkList)){
-                    foreach($checkList as $v){
+                if(!empty($checkList))
+                {
+                    foreach($checkList as $v)
+                    {
                         if(in_array($v,$bmList)){
                             array_push($error,[$v,'该BM需求在处理中,不需要重复提交!!!']);
                             continue;
@@ -281,13 +283,12 @@ class Bm extends Backend
                         }
 
                         if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v) > 0) throw new \Exception("BM不能包含中文");
-
                         if($demandType == 1 && $bmType == 1 && preg_match('/[a-zA-Z]/', $v)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         if($demandType == 1 && $bmType == 2 && !filter_var($v, FILTER_VALIDATE_EMAIL)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
-
                         if($demandType == 2 && !is_numeric($v) && !filter_var($v, FILTER_VALIDATE_EMAIL))throw new \Exception("提交格式错误,请重新填写！");
                         //if (filter_var($v, FILTER_VALIDATE_EMAIL) && $demandType == 1 && $bmType != 2) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         // dd($checkList,!filter_var($v, FILTER_VALIDATE_EMAIL));
+                        if($demandType == 2) $bmType = $bmBmType[$v]??1; //那绑定时候的bm类型
                         $dataList[] = [
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,
