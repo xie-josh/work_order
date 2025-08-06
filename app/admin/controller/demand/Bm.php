@@ -25,7 +25,7 @@ class Bm extends Backend
 
     protected array $withJoinTable = ['admin'];
 
-    protected array $noNeedPermission = ['batchAdd','disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll'];
+    protected array $noNeedPermission = ['batchAdd','disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll','bmAllUnbinding'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -80,6 +80,7 @@ class Bm extends Backend
             // array_push($where,['bm.dispose_type','=',0]);
         }
        
+        
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
@@ -110,7 +111,7 @@ class Bm extends Backend
             if($v[0] == 'bm.id'){
                 if (preg_match('/\d+/', $v[2], $matches)) {
                     $number = ltrim($matches[0], '0'); // 移除开头的零
-                    $v[2] = '%'.$number.'%';
+                    $v[2] = $number;
                 } else {
                     //$v[2] = $number;
                 }
@@ -157,7 +158,6 @@ class Bm extends Backend
             ->paginate($limit);
         $dataList = $res->toArray()['data'];
         $adminNameArr = DB::table('ba_admin')->column('nickname','id');
-        //dd($dataList);
         if($dataList){
             
             $adminIds = [];
@@ -966,7 +966,7 @@ class Bm extends Backend
 
     public function bmAllUnbinding()
      {
-        if(!$this->auth->isSuperAdmin()) $this->error('请找管理员处理！');
+        // if(!$this->auth->isSuperAdmin()) $this->error('请找管理员处理！');
         $accountIds = $this->request->param('account_list');    
 
         $bmList = Db::table('ba_bm')
