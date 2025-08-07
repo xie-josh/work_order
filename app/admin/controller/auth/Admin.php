@@ -52,10 +52,21 @@ class Admin extends Backend
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-        // if($this->request->param('type') == 1){
-        //     $adminIds = Db::table('ba_admin_group_access')->where('group_id',5)->column('uid');
-        //     array_push($where,['id','in',$adminIds]);
+
+        // if($this->request->param('admin_group_id')){
+        //     $adminIds = DB::table('ba_admin_group_access')->where('group_id',$this->request->param('admin_group_id'))->column('uid');
+        //     array_push($where,['id','IN',$adminIds]);
         // }
+
+       foreach($where as $k => &$v){
+            if($v[0] == 'admin.admin_group_id'){
+                $adminIds = DB::table('ba_admin_group_access')->where('group_id',$v[2])->column('uid');
+                array_push($where,['id','IN',$adminIds]); 
+
+                unset($where[$k]);
+                continue;
+            }
+        }
         
         $res = $this->model
             ->field('*,ROUND((money - used_money),2) usableMoney')
