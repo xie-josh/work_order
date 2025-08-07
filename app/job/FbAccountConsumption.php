@@ -39,6 +39,7 @@ class FbAccountConsumption
             $params['stop_time'] = date('Y-m-d',time());
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
+            $this->fbSpendCap($params);
 
             // if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             // else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
@@ -163,7 +164,7 @@ class FbAccountConsumption
                     ];
                 }
             }
-            $this->fbSpendCap($params);
+            // $this->fbSpendCap($params);
             DB::table('ba_account_consumption')->insertAll($data);            
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
@@ -195,8 +196,8 @@ class FbAccountConsumption
 
             $FacebookService = new \app\services\FacebookService();
             $result = $FacebookService->adAccounts($accountrequestProposal);
-
-            DB::table('ba_accountrequest_proposal')->update(
+            if($result['code'] != 1) throw new \Exception($result['msg']);
+            DB::table('ba_accountrequest_proposal')->where('account_id', $accountrequestProposal['account_id'])->update(
                 [
                     'spend_cap'=>$result['data']['spend_cap'],
                     'amount_spent'=>$result['data']['amount_spent'],
@@ -207,7 +208,6 @@ class FbAccountConsumption
             //code...
         } catch (\Throwable $th) {
             $logs = json_encode($th->getMessage());
-            $result = false;
             DB::table('ba_fb_logs')->insert(
                 ['log_id'=>$accountrequestProposal['account_id'],'type'=>'job_fb_spend_cap','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
             );
