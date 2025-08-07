@@ -430,4 +430,15 @@ class Admin extends Backend
         }
     }
 
+    public function getGroupList()
+    {
+        $list = DB::table('ba_admin_group')->select()->toArray();
+        // foreach($list as &$v){
+        //     $v['id'] = (string)$v['id'];
+        // }
+         $this->success('', [
+            'list'   => $list,
+        ]);
+    }
+
 }
