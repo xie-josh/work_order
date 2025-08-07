@@ -163,6 +163,7 @@ class FbAccountConsumption
                     ];
                 }
             }
+            $this->fbSpendCap($params);
             DB::table('ba_account_consumption')->insertAll($data);            
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
@@ -184,5 +185,33 @@ class FbAccountConsumption
             $timeArray[] = date('Y-m-d', $currentTimestamp);
         }
         return $timeArray;
+    }
+
+    function fbSpendCap($params)
+    {
+        try {
+            $accountrequestProposal = $params;
+            if($accountrequestProposal['is_token'] !=1) $accountrequestProposal['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['token']);
+
+            $FacebookService = new \app\services\FacebookService();
+            $result = $FacebookService->adAccounts($accountrequestProposal);
+
+            DB::table('ba_accountrequest_proposal')->update(
+                [
+                    'spend_cap'=>$result['data']['spend_cap'],
+                    'amount_spent'=>$result['data']['amount_spent'],
+                    'pull_spend_time'=>date('Y-m-d H:i:s',time())
+                ]
+            );
+
+            //code...
+        } catch (\Throwable $th) {
+            $logs = json_encode($th->getMessage());
+            $result = false;
+            DB::table('ba_fb_logs')->insert(
+                ['log_id'=>$accountrequestProposal['account_id'],'type'=>'job_fb_spend_cap','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
+            );
+        }
+        return true;
     }
 }
