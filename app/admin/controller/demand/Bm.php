@@ -223,6 +223,7 @@ class Bm extends Backend
                 $accountId = $data['account_id']??'';
                 $bm = $data['bm']??'';
                 $bmType = $data['bm_type']??1;
+                $jurisdiction = $data['choice_jurisdiction']??1;
                 $checkList = $data['checkList']??[];
              
                 if($bm) array_push($checkList,$bm);
@@ -241,10 +242,11 @@ class Bm extends Backend
                 ->where('dispose_type',1)
                 ->where('new_status',1)
                 ->group('account_id,bm')
-                ->select()->toArray();  
+                ->select()->toArray();
 
                 $bm =  array_column($bmArr,'bm');
                 $bmBmType =  array_column($bmArr,'bm_type','bm');
+                $choiceJurisdiction =  array_column($bmArr,'choice_jurisdiction','bm');
                 if($demandType == 2 && !empty(array_diff($checkList,$bm))){   //验证不存在的解绑
                     throw new \Exception(implode(',',array_diff($checkList,$bm))."没有绑定记录不能解绑！");
                 }
@@ -288,12 +290,17 @@ class Bm extends Backend
                         if($demandType == 2 && !is_numeric($v) && !filter_var($v, FILTER_VALIDATE_EMAIL))throw new \Exception("提交格式错误,请重新填写！");
                         //if (filter_var($v, FILTER_VALIDATE_EMAIL) && $demandType == 1 && $bmType != 2) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         // dd($checkList,!filter_var($v, FILTER_VALIDATE_EMAIL));
-                        if($demandType == 2) $bmType = $bmBmType[$v]??1; //那绑定时候的bm类型
+                        if($demandType == 2) 
+                        {
+                            $bmType       = $bmBmType[$v]??1; //解绑时拿绑定的bm类型
+                            $jurisdiction = $choiceJurisdiction[$v]??1; //解绑时拿绑定的权限类型
+                        }
                         $dataList[] = [
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,
                             'bm'=>$v,
                             'bm_type'=>$bmType,
+                            'choice_jurisdiction'=>$jurisdiction,
                             'account_name'=>$account['name'],
                             'admin_id'=>$this->auth->id,
                             'create_time'=>time()
@@ -843,12 +850,11 @@ class Bm extends Backend
 
             $accountList = $data['account_list'];
             $bmList = $data['bm_list'];
+            $bmList = array_column($bmList,"choice_jurisdiction",'bm');
 
-            $bmList = array_unique($bmList);
-
-            if(empty($accountList) || empty($bmList)) $this->error('参数错误');
+            if(empty($accountList) || empty(array_unique(array_keys($bmList)))) $this->error('参数错误');
             if(count($accountList) > 100) $this->error('批量添加不能超过100条');
-
+            
             try {
                 $errorList = [];
                 $dataList  = [];
@@ -875,18 +881,20 @@ class Bm extends Backend
                 $accountListC = array_column($accountListC,'account_id');
 
                 if(count($accountList) != count($accountListC)) $errorList[] = ['bm'=>'','msg'=>'你填写的账户ID我们只找到部分，未找到的已经跳过!'];
-
+                
                 $bmListC = [];
-                foreach($bmList as $v){
+                foreach($bmList as $v => $vv){
                     if(filter_var($v, FILTER_VALIDATE_EMAIL)){
                         $bmListC[] = [
                             'bm'=>$v,
-                            'bm_type'=>2
+                            'bm_type'=>2,
+                            'choice_jurisdiction'=>$vv,
                         ];
                     }else if (preg_match('/^\d+$/', $v)) {
                         $bmListC[] = [
                             'bm'=>$v,
-                            'bm_type'=>1
+                            'bm_type'=>1,
+                            'choice_jurisdiction'=>$vv,
                         ];
                     }else{
                         $errorList[] = ['bm'=>$v,'msg'=>'BM格式错误,请填写正确的BM或邮箱!'];
@@ -930,13 +938,13 @@ class Bm extends Backend
                             'account_id'=>$v,
                             'bm'=>$v2['bm'],
                             'bm_type'=>$v2['bm_type'],
+                            'choice_jurisdiction'=>$v2['choice_jurisdiction'],
                             'account_name'=>'',
                             'admin_id'=>$adminId,
                             'create_time'=>time()
                         ];
                     }      
                 }
-
                 DB::table('ba_bm')->insertAll($dataList);
             } catch (\Exception $th) {
                 $this->error('参数错误!');
