@@ -991,6 +991,7 @@ class Bm extends Backend
                 ->whereColumn('n.bm', 'b.bm')
                 ->whereIn('n.account_id', $accountIds)
                 ->where('n.demand_type', 2)
+                ->where('n.new_status', 1)
                 ->where('n.status', '<>', 2)
                 ->where('n.dispose_type', '<>', 2);
         })->select()->toArray();
