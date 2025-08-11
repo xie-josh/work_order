@@ -118,7 +118,123 @@ class AccountrequestProposal extends Backend
             'remark' => get_route_remark(),
         ]);
     }
+
     public function userIndex3()
+    {
+        $this->withJoinTable = [];
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        $this->dataLimit = false;
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId != 2 && !$this->auth->isSuperAdmin()) {
+            array_push($where,['account.admin_id','=',$this->auth->id]);
+        }
+
+        $openTime = '';
+        $endTime = '';
+        $is_  = true;
+        $whereOr = [];
+        $noWhere = [];
+        foreach($where as $k => $v){
+            if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
+            
+            if($v[0] == 'account.open_time'){
+                $openTime = date('Y-m-d H:i:s',$v[2][0]);
+                $endTime = date('Y-m-d H:i:s',$v[2][1]);
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 1){
+                array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 2){
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 0){
+                array_push($whereOr,['accountrequest_proposal.account_status','=',0]);
+                array_push($whereOr,['accountrequest_proposal.status','=',96]);
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 97){
+                array_push($where,['accountrequest_proposal.status','=',97]);
+                unset($where[$k]);
+                continue;
+            }
+        }
+
+        // if($is_) array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+
+
+        array_push($where,['account.account_id','<>','']);
+
+        $res = DB::table('ba_account')
+        ->alias('account')
+        ->field('account.*,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname,accountrequest_proposal.status accountrequest_proposal_status,accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->leftJoin('ba_admin admin','admin.id=account.admin_id')
+        ->order($order)
+        ->where($where)
+        ->where(function($query) {       
+            $query->where(function ($q) {
+                $q->where('account.status', '=', '4')
+                ->where('account.is_keep', '=', '0');
+            })->whereOr(function ($q) {
+                $q->where('account.status', '=', '4')
+                ->where('account.keep_succeed', '=', '1');
+            });
+        })
+        ->where(function($query) use($whereOr){
+            if(!empty($whereOr)){
+                $query->whereOr($whereOr);
+            }
+        })  
+        ->paginate($limit);
+        $result = $res->toArray();
+        $dataList = [];
+        if(!empty($result['data'])) {
+            $dataList = $result['data'];
+
+            foreach($dataList as &$v){
+
+                $spendCap = $v['spend_cap'] == 0.01?0:$v['spend_cap'];
+                $amountSpent = $v['amount_spent'];
+                $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');
+                
+                $openAccountTime = date('Y-m-d',$v['open_time']);
+                
+                $consumptionWhere = [
+                    ['account_id','=',$v['account_id']],
+                    ['date_start','>=',$openAccountTime]
+                ];
+
+                if(!empty($openTime) && !empty($endTime)){
+                    array_push($consumptionWhere,['date_start','>=',$openTime]);
+                    array_push($consumptionWhere,['date_start','<=',$endTime]);
+                }
+                $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+                
+                $v['fb_balance'] = $balance;
+                $v['fb_spand'] = bcadd( (string)$accountSpent2,'0',2);
+            }
+        }
+
+        return [
+            'list'   => $dataList,
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ];
+    }
+
+    public function userIndex3_test()
     {
         $this->withJoinTable = [];
         if ($this->request->param('select')) {
@@ -689,6 +805,43 @@ class AccountrequestProposal extends Backend
     }
 
     public function refreshConsumption($accountrequestProposal)
+    {
+        $result = $this->accountConsumption($accountrequestProposal);
+        if($result['code'] != 1) throw new \Exception($result['msg']);
+
+        $account = DB::table('ba_account')->field('money,open_money,account_id,open_time')->where('account_id',$accountrequestProposal['account_id'])->find();
+
+        $openTime = date('Y-m-d',$account['open_time']);                        
+
+        $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountrequestProposal['account_id'])->where('date_start','>=',$openTime)->sum('spend');
+
+
+        $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['personalbm_token_ids']);
+        if(!empty($token)) $accountrequestProposal['token'] = $token;
+        
+        $FacebookService = new \app\services\FacebookService();
+        $result = $FacebookService->adAccounts($accountrequestProposal);
+        if($result['code'] != 1) throw new \Exception('无法查询该账户，请联系管理员1-2！');
+        DB::table('ba_accountrequest_proposal')->where('account_id', $accountrequestProposal['account_id'])->update(
+            [
+                'spend_cap'=>$result['data']['spend_cap'],
+                'amount_spent'=>$result['data']['amount_spent'],
+                'pull_spend_time'=>date('Y-m-d H:i:s',time())
+            ]
+        );
+
+        $spendCap = $result['data']['spend_cap'] == 0.01?0:$result['data']['spend_cap'];
+        $amountSpent = $result['data']['amount_spent'];
+        $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');
+
+        $resultData = [
+            'fb_balance'=>$balance,
+            'fb_spand'=>bcadd((string)$accountSpent,'0',2)
+        ];
+        return $resultData;
+    }
+
+    public function refreshConsumption_test($accountrequestProposal)
     {
         $result = $this->accountConsumption($accountrequestProposal);
         if($result['code'] != 1) throw new \Exception($result['msg']);

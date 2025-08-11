@@ -192,7 +192,9 @@ class FbAccountConsumption
     {
         try {
             $accountrequestProposal = $params;
-            if($accountrequestProposal['is_token'] !=1) $accountrequestProposal['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['token']);
+            
+            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['personalbm_token_ids']);
+            if(!empty($token)) $accountrequestProposal['token'] = $token;
 
             $FacebookService = new \app\services\FacebookService();
             $result = $FacebookService->adAccounts($accountrequestProposal);
