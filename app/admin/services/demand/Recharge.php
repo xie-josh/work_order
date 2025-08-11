@@ -490,6 +490,7 @@ class Recharge
 
             $spendCap = bcsub((string)$fbBoney,(string)$fbNumber,2);
             $accountrequestProposal['spend'] = $spendCap;
+            if($spendCap <= 0.01) $accountrequestProposal['spend'] = 0.01;
             // dd($accountrequestProposal,$result1);
             $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
             if($result3['code'] != 1) throw new \Exception("FB限额扣除错误，请检查账户权限或联系管理员！");
