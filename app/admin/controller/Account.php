@@ -25,7 +25,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress','importTemplate'];
+    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress','importTemplate','exportAccountDealWith','getExportProgressWeal'];
     protected string|array $quickSearchField = ['id'];
 
     protected bool|string|int $dataLimit = 'parent';
@@ -239,11 +239,16 @@ class Account extends Backend
                 //     if(empty($data['email'])) throw new \Exception("email不能为空！");
                 //     $data['bm'] = '';
                 // }
-
                 
                 if(!empty($bmList))foreach($bmList as $v){
                     if(filter_var($v, FILTER_VALIDATE_EMAIL) || preg_match('/^\d+$/', $v)){
-                    }else throw new \Exception("BM格式错误,请填写正确的BM或邮箱!");                    
+                    }else throw new \Exception("BM格式错误,请填写正确的BM或邮箱!");    
+                    
+                    if(filter_var($v, FILTER_VALIDATE_EMAIL))
+                    {
+                        $isEmail = (new \app\services\Basics())->isEmail($v);
+                        if($isEmail['code'] != 1) throw new \Exception($isEmail['msg']);
+                    }
                 }else throw new \Exception("BM|email不能为空!");
                 $data['bes'] = json_encode($bmList??[], true);
                 // if($data['bm_type'] == 3 && (empty($data['email']) || empty($data['bm'])))  throw new \Exception("BM 与 Email不能为空！");
@@ -326,7 +331,6 @@ class Account extends Backend
                 unset($data['status']);
                 unset($data['money']);
                 
-
                 if(!$this->auth->isSuperAdmin()){
                     unset($data['dispose_status']);
                 }
@@ -335,7 +339,13 @@ class Account extends Backend
                 
                  if(!empty($data['bes']))foreach($data['bes'] as $v){
                     if(filter_var($v, FILTER_VALIDATE_EMAIL) || preg_match('/^\d+$/', $v)){
-                    }else throw new \Exception("BM格式错误,请填写正确的BM或邮箱!");                    
+                    }else throw new \Exception("BM格式错误,请填写正确的BM或邮箱!");
+
+                    if(filter_var($v, FILTER_VALIDATE_EMAIL))
+                    {
+                        $isEmail = (new \app\services\Basics())->isEmail($v);
+                        if($isEmail['code'] != 1) throw new \Exception($isEmail['msg']);
+                    }
                 }else throw new \Exception("email不能为空!");
                 $data['bes'] = json_encode($data['bes']??[], true);
 
@@ -1109,7 +1119,7 @@ class Account extends Backend
                 
                 foreach ($accountList as $value) {
                     $accountId = $value;
-                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>2,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
+                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>1,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
                     DB::table('ba_bm')->where('account_id',$accountId)->delete();
                     DB::table('ba_recharge')->where('account_id',$accountId)->delete();
                 }
@@ -1446,6 +1456,99 @@ class Account extends Backend
         } else {
             $this->error(__('No rows updated'));
         }
+    }
+
+
+    public function exportAccountDealWith()
+    {
+        $where = [];
+        set_time_limit(300);
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        $batchSize = 2000;
+        $processedCount = 0;
+        $redisKey = 'export_progress_weal'.'_'.$this->auth->id;
+
+        array_push($where,['account.status','in',[1,3,4,5,6]]);
+        
+        $query =  $this->model
+        ->alias('account')
+        ->field('account.is_keep,account.operate_admin_id,account.account_type,account.open_time,account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm accountrequest_proposal_bm,accountrequest_proposal.admin_id accountrequest_proposal_admin_id')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        //->withJoin(['accountrequestProposal'], 'LEFT')
+        ->order('account.id','desc')
+        ->where($where);
+
+        $total = $query->count(); 
+
+        $resultAdmin = DB::table('ba_admin')->select()->toArray();
+
+        $accountTypeList = DB::table('ba_account_type')->field('id,name')->select()->toArray();
+        $accountTypeListValue = array_column($accountTypeList,'name','id');
+
+        $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
+
+        $statusValue = config('basics.OPEN_ACCOUNT_STATUS');
+        // $disposeStatusValue = [0=>'待处理',1=>'处理完成',2=>'已提交',3=>'提交异常',4=>'处理异常'];
+
+        $isKeepValue = [0=>'否',1=>'是'];
+
+        //管理 bm，渠道，账户名称，id，开户时间，处理人
+
+        // dd($query->fetchSql()->find());
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            '管理BM',
+            '渠道',
+            '账户名称',
+            '账户ID',
+            '开户时间',
+            '处理人',
+            '开户状态',
+            '是否养户',
+        ];
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $name = $folders['name'].'.xlsx';
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
+            $dataList=[];
+            foreach($data as $v){
+                $dataList[] = [
+                    $v['accountrequest_proposal_id']?$v['accountrequest_proposal_bm']:'',
+                    ($adminList[$v['accountrequest_proposal_admin_id']])??'',
+                    $v['accountrequest_proposal_id']?$v['serial_name']:$v['name'],
+                    $v['account_id'],
+                    $v['open_time']?date('Y-m-d H:i',$v['open_time']):'',
+                    ($adminList[$v['operate_admin_id']])??'',
+                    $statusValue[$v['status']],
+                    $isKeepValue[$v['is_keep']],
+                ];  
+                $processedCount++;
+            }
+            $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+    public function getExportProgressWeal()
+    {
+        $progress = Cache::store('redis')->get('export_progress_weal'.'_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
     }
 
     /**

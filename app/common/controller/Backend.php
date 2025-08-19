@@ -4,8 +4,10 @@ namespace app\common\controller;
 
 use Throwable;
 use think\Model;
+use think\facade\Db;
 use think\facade\Event;
 use app\admin\library\Auth;
+
 use app\common\library\token\TokenExpirationException;
 
 class Backend extends Api
@@ -356,5 +358,23 @@ class Backend extends Api
         ];
 
         return $alias[$operator] ?? $operator;
+    }
+
+    /**
+     * 获取当前登录用户的分组ID
+     */
+    public function uidGetGroupId()
+    {
+        $groupID =   DB::table('ba_admin_group_access')->where('uid',$this->auth->id)->value('group_id');
+        return $groupID;
+     }
+
+    /**
+     * 获取开户账户的用户
+     */
+    public function getAccountAdminId($arr)
+    {
+        $accountNameArr =   DB::table('ba_account')->whereIn('account_id',$arr)->column('admin_id','account_id');
+        return $accountNameArr;
     }
 }

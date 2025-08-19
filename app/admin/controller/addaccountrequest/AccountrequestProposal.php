@@ -26,7 +26,7 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['index','accountRefresh','bmList','editStatusAll','Export','getAccountrequestProposal','getExportProgress',"accountCardBind","accountCardBindDel","accountCardList","accountCardHandoff","allEditLabelRelevance"];
+    protected array $noNeedPermission = ['index','accountRefresh','bmList','editStatusAll','Export','getAccountrequestProposal','getExportProgress',"accountCardBind","accountCardBindDel","accountCardList","accountCardHandoff","allEditLabelRelevance","manageExport","getManageExportProgress","getCountBalance"];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -1327,6 +1327,216 @@ class AccountrequestProposal extends Backend
         }
         return $this->success(__('Update successful'));
     }
+
+    
+
+    public function manageExport()
+    {
+        set_time_limit(600);
+        $batchSize = 2000;
+        $processedCount = 0;
+
+        $this->withJoinTable = [];
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        $this->dataLimit = false;
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
+        if($groupsId != 2 && !$this->auth->isSuperAdmin()) {
+            array_push($where,['account.admin_id','=',$this->auth->id]);
+        }
+
+        $openTime = '';
+        $endTime = '';
+        $is_  = true;
+        $isStatus = 99;
+        $whereOr = [];
+        $noWhere = [];
+        foreach($where as $k => $v){
+            if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
+            
+            if($v[0] == 'account.open_time'){
+                $openTime = date('Y-m-d H:i:s',$v[2][0]);
+                $endTime = date('Y-m-d H:i:s',$v[2][1]);
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 1){
+                array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                $isStatus = 1;
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 2){
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                $isStatus = 2;
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 0){
+                array_push($whereOr,['accountrequest_proposal.account_status','=',0]);
+                array_push($whereOr,['accountrequest_proposal.status','=',96]);
+                $isStatus = 0;
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 97){
+                array_push($where,['accountrequest_proposal.status','=',97]);
+                $isStatus = 97;
+                unset($where[$k]);
+                continue;
+            }
+        }
+        array_push($where,['account.account_id','<>','']);
+
+        $query = DB::table('ba_account')
+        ->alias('account')
+        ->field('accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,account.account_id,account.open_money,account.open_time,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname,accountrequest_proposal.status accountrequest_proposal_status')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->leftJoin('ba_admin admin','admin.id=account.admin_id')
+        ->order('account.id','desc')
+        ->where($where)
+        ->where(function($query) {       
+            $query->where(function ($q) {
+                $q->where('account.status', '=', '4')
+                ->where('account.is_keep', '=', '0');
+            })->whereOr(function ($q) {
+                $q->where('account.status', '=', '4')
+                ->where('account.keep_succeed', '=', '1');
+            });
+        })
+        ->where(function($query) use($whereOr){
+            if(!empty($whereOr)){
+                $query->whereOr($whereOr);
+            }
+        });
+        $query2 = clone $query;
+        $total = $query2->count(); 
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            '账号ID',
+            '账户名称',
+            '状态',
+            '币种',
+            '余额',
+            '历史花费',
+            '下户时间'
+        ];
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $name = $folders['name'].'.xlsx';
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->toArray();
+            // dd($where,$data);
+            if(!empty($data)) {
+                $dataList = $data;
+                $List = [];
+
+                foreach($dataList as &$v){
+
+                    $spendCap = $v['spend_cap'] == 0.01?0:$v['spend_cap'];
+                    $amountSpent = $v['amount_spent'];
+                    $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');
+
+                    $openAccountTime = date('Y-m-d',$v['open_time']);
+
+                    $consumptionWhere = [
+                        ['account_id','=',$v['account_id']],
+                        ['date_start','>=',$openAccountTime]
+                    ];
+                    if(!empty($openTime) && !empty($endTime)){
+                        array_push($consumptionWhere,['date_start','>=',$openTime]);
+                        array_push($consumptionWhere,['date_start','<=',$endTime]);
+                    }
+                    $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');                  
+                    
+                    $accountStatus = '';
+                    if(in_array($v['account_status'],[1,3]) && !in_array($v['accountrequest_proposal_status'],[96,97])) $accountStatus = '活跃';
+                    if(in_array($v['account_status'],[2]) && !in_array($v['accountrequest_proposal_status'],[96,97])) $accountStatus = '封户';
+                    if($v['account_status'] == 0 || $v['accountrequest_proposal_status']  == 96)
+                    {
+                        $accountStatus = '不可用';
+                        $balance = '***';
+                    }
+                    if($v['accountrequest_proposal_status']  == 97) $accountStatus = '暂停使用';
+
+                    $List[] = [
+                        $v['account_id'],
+                        $v['serial_name'],
+                        $accountStatus,
+                        $v['currency'],
+                        $balance,
+                        bcadd( (string)$accountSpent2,'0',2),
+                        date('Y-m-d H:i:s',$v['open_time'])
+                    ];
+
+                    $processedCount++;
+                }
+
+                $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+                ->header($header)
+                ->data($List);
+                $progress = min(100, ceil($processedCount / $total * 100));
+                Cache::store('redis')->set('export_manage', $progress, 300);
+            }
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete('export_manage');
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);  
+    }
+
+
+    public function getManageExportProgress()
+    {
+        $progress = Cache::store('redis')->get('export_manage', 0); // 获取进度
+        return $this->success('',['progress' => $progress]);
+    }
+
+
+    public function getCountBalance()
+    {
+        $where = [];
+        if(!$this->auth->isSuperAdmin()){
+            array_push($where,['admin_id','=',$this->auth->id]);
+            array_push($where,['spend_cap','<>',0.01]);
+            array_push($where,['account_status','<>',0]);
+            array_push($where,['status','<>',96]);
+        }
+
+        $result = DB::table('ba_accountrequest_proposal')
+        ->where($where)
+        ->whereIn('account_id',function($query){
+            $query->table('ba_account')
+            ->where(function($query) {       
+                $query->where(function ($q) {
+                    $q->where('status', '=', '4')
+                    ->where('is_keep', '=', '0');
+                })->whereOr(function ($q) {
+                    $q->where('status', '=', '4')
+                    ->where('keep_succeed', '=', '1');
+                });
+            })->field('account_id');
+        })
+        ->field('sum(spend_cap) spend_cap,sum(amount_spent) amount_spent')->find();
+
+        $balance = bcsub((string)$result['spend_cap'],(string)$result['amount_spent'],'2');
+        $this->success('',['balance'=>$balance]);
+    }
+
+
+    
+
+
 
     
     /**

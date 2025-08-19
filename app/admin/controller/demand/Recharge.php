@@ -140,7 +140,10 @@ class Recharge extends Backend
                         $validate->check($data);
                     }
                 }
-                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where('admin_id',$this->auth->id)->where('status',4)->find();
+                $groupid = $this->uidGetGroupId();
+                $whereC = [];
+                if(in_array($groupid,[3,4]))$whereC['admin_id'] = $this->auth->id; //管理员和员工组跳过
+                $account = Db::table('ba_account')->where('account_id',$data['account_id'])->where($whereC)->where('status',4)->find();
                 if(empty($account)) throw new \Exception("未找到该账户ID或账户不可用");
 
                 // $recharge = $this->model->where('account_id',$data['account_id'])->order('id','desc')->find();
@@ -191,8 +194,10 @@ class Recharge extends Backend
                     (new \app\admin\services\card\Cards())->allCardFreeze($account['account_id']);
                 }
                 
+                $adminArr   = $this->getPermissionUser([$account['account_id']]); //权限判断
                 $data['account_name'] = $account['name'];
-                $data['admin_id'] = $this->auth->id;
+                $data['admin_id'] = $adminArr?$adminArr[$account['account_id']]:$this->auth->id;
+                $data['add_operate_user'] = $this->auth->id;
 
                 if(in_array($data['type'],[1,2]) && env('IS_ENV',false)) (new QYWXService())->send(['account_id'=>$data['account_id']],$data['type']);
 
@@ -816,6 +821,14 @@ class Recharge extends Backend
             
             $wk = DB::table('ba_wk_account')->column('account_id');
             
+            $accountListC =  array_column($list,'account_id');
+            $adminArr   = $this->getPermissionUser($accountListC); //权限判断
+
+            $groupid = $this->uidGetGroupId();
+            $whereC = [];
+            if(in_array($groupid,[3,4])) $whereC['admin_id'] =  $this->auth->id;
+
+
             $errorList = [];
             foreach($list as $v)
             {
@@ -830,7 +843,7 @@ class Recharge extends Backend
                 if(!$acquired) $this->error($accountId.":该需求被锁定，处理中！");
                 
                 try {
-                    $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
+                    $account = Db::table('ba_account')->where('account_id',$accountId)->where($whereC)->where('status',4)->find();
                     if(empty($account)) throw new \Exception("未找到该账户或账户不可用！");                
     
                     $nOTConsumptionStatus = config('basics.NOT_consumption_status');
@@ -892,7 +905,8 @@ class Recharge extends Backend
                     $data['type'] = $type;
                     $data['account_id'] = $accountId;
                     $data['account_name'] = $account['name'];
-                    $data['admin_id'] = $this->auth->id;
+                    $data['admin_id'] = $adminArr?$adminArr[$accountId]:$this->auth->id;                    
+                    $data['add_operate_user'] = $this->auth->id;
                     if(in_array($type,[3,4]))$data['number'] = 0;
                     else $data['number'] = $amount;
                     $rechargeId = DB::table('ba_recharge')->insertGetId($data);
@@ -926,4 +940,116 @@ class Recharge extends Backend
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
+
+         /**
+     * 根据权限获取账户开户user
+     */
+    public function getPermissionUser($accountArr)
+    {
+        $adminArr =[];     
+        $accountAdminIdArr = $this->getAccountAdminId($accountArr);
+        if(!empty($accountAdminIdArr))switch($this->uidGetGroupId()){
+            case 1:
+            case 2: 
+                   $adminArr = $accountAdminIdArr; 
+                break;
+            case 3: 
+                   $adminArr = array_map(function($value) {
+                    return $this->auth->id;
+                }, $accountAdminIdArr); 
+                break;
+        }
+        return $adminArr;
+    }
+
+
+     public function exportDealWith()
+    {
+        $ids = $this->request->get('ids');
+        $where = [];
+        set_time_limit(300);
+        $batchSize = 2000;
+        $processedCount = 0;
+        $redisKey = 'export_recharge_with'.'_'.$this->auth->id;
+        
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        array_push($this->withJoinTable,'account');
+        //array_push($where,['recharge.id','IN',$ids]);
+
+        $query = DB::table('ba_recharge')
+        ->field('recharge.operate_admin_id,account.open_time,accountrequestProposal.admin_id accountrequest_proposal_admin_id,recharge.id,accountrequestProposal.bm,accountrequestProposal.serial_name,accountrequestProposal.account_id,recharge.type,recharge.number,recharge.status,recharge.create_time,recharge.update_time')
+        ->alias('recharge')
+        ->leftJoin('ba_accountrequest_proposal accountrequestProposal','accountrequestProposal.account_id=recharge.account_id')
+        ->leftJoin('ba_account account','account.account_id=recharge.account_id')
+        ->where($where);
+
+        $total = $query->count();
+
+        $resultAdmin = DB::table('ba_admin')->select()->toArray();
+        $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
+
+        $type = [1=>'充值',2=>'扣款',3=>'封户清零',4=>'活跃清零'];
+        $status = [0=>'待处理',1=>'成功',2=>'失败'];
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            '管理BM',
+            '渠道',
+            '账户名称',
+            '账户ID',
+            '类型',
+            '金额',
+            '状态',
+            '创建时间',
+            '修改时间',
+            '开户时间',
+            '处理人',
+        ];
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+
+        $name = $folders['name'].'.xlsx';
+        $excel->fileName($folders['name'].'.xlsx', 'sheet1');
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->order('id','desc')->limit($offset, $batchSize)->select()->toArray();
+           
+            $dataList=[];
+            foreach($data as $v){
+                $dataList[] = [
+                    $v['bm'],
+                    ($adminList[$v['accountrequest_proposal_admin_id']])??'',
+                    $v['serial_name'],                    
+                    $v['account_id'],
+                    $type[$v['type']]??'',
+                    $v['number'],
+                    $status[$v['status']]??'',
+                    $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
+                    $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
+                    $v['open_time']?date('Y-m-d H:i',$v['open_time']):'',
+                    ($adminList[$v['operate_admin_id']])??'',
+                ];  
+                $processedCount++;
+            }
+            $excel->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
+    public function getExportRechargeWith()
+    {
+        $progress = Cache::store('redis')->get('export_recharge_with'.'_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
+    }
 }

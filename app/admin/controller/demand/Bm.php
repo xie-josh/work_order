@@ -194,7 +194,7 @@ class Bm extends Backend
 
 
     public function add(): void
-    { 
+    {         
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
@@ -225,15 +225,19 @@ class Bm extends Backend
                 $bmType = $data['bm_type']??1;
                 $jurisdiction = $data['choice_jurisdiction']??1;
                 $checkList = $data['checkList']??[];
-             
+                
                 if($bm) array_push($checkList,$bm);
 
                 $checkList = array_unique($checkList);
-
-                $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->where('status',4)->find();
-                if(empty($account)) throw new \Exception("未找到该账户ID完成状态!"); //未完成开户绑定拦截
+                $groupid = $this->uidGetGroupId();
+                $whereC = [];
+                if(in_array($groupid,[3,4]))$whereC['admin_id'] = $this->auth->id; //管理员和员工组跳过
+                $account = Db::table('ba_account')->where('account_id',$accountId)->where($whereC)->where('status',4)->find();
+                if(empty($account)) throw new \Exception("未找到该账户ID完成状态!"); //未完成开户绑定拦截      
 
                 if($demandType == 4) throw new \Exception("该类型不可以手动添加!");
+                
+
                 //-----------------------------------------
                 $bmArr = DB::table('ba_bm')
                 ->where('account_id',$accountId)
@@ -256,7 +260,7 @@ class Bm extends Backend
                 if(empty($accountrequestProposal) || in_array($accountrequestProposal,$notConsumptionStatus)) throw new \Exception("未找到账户或该账户已经终止使用，不可操作，请联系管理员！");
 
                 if(empty($checkList) && $demandType != 3) throw new \Exception("请填写或需要操作的BM");
-
+              
                 //TODO... 只要是未完成，注意失败的，可以不可以在提交
                 $bmList = DB::table('ba_bm')->where('account_id',$accountId)->whereIn('bm',$checkList)
                 ->where(function ($quant){
@@ -264,7 +268,11 @@ class Bm extends Backend
                 })
                 ->where([['dispose_type','=',0]])->column('bm');
                 $error = [];
-       
+
+                //----------------------------------
+                $accountArr = [$accountId];
+                $adminArr   = $this->getPermissionUser($accountArr); //权限判断
+                //----------------------------------
                 $dataList = [];
                 if(!empty($checkList))
                 {
@@ -283,18 +291,25 @@ class Bm extends Backend
                                 continue;
                             }
                         }
-
+                       
                         if(preg_match('/[\x{4e00}-\x{9fa5}]/u', $v) > 0) throw new \Exception("BM不能包含中文");
                         if($demandType == 1 && $bmType == 1 && preg_match('/[a-zA-Z]/', $v)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         if($demandType == 1 && $bmType == 2 && !filter_var($v, FILTER_VALIDATE_EMAIL)) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         if($demandType == 2 && !is_numeric($v) && !filter_var($v, FILTER_VALIDATE_EMAIL))throw new \Exception("提交格式错误,请重新填写！");
                         //if (filter_var($v, FILTER_VALIDATE_EMAIL) && $demandType == 1 && $bmType != 2) throw new \Exception("BM与选择的类型不匹配,请重新选择！");
                         // dd($checkList,!filter_var($v, FILTER_VALIDATE_EMAIL));
+
+                        if($demandType == 1 && $bmType == 2)
+                        {
+                            $isEmail = (new \app\services\Basics())->isEmail($v);
+                            if($isEmail['code'] != 1) throw new \Exception($isEmail['msg']);
+                        }    
+
                         if($demandType == 2) 
                         {
                             $bmType       = $bmBmType[$v]??1; //解绑时拿绑定的bm类型
                             $jurisdiction = $choiceJurisdiction[$v]??1; //解绑时拿绑定的权限类型
-                        }
+                        } 
                         $dataList[] = [
                             'demand_type'=>$demandType,
                             'account_id'=>$accountId,
@@ -302,7 +317,8 @@ class Bm extends Backend
                             'bm_type'=>$bmType,
                             'choice_jurisdiction'=>$jurisdiction,
                             'account_name'=>$account['name'],
-                            'admin_id'=>$this->auth->id,
+                            'admin_id'=>$adminArr?$adminArr[$accountId]:$this->auth->id,
+                            'add_operate_user'=>$this->auth->id,
                             'create_time'=>time()
                         ];
                     }
@@ -313,7 +329,8 @@ class Bm extends Backend
                         'bm'=>'',
                         'bm_type'=>$bmType,
                         'account_name'=>$account['name'],
-                        'admin_id'=>$this->auth->id,
+                        'admin_id'=>$adminArr?$adminArr[$accountId]:$this->auth->id,
+                        'add_operate_user'=>$this->auth->id,
                         'create_time'=>time()
                     ];
                 }
@@ -390,6 +407,13 @@ class Bm extends Backend
                 if($data['demand_type'] == 2 && !is_numeric($data['bm']) && !filter_var($data['bm'], FILTER_VALIDATE_EMAIL))throw new \Exception("提交格式错误,请重新填写！");
 
                 if($row['demand_type'] == 4 || $data['demand_type'] == 4) unset($data['demand_type']);
+
+                if($data['demand_type'] == 1 && $data['bm_type'] == 2)
+                {
+                    $isEmail = (new \app\services\Basics())->isEmail($data['bm']);
+                    if($isEmail['code'] != 1) throw new \Exception($isEmail['msg']);
+                }
+                    
 
                 $result = $row->save($data);
                 $this->model->commit();
@@ -860,14 +884,16 @@ class Bm extends Backend
                 $dataList  = [];
 
                 $adminId = $this->auth->id;
+                $groupid = $this->uidGetGroupId();
+                $whereC = [];
+                if(in_array($groupid,[3,4])) $whereC['account.admin_id'] =  $adminId;
                 $accountListC = DB::table('ba_account')->alias('account')
                 ->field('accountrequest_proposal.account_id,accountrequest_proposal.status')
                 ->whereIn('account.account_id',$accountList)
-                ->where('account.admin_id',$adminId)
+                ->where($whereC)// ->where('account.admin_id',$adminId)
                 ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
                 ->select()
                 ->toArray();
-
                 $nOTConsumptionStatus = config('basics.NOT_consumption_status');
 
                 foreach($accountListC as $k => $v){
@@ -881,7 +907,9 @@ class Bm extends Backend
                 $accountListC = array_column($accountListC,'account_id');
 
                 if(count($accountList) != count($accountListC)) $errorList[] = ['bm'=>'','msg'=>'你填写的账户ID我们只找到部分，未找到的已经跳过!'];
-                
+
+                $adminArr   = $this->getPermissionUser($accountListC); //权限判断
+              
                 $bmListC = [];
                 foreach($bmList as $v => $vv){
                     if(filter_var($v, FILTER_VALIDATE_EMAIL)){
@@ -889,7 +917,7 @@ class Bm extends Backend
                             'bm'=>$v,
                             'bm_type'=>2,
                             'choice_jurisdiction'=>$vv,
-                        ];
+                        ];                        
                     }else if (preg_match('/^\d+$/', $v)) {
                         $bmListC[] = [
                             'bm'=>$v,
@@ -933,6 +961,14 @@ class Bm extends Backend
                             continue;
                         }
 
+                        if($v2['bm_type'] == 2) {
+                            $isEmail = (new \app\services\Basics())->isEmail($v2['bm']);
+                            if($isEmail['code'] != 1) {
+                                $errorList[] = ['bm'=>$v2['bm'],'msg'=>$isEmail['msg']];
+                                continue;
+                            }
+                        }
+
                         $dataList[] = [
                             'demand_type'=>1,
                             'account_id'=>$v,
@@ -940,7 +976,8 @@ class Bm extends Backend
                             'bm_type'=>$v2['bm_type'],
                             'choice_jurisdiction'=>$v2['choice_jurisdiction'],
                             'account_name'=>'',
-                            'admin_id'=>$adminId,
+                            'admin_id'=>$adminArr?$adminArr[$v]:$this->auth->id,
+                            'add_operate_user'=>$this->auth->id,
                             'create_time'=>time()
                         ];
                     }      
@@ -1016,6 +1053,27 @@ class Bm extends Backend
         }else{
             $this->error('没有找到可以解绑的需求！',[]);
         }
+    }
+
+    /**
+     * 根据权限获取账户开户user
+     */
+    public function getPermissionUser($accountArr)
+    {
+        $adminArr =[];     
+        $accountAdminIdArr = $this->getAccountAdminId($accountArr);
+        if(!empty($accountAdminIdArr))switch($this->uidGetGroupId()){
+            case 1:
+            case 2: 
+                   $adminArr = $accountAdminIdArr; 
+                break;
+            case 3: 
+                   $adminArr = array_map(function($value) {
+                    return $this->auth->id;
+                }, $accountAdminIdArr); 
+                break;
+        }
+        return $adminArr;
     }
 
 }

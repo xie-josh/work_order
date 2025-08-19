@@ -60,6 +60,18 @@ class Basics
         ];
     }
 
+    public function isEmail($email)
+    {
+        $domain = substr(strrchr($email, "@"), 1);
+        $main = explode('.', $domain)[0];
+        $allowList = config('basics.BM_EMAIL');
+        if (in_array(strtolower($main), $allowList)) {
+            return $this->returnSucceed();
+        }else{
+            return $this->returnError('请提供@outlook或@hotmail后缀邮箱!');
+        }
+    }
+
     static function logs(String $type = '',array $data = [], String $logs = '')
     {
         DB::table('ba_logs')->insert([
