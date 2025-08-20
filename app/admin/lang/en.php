@@ -30,6 +30,7 @@ return [
     'Unknown'                                                                             => 'Unknown',
     'Account not exist'                                                                   => 'Account does not exist',
     'Account disabled'                                                                    => 'Account is disabled',
+    'Account audit'                                                                       => 'Account is Audit',
     'Token login failed'                                                                  => 'Token login failed',
     'Username is incorrect'                                                               => 'Incorrect username',
     'Please try again after 1 day'                                                        => 'The number of login failures exceeds the limit, please try again after 24 hours',

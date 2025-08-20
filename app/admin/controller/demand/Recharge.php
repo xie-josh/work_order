@@ -662,7 +662,8 @@ class Recharge extends Backend
         $deductionTotal = $res->total();
 
         $bmTokenList = DB::table('ba_fb_personalbm_token')->where([
-            ['expired_time','<',date("Y-m-d",strtotime("+6 day"))]
+            ['expired_time','<',date("Y-m-d",strtotime("+6 day"))],
+            ['status','=',1]
         ])->field('name,expired_time')->select()->toArray();
 
         $accountReturn = DB::table('ba_account_return')->where('status',0)->count();

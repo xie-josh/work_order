@@ -294,7 +294,7 @@ class Index extends Backend
             $redisLock->delete('sendEmailCode_'.$email);
         }
        
-        $register['status'] = 0;
+        $register['status'] = 2;
         $register['create_time'] = time();
         $id = DB::table('ba_admin')->insertGetId($register);
        

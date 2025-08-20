@@ -53,7 +53,7 @@ class AdminMoneyLog extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
-        $res->visible(['admin' => ['username']]);
+        $res->visible(['admin' => ['username','nickname']]);
 
         $this->success('', [
             'list'   => $res->items(),

@@ -55,5 +55,18 @@ class PersonalBmToken extends Backend
             'remark' => get_route_remark(),
         ]);
     }
+    
+    public function updateStatus()
+    {
+        $data = $this->request->param();
+        $ids = $data['ids']??[];
+        $status = $data['status']??0;
+        $result = $this->model->whereIn('id',$ids)->update(['status'=>$status]);
+        if ($result !== false) {
+            $this->success(__('Update successful'));
+        } else {
+            $this->error(__('No rows updated'));
+        }
+    }
 
 }

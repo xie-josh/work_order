@@ -31,6 +31,7 @@ return [
     // 权限类语言包-s
     'Account not exist'                                                                   => '帐户不存在',
     'Account disabled'                                                                    => '帐户已禁用',
+    'Account audit'                                                                       => '帐户审核中',
     'Token login failed'                                                                  => '令牌登录失败',
     'Username is incorrect'                                                               => '用户名不正确',
     'Please try again after 1 day'                                                        => '登录失败次数超限，请在1天后再试',

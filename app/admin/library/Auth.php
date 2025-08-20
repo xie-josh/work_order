@@ -177,6 +177,10 @@ class Auth extends \ba\Auth
             $this->setError('Account disabled');
             return false;
         }
+        if ($this->model->status == '2') {
+            $this->setError('Account audit');
+            return false;
+        }
         $adminLoginRetry = Config::get('buildadmin.admin_login_retry');
         if ($adminLoginRetry && $this->model->login_failure >= $adminLoginRetry && time() - $this->model->getData('last_login_time') < 86400) {
             $this->setError('Please try again after 1 day');

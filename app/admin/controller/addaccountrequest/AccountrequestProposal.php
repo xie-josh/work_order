@@ -962,6 +962,7 @@ class AccountrequestProposal extends Backend
                 "account_id" => $v['account_id'],
                 "admin_id" => $v['admin_id'],
                 "account_name" => $v['serial_name'],
+                'add_operate_user'=>$this->auth->id,
                 'create_time'=>time()
             ];
             

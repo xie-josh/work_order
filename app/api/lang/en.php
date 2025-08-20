@@ -4,6 +4,7 @@ return [
     'Login expired, please login again.'                     => 'Login expired, please login again.',
     'Account not exist'                                      => 'Account does not exist',
     'Account disabled'                                       => 'Account is disabled',
+    'Account audit'                                          => 'Account is Audit',
     'Token login failed'                                     => 'Token login failed',
     'Please try again after 1 day'                           => 'The number of failed login attempts has exceeded the limit, please try again after 24 hours.',
     'Password is incorrect'                                  => 'Incorrect password',

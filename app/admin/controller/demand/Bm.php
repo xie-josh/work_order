@@ -1043,6 +1043,7 @@ class Bm extends Backend
                 'bm_type'=>$item['bm_type'],
                 'account_name'=>'',
                 'admin_id'=>$item['admin_id'],
+                'add_operate_user'=>$this->auth->id,
                 'create_time'=>time()
             ];
         }
