@@ -1119,7 +1119,7 @@ class Account extends Backend
                 
                 foreach ($accountList as $value) {
                     $accountId = $value;
-                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>1,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
+                    DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>2,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
                     DB::table('ba_bm')->where('account_id',$accountId)->delete();
                     DB::table('ba_recharge')->where('account_id',$accountId)->delete();
                 }
