@@ -376,7 +376,7 @@ class Recharge extends Backend
                                 'type'=>$type
                             ];
                             $this->model->where('id',$v['id'])->update($data);
-                            DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$currencyNumber)->update();
 
                             

@@ -401,7 +401,7 @@ class Recharge
             ];
 
             
-            DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
+            DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'update_time'=>time()]);
             DB::table('ba_admin')->where('id',$result['admin_id'])->dec('used_money',$currencyNumber)->update();
             $this->model->where('id',$result['id'])->update($data);
             Cache::store('redis')->delete($key);
