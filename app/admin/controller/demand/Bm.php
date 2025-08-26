@@ -525,7 +525,10 @@ class Bm extends Backend
         $bmList = [];
         try {
             $accountId = $this->request->get('account_id');
-            $account = Db::table('ba_account')->where('account_id',$accountId)->where('admin_id',$this->auth->id)->find();
+            $groupid = $this->uidGetGroupId();
+            $whereC = [];
+            if(in_array($groupid,[3,4]))$whereC['admin_id'] = $this->auth->id; //管理员和员工组跳过
+            $account = Db::table('ba_account')->where('account_id',$accountId)->where($whereC)->find();
             if(empty($account)) throw new \Exception("未找到该账户ID");
 
             $result =  DB::table('ba_bm')
