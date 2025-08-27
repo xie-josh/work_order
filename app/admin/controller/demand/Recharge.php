@@ -319,7 +319,7 @@ class Recharge extends Backend
                         // Cache::store('redis')->set($key, '1', 180);
 
                         $accountIs_ = DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->value('is_');
-                        if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+                        //if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
                         $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
                         if((empty($resultProposal) || $resultProposal['status'] == 99) && !in_array($type,[3,4]) ) throw new \Exception("错误：账户未找到或账户已经终止使用！"); 
@@ -376,7 +376,7 @@ class Recharge extends Backend
                                 'type'=>$type
                             ];
                             $this->model->where('id',$v['id'])->update($data);
-                            DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'update_time'=>time()]);
+                            DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
                             DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$currencyNumber)->update();
 
                             

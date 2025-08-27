@@ -37,7 +37,7 @@ class Recharge
             if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
 
             $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();
-            if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+            //if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
             $key = 'recharge_spendUp_automatic_'.$id;
             $redis = Cache::store('redis')->handler(); 
@@ -401,7 +401,7 @@ class Recharge
             ];
 
             
-            DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'update_time'=>time()]);
+            DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
             DB::table('ba_admin')->where('id',$result['admin_id'])->dec('used_money',$currencyNumber)->update();
             $this->model->where('id',$result['id'])->update($data);
             Cache::store('redis')->delete($key);

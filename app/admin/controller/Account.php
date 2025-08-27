@@ -226,6 +226,10 @@ class Account extends Backend
                 if(empty($data['time_zone']) || empty($data['type'])) throw new \Exception("时区与投放类型不能为空!");
                 if($money < 200) throw new \Exception("开户金额不能小于200！");
 
+                if (preg_match('/[\x{4e00}-\x{9fa5}]/u', $data['name'])) {
+                    throw new \Exception("账户名称不能包含中文!");
+                }
+
                 $bmList = $data['bes']??[];
                 if($data['bm_type'] == 1){
                     if(count($bmList) != 1) throw new \Exception("BM只能填一个！");
@@ -330,6 +334,10 @@ class Account extends Backend
                 
                 unset($data['status']);
                 unset($data['money']);
+
+                if (preg_match('/[\x{4e00}-\x{9fa5}]/u', $data['name'])) {
+                    throw new \Exception("账户名称不能包含中文!");
+                }
                 
                 if(!$this->auth->isSuperAdmin()){
                     unset($data['dispose_status']);
