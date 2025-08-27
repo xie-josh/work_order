@@ -1506,35 +1506,102 @@ class AccountrequestProposal extends Backend
 
     public function getCountBalance()
     {
+        // if($this->request->get('cc') != 1)  $this->success('',['balance'=>0]);
+
         $where = [];
-        if(!$this->auth->isSuperAdmin()){
-            array_push($where,['admin_id','=',$this->auth->id]);
-            array_push($where,['spend_cap','<>',0.01]);
+        // if(!$this->auth->isSuperAdmin()){
+            // array_push($where,['admin_id','=',$this->auth->id]);
+            array_push($where,['spend_cap','<>','0.01']);
             array_push($where,['account_status','<>',0]);
             array_push($where,['status','<>',96]);
-        }
+        // }
 
         $result = DB::table('ba_accountrequest_proposal')
         ->where($where)
         ->whereIn('account_id',function($query){
             $query->table('ba_account')
-            ->where(function($query) {       
-                $query->where(function ($q) {
-                    $q->where('status', '=', '4')
-                    ->where('is_keep', '=', '0');
-                })->whereOr(function ($q) {
-                    $q->where('status', '=', '4')
-                    ->where('keep_succeed', '=', '1');
-                });
-            })->field('account_id');
+            ->where('admin_id',$this->auth->id)
+            ->where('status',4)
+            ->where(function($query){
+                $query->whereOr(
+                    [
+                        ['is_keep','=','0'],
+                        ['keep_succeed','=','1'],
+                    ]
+                );
+            })
+            ->field('account_id');
         })
-        ->field('sum(spend_cap) spend_cap,sum(amount_spent) amount_spent')->find();
+        ->field('sum(spend_cap) spend_cap,sum(amount_spent) amount_spent,currency')->group('currency')->select()->toArray(); 
 
-        $balance = bcsub((string)$result['spend_cap'],(string)$result['amount_spent'],'2');
+        $currencyRate = config('basics.currency');
+
+        $tokenCapSpent = 0;
+        $tokenAmountSpent = 0;
+        foreach($result as $v)
+        {
+            if(isset($currencyRate[$v['currency']]))
+            {
+                $rate = $currencyRate[$v['currency']];
+                $spent = bcdiv((string)$v['spend_cap'],(string)$rate,4);
+                $spent2 = bcdiv((string)$v['amount_spent'],(string)$rate,4);
+                $tokenCapSpent += $spent;
+                $tokenAmountSpent += $spent2;
+            }else{
+                $tokenCapSpent += $v['spend_cap'];
+                $tokenAmountSpent += $v['amount_spent'];
+            }
+        }
+
+        // if($this->request->get('cc') == 1){
+        //         $result = DB::table('ba_accountrequest_proposal')
+        //     ->where($where)
+        //     ->whereIn('account_id',function($query){
+        //         $query->table('ba_account')
+        //         ->where('admin_id',$this->auth->id)
+        //         ->where(function($query) {       
+        //             $query->where(function ($q) {
+        //                 $q->where('status', '=', '4')
+        //                 ->where('is_keep', '=', '0');
+        //             })->whereOr(function ($q) {
+        //                 $q->where('status', '=', '4')
+        //                 ->where('keep_succeed', '=', '1');
+        //             });
+        //         })->field('account_id');
+        //     })
+        //     ->field('sum(spend_cap) spend_cap,sum(amount_spent) amount_spent')->fetchSql()->find();
+
+        // dd($result);
+        // }
+
+        
+        $balance = bcsub((string)$tokenCapSpent,(string)$tokenAmountSpent,'2');
+        // dd($result,$tokenCapSpent,$tokenAmountSpent,$balance);
         $this->success('',['balance'=>$balance]);
     }
 
+    public function allEdit()
+    {
+        $data = $this->request->param();
+        $accountIds = $data['account_ids'];        
 
+        $item = [];
+        if(!empty($data['status'])) $item['status'] = $data['status'];
+        if(!empty($data['time_zone'])) $item['time_zone'] = $data['time_zone'];
+        if(!empty($data['bm_id'])){
+            $item['bm_token_id'] = $data['bm_id'];
+            $name = DB::table('ba_fb_bm_token')->where('id',$data['bm_id'])->value('name');
+            $item['bm'] = $name;
+        }
+        if(!empty($data['affiliation_bm'])) $item['affiliation_bm'] = $data['affiliation_bm'];
+        if(!empty($data['admin_id'])) $item['admin_id'] = $data['admin_id'];
+        if(!empty($data['label_ids'])) $item['label_ids'] = implode(',',$data['label_ids']);
+
+        $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update($item);
+
+        if($result) $this->success('更新成功！');
+        else $this->error('未找到可以更新的！');
+    }
     
 
 
