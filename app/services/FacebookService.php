@@ -327,6 +327,34 @@ class FacebookService
         }
     }
 
+    public function getAdsCampaignsList($params){
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id'];
+            $effectiveStatus = $params['effective_status']??[];
+            
+            $param = [
+                'effective_status'=>$effectiveStatus,
+            ];
+            $url = "https://graph.facebook.com/v21.0/act_{$accountId}/campaigns";
+            $method = 'GET';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            if(isset($result['data']) && $result['data']){         
+                return $this->returnSucceed($result);
+            }else{
+                $this->log('FB_getAdsCampaignsList',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_getAdsCampaignsList',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+
     public function businessesList($params){
         try {
             $token = $params['token'];

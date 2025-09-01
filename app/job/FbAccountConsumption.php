@@ -94,6 +94,8 @@ class FbAccountConsumption
             $accountList = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,open_time,admin_id')->where('status',4)->select()->toArray();
             $accountRecycleList = DB::table('ba_account_recycle')->where('account_id',$accountId)->field('account_id,open_time,admin_id')->where('status',4)->order('open_time','asc')->select()->toArray();
 
+            $accountInfo = $accountList[0]??[];
+
             $accountList = array_merge($accountRecycleList,$accountList);
 
             $accountTimeList = [];
@@ -165,7 +167,12 @@ class FbAccountConsumption
                 }
             }
             // $this->fbSpendCap($params);
-            DB::table('ba_account_consumption')->insertAll($data);            
+            DB::table('ba_account_consumption')->insertAll($data);
+            
+            if(!empty($accountInfo)){
+                if($accountInfo['is_keep'] == 1 && $accountInfo['keep_succeed'] == 0) $this->addDelete($accountId,$currency,$accountInfo['open_time'],$accountInfo['admin_id']);                
+            }
+            
         } catch (\Throwable $th) {
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
@@ -176,7 +183,6 @@ class FbAccountConsumption
         }
         return true;        
     }
-
     
     function generateTimeArray($startDate, $endDate) {
         $startTimestamp = strtotime($startDate);
@@ -216,4 +222,52 @@ class FbAccountConsumption
         }
         return true;
     }
+
+    function addDelete($accountId,$currency,$stratOpenTime,$adminId)
+    {
+        try {
+            $spend = DB::table('ba_account_consumption')->where('account_id',$accountId)->where('date_start','>=',$stratOpenTime)->sum('spend');
+            if($spend > 0){
+                $currencyRate = config('basics.currencyRate');
+                if(!empty($currencyRate[$currency])){
+                    $spend = bcmul((string)$spend, $currencyRate[$currency],2);
+                }
+
+                if($spend > 11){
+                    $id = DB::table('ba_recharge')->insertGetId(
+                        [
+                            'account_id'=>$accountId,
+                            'type'=>4,
+                            'admin_id'=>$adminId,
+                            'create_time'=>time()
+                        ]
+                    );
+                    DB::table('ba_account_return')->insert([
+                        'account_id'=>$accountId,
+                        'type'=>6,
+                        'create_time'=>time()
+                    ]);
+                    $this->addDeleteJob($id);
+                }
+            }
+        } catch (\Throwable $th) {
+            $params = [
+                $accountId,$currency,$stratOpenTime,$adminId
+            ];
+            $logs = json_encode($th->getMessage());
+            DB::table('ba_fb_logs')->insert(
+                ['log_id'=>$accountId,'type'=>'job_fb_add_delete','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
+            );
+        }
+        return true;
+    }
+
+    public function addDeleteJob($id)
+    {
+        $jobHandlerClassName = 'app\job\AccountSpendDelete';
+        $jobQueueName = 'AccountSpendDelete';
+        Queue::later(10, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        return true;
+    }
+    
 }

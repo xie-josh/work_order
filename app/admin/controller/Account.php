@@ -224,7 +224,11 @@ class Account extends Backend
                 
                 $money = $data['money']??0;
                 if(empty($data['time_zone']) || empty($data['type'])) throw new \Exception("时区与投放类型不能为空!");
-                if($money < 200) throw new \Exception("开户金额不能小于200！");
+                if(empty($data['is_keep'])){
+                    if($money < 200) throw new \Exception("开户金额不能小于200！");
+                }else{
+                    if($money != 10) throw new \Exception("养户开户金额必须是10！");
+                }
 
                 if (preg_match('/[\x{4e00}-\x{9fa5}]/u', $data['name'])) {
                     throw new \Exception("账户名称不能包含中文!");
@@ -668,12 +672,47 @@ class Account extends Backend
                     }
                     //$cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
                 }else if($status == 7){
+                
                     //养护完成生成bm需求
                     $keep['status']=4;
                     $keep['keep_succeed']=0;
                     $keep['is_keep']=1;
                     $ids = $this->model->whereIn('id',$ids)->where($keep)->select()->toArray();
                     foreach($ids as $v){
+
+                            $personalbmTokenIds = DB::table('ba_accountrequest_proposal')
+                            ->alias('a')
+                            ->where('a.account_id',$v['account_id'])
+                            ->leftJoin('ba_fb_bm_token b','b.id=a.bm_token_id')
+                            ->value('b.personalbm_token_ids');
+
+                            if(empty($personalbmTokenIds)) throw new \Exception($v['account_id'].":该账户未配置个人BM！");
+
+                            $params = [
+                                'account_id'=>$v['account_id'],
+                                'effective_status'=>['ACTIVE'],
+                            ];
+
+                            $FacebookService = new \app\services\FacebookService();
+
+                            $params['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($personalbmTokenIds);
+
+                            $result = $FacebookService->getAdsCampaignsList($params);
+
+                            if($result['code'] != 1) throw new \Exception($v['account_id'].":".$result['msg']);
+                            if($result['code'] == 1 && !empty($result['data']['data'])) throw new \Exception($v['account_id'].":该账户中找到有效广告系列，请关闭！");
+
+                            $result = $FacebookService->adAccounts($params);
+                            if($result['code'] != 1) throw new \Exception('无法查询该账户消耗！');
+                            $spend = $result['data']['amount_spent'];
+                            $currency = $result['data']['currency'];
+
+                            $currencyRate = config('basics.currencyRate');
+                            if(!empty($currencyRate[$currency])){
+                                $spend = bcmul((string)$spend, $currencyRate[$currency],2);
+                            }
+                            if($spend > 11) throw new \Exception($v['account_id'].":该账户消耗大于11刀，请联系管理员处理！(当前消耗:{$spend})");
+
                             //根据bes生成对等个数的开户绑定条数
                             $besArr =  json_decode($v['bes']??'', true)??[];
                             $bmDataList = [];
@@ -1326,7 +1365,7 @@ class Account extends Backend
                 "12"=>'GMT +12:00',
             ];
 
-            unset($fileObject[0],$fileObject[1]);
+            unset($fileObject[0],$fileObject[1],$fileObject[2]);
             $authAdminId = $this->auth->id;
             if($this->auth->isSuperAdmin()){
                 // $adminId = 0;
@@ -1362,27 +1401,38 @@ class Account extends Backend
             // if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
             // if($usableMoney <= 0 || $usableMoney < $countAmout) throw new \Exception("余额不足,请联系管理员！");
 
-
             $time = date('Y-m-d',time());
             $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
             if($accountNumber < ($countNumber + $openAccountNumber) && $this->auth->id != 1) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
  
             $notMoneyAdminList = explode(',',env('CACHE.NOT_MONEY_admin',''));
             $data = [];
+            $isKeepCount = 0;
             foreach($filteredArray as $v){
                 $accountTypeId = $accountTypeList[$v[0]]??'';
                 $time = $timeList[(String)$v[1]]??'';
                 $name = $v[2];
-                $isKeep = 0;
+                 $isKeep = 0;
                 // $adminId = empty($adminId)?($v[5]??0):$adminId;
 
                 if(in_array($adminId,$notMoneyAdminList) && !empty($v[3])) $money = $v[3];
                 else $money = 0;
 
-                if(in_array($accountTypeId,[1,3]) && $v[5] == 1) $isKeep = 1;
+                if(in_array($accountTypeId,[1,3]) && $v[5] == 1)
+                {
+                    $isKeep = 1;//---养户充值
+                    $isKeepCount++;
+                } 
+                if(!in_array($accountTypeId,[1,3]) && $v[5] == 1)
+                {
+                    throw new \Exception("养户只针对于【电商/游戏】类型  请修改账户名称为".$v[2]."的投放类型,或改成非养户类型后重新导入");
+                } 
 
                 $currency = $v[4];
-
+                // $isKeep = $v[5];
+                if($isKeep)$open_money =10;
+                else$open_money = 0;
+                
                 $bes = [];
                 $i=6;
                 while ($i <= 100) {
@@ -1403,7 +1453,8 @@ class Account extends Backend
                     // 'bm'=>$bm,
                     'bes'=>json_encode($bes??[]),
                     'bm_type'=>2,
-                    'money'=>$money,
+                    'money'=>$open_money,
+                    // 'open_money'=>$open_money, //---养户充值10
                     'admin_id'=>$adminId,
                     'status'=>$authAdminId==1?1:0,
                     'currency'=>$currency,
@@ -1411,9 +1462,18 @@ class Account extends Backend
                     'is_keep'=>$isKeep, 
                     'create_time'=>time()
                 ];
-        
-
                 $data[] = $d;
+            }
+            if($isKeepCount>0)
+            {
+                $amount =  bcmul($isKeepCount, '10');//---养户充值*10
+                $where['id'] = $this->auth->id;
+                $result =  DB::table('ba_admin')
+                            ->whereRaw("money - used_money > $amount")
+                            ->where($where)
+                            ->inc('used_money', $amount)                   
+                            ->update();
+                if(!$result) throw new \Exception("养户所需余额不足请充值！");
             }
             DB::table('ba_account')->insertAll($data);
             $result = true;
