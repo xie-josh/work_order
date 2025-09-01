@@ -1286,7 +1286,13 @@ class AccountrequestProposal extends Backend
         $accountIds = $data['account_ids'];
         $status = $data['status'];
 
-        $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['status'=>$status]);
+
+        $d = [
+            'status'=>$status
+        ];
+        if($status == 99) $d['account_status'] = 0;
+        
+        $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update($d);
         if($result) return $this->success(__('Update successful'));
         return $this->error(__('No rows updated'));
     }
@@ -1586,7 +1592,10 @@ class AccountrequestProposal extends Backend
         $accountIds = $data['account_ids'];        
 
         $item = [];
-        if(!empty($data['status'])) $item['status'] = $data['status'];
+        if(!empty($data['status'])){
+            $item['status'] = $data['status'];
+            if($data['status'] == 99) $item['account_status'] = 0;
+        }
         if(!empty($data['time_zone'])) $item['time_zone'] = $data['time_zone'];
         if(!empty($data['bm_id'])){
             $item['bm_token_id'] = $data['bm_id'];
