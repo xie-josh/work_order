@@ -91,7 +91,7 @@ class FbAccountConsumption
             DB::table('ba_account_consumption')->where('account_id',$accountId)->whereIn('date_start',$sSTimeList)->delete();
 
 
-            $accountList = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,open_time,admin_id,is_keep,keep_succeed,admin_id')->where('status',4)->select()->toArray();
+            $accountList = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,open_time,admin_id,is_keep,keep_succeed')->where('status',4)->select()->toArray();
             $accountRecycleList = DB::table('ba_account_recycle')->where('account_id',$accountId)->field('account_id,open_time,admin_id')->where('status',4)->order('open_time','asc')->select()->toArray();
 
             $accountInfo = $accountList[0]??[];
