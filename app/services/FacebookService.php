@@ -343,7 +343,7 @@ class FacebookService
                 'Authorization'=>"Bearer {$token}",
             ];
             $result = $this->curlHttp($url,$method,$header,$param);
-            if(isset($result['data']) && $result['data']){         
+            if(isset($result['data'])){         
                 return $this->returnSucceed($result);
             }else{
                 $this->log('FB_getAdsCampaignsList',$result['msg']??'',$params,$accountId);
