@@ -458,11 +458,18 @@ class Airwallex extends Backend implements CardInterface
     public function createCard($params)
     {
         $UUID = $this->getUUID();
+
         // $param = [];
         // $url = "$this->url/api/v1/issuing/cardholders";
         // $method = 'GET';
 
+        //香港信息（注意：调整account_Id 值）
+        // $cardholder_id = 'ff5f1eb4-2e06-4b7b-9f5e-dbe04adbd77e';
+
+        //美国信息（注意：调整account_Id 值）
         $cardholder_id = 'eddff90c-036e-421b-8f43-4789b2105a8f';
+
+        
 
         $param = [
             'authorization_controls'=>[
@@ -490,7 +497,7 @@ class Airwallex extends Backend implements CardInterface
             ],
             //"issue_to"=>"ORGANISATION",
             //'purpose'=>'MARKETING_EXPENSES',
-            'nick_name'=>'250503',
+            'nick_name'=>'250529',
             'request_id'=>$UUID
         ];
         $url = "$this->url/api/v1/issuing/cards/create";
@@ -507,7 +514,7 @@ class Airwallex extends Backend implements CardInterface
         if($result['msg'] == 'succeed'){           
             return $this->returnSucceed();
         }else{
-            return $this->returnError($result['msg']);
+            return $this->returnError($result['msg']??'');
         }
     }
 
@@ -530,10 +537,14 @@ class Airwallex extends Backend implements CardInterface
     //https://x-api.photonpay.com/vcc/open/v2/sandBoxTransaction
     public function test($params):array
     {
-        
-        // $this->createCard($params);
-        // return [];
-        // $UUID = $this->getUUID();
+        if(!empty($params['type']) && $params['type'] == 'createCard')
+        {
+            $this->createCard($params);
+            return [];
+        }
+
+
+        $UUID = $this->getUUID();
 
         if(!empty($params['type']) && $params['type'] == 'transactionDetail'){
             $result = $this->transactionDetail2($params);
@@ -542,6 +553,17 @@ class Airwallex extends Backend implements CardInterface
             }else{
                 return $this->returnError($result['msg']);
             }
+        }
+
+        //销卡
+        if(!empty($params['type']) && $params['type'] == 'closed')
+        {
+            $param = [
+                'id'=>$params['card_id'],
+                'card_status'=>'CLOSED'
+            ];
+            $url = "$this->url/api/v1/issuing/cards/{$params['card_id']}/update";
+            $method = 'POST';
         }
 
 
@@ -559,16 +581,7 @@ class Airwallex extends Backend implements CardInterface
         //     'card_id'=>'f28426d7-06a8-47f0-9e62-481dbe3da85f',
         // ];
         // $url = "$this->url/api/v1/issuing/authorizations";
-        // $method = 'GET';
-
-
-        //销卡
-        // $param = [
-        //     'id'=>$params['card_id'],
-        //     'card_status'=>'CLOSED'
-        // ];
-        // $url = "$this->url/api/v1/issuing/cards/{$params['card_id']}/update";
-        // $method = 'POST';
+        // $method = 'GET';        
 
 
         $header = [
@@ -594,8 +607,10 @@ class Airwallex extends Backend implements CardInterface
             'Authorization'=>'Bearer '.$this->token
         ];
         $param = [
-            'from_created_at'=>'2024-12-30T11:05:00+0000',
-            'to_created_at'=>'2025-05-07T11:05:00+0000',
+            // 'from_created_at'=>'2024-11-01T11:05:00+0000',
+            // 'to_created_at'=>'2025-02-10T11:05:00+0000',
+            'from_created_at'=>'2025-02-09T11:05:00+0000',
+            'to_created_at'=>'2025-08-26T11:05:00+0000',
             'card_id'=>$params['card_id'],
             'page_num'=>$params['page_index']??0,
             'page_size'=>$params['page_size']??200,
