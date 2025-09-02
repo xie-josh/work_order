@@ -55,6 +55,7 @@ class AirwallexUs extends Backend implements CardInterface
                 'update_time'=>date("Y-m-d H:i:s",time()),
             ];
             DB::table('ba_card_account')->where('id',$this->accountId)->update($data);
+            Db::connect('db2')->table('ba_card_account')->where('id',$this->accountId)->update($data);
             
             $this->token  = $token;
         }else{
