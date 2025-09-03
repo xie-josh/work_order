@@ -17,8 +17,28 @@ class SlashCallback extends Frontend
         parent::initialize();
     }
 
+    public function transmit(Request $request)
+    {    
+        $url = "https://star.wewallads.com/api/SlashCallback/handleCallback?server=1";
+        // $url = "http://47.243.243.112:10083/api/SlashCallback/testssss?server=1";
+        $backend = (new \app\api\cards\Backend());
+        // $result =  $backend->curlHttp($url,'POST',['Content-Type'=>'application/json'],[1,23]);dd($result);
+        $result =  $backend->curlHttp($url,'POST',$request->header(),$request->param());
+        if(isset($result['roger'])) 
+             return false; 
+        else 
+             return true;  
+    }
+
+    // public function testssss(Request $request){
+    //     return json([$request->param(),$request->header()]);
+    // }
+
     public function handleCallback(Request $request)
     {
+        if(env('CACHE.DISTINCTION_CALLBACK')!=1)if(!$this->transmit($request)){
+            return response('', 400);
+        }
         //TODO...  该数据没有鉴权，后面补充
         // 获取参数
         $params = $request->param();
@@ -55,7 +75,10 @@ class SlashCallback extends Frontend
             $logs = 'callback错误：'.'('.$th->getLine().')'.json_encode($th->getMessage());
             $data = json_encode($header).json_encode($params);
             Db::table('ba_cards_logs')->insert(['type'=>'callback','data'=>$data,'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]);
-            return response('', 204);
+            if(env('CACHE.DISTINCTION_CALLBACK')==1)
+                 return json(['roger' => false]); //新
+            else
+                 return  response('', 400);  //旧
         }
         // 记录日志
         // Log::info('Received callback', $params);

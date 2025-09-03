@@ -17,6 +17,18 @@ class CardCallback extends Frontend
         parent::initialize();
     }
 
+    public function transmit(Request $request)
+    {
+        $url = "https://star.wewallads.com/api/CardCallback/handleCallback?server=1";
+        // $url = "http://47.243.243.112:10083/api/AirwallexCallback/testssss?server=1";
+        $backend = (new \app\api\cards\Backend());
+        $result =  $backend->curlHttp($url,'POST',$request->header(),$request->param());
+        if(!empty($result['roger'])) 
+            return true;  
+        else 
+            return false; 
+    }
+
     /**
     * 发卡交易类型:
     * auth	消费
@@ -52,7 +64,9 @@ class CardCallback extends Frontend
 
     public function handleCallback(Request $request)
     {
-
+        if(env('CACHE.DISTINCTION_CALLBACK')!=1)if(!$this->transmit($request)){
+            return json(['roger' => false]);
+        }
         //TODO...  该数据没有鉴权，后面补充
         // 获取参数
         $params = $request->param();

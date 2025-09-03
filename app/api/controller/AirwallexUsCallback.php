@@ -17,8 +17,23 @@ class AirwallexUsCallback extends Frontend
         parent::initialize();
     }
 
-    public function handleCallback(Request $request)
+    public function transmit(Request $request)
     {
+        $url = "https://star.wewallads.com/api/AirwallexUsCallback/handleCallback?server=1";
+        // $url = "http://47.243.243.112:10083/api/AirwallexCallback/testssss?server=1";
+        $backend = (new \app\api\cards\Backend());
+        $result =  $backend->curlHttp($url,'POST',$request->header(),$request->param());
+        if(!empty($result['roger'])) 
+            return true;  
+        else 
+            return false; 
+    }
+
+    public function handleCallback(Request $request)
+    {  
+        if(env('CACHE.DISTINCTION_CALLBACK')!=1)if(!$this->transmit($request)){
+            return json(['roger' => false],400);
+        }
         //TODO...  该数据没有鉴权，后面补充
         // 获取参数
         $params = $request->param();
@@ -42,7 +57,10 @@ class AirwallexUsCallback extends Frontend
             $data = json_encode($header).json_encode($params);
             Db::table('ba_cards_logs')->insert(['type'=>'callback','data'=>$data,'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]);
             //if(!empty($cardId) && !empty($is_type))  DB::table('ba_cards')->where('card_id',$cardId)->update([$is_type=>2,'update_time'=>time(),'info_logs'=>$logs]);
-            return json(['roger' => false],400);
+            if(env('CACHE.DISTINCTION_CALLBACK')==1) 
+                return json(['roger' => false]);      //新
+            else
+                return json(['roger' => false],400);  //旧
         }
         // 记录日志
         Log::info('Received callback', $params);
