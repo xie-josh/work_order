@@ -738,7 +738,7 @@ class Account extends Backend
                             }
                             if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
                     }
-                    if(!empty($ids)) $this->model->whereIn('id',array_column($ids,'id'))->update(['keep_succeed'=>1,'keep_time'=>time(),'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
+                    if(!empty($ids)) $this->model->whereIn('id',array_column($ids,'id'))->update(['keep_succeed'=>1,'keep_time'=>time(),'update_time'=>time(),'operate_admin_id'=>$this->auth->id,'images'=>is_array($data['images']) ? implode(',', $data['images']) : $data['images']]);
                 }
                 //$this->model->whereIn('id',array_column($ids,'id'))->update(['money'=>0,'is_'=>1]);
                 $result = true;
