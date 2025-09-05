@@ -25,7 +25,7 @@ class Bm extends Backend
 
     protected array $withJoinTable = ['admin'];
 
-    protected array $noNeedPermission = ['batchAdd','disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll','bmAllUnbinding'];
+    protected array $noNeedPermission = ['batchAdd','disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll','bmAllUnbinding','emailOperation'];
 
     protected bool|string|int $dataLimit = 'parent';
 
