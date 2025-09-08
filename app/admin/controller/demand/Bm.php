@@ -1101,7 +1101,7 @@ class Bm extends Backend
         {
             $accountListC = array_column($bmArr,'account_id');
             //这个邮箱待处理的BM
-            $bmList = DB::table('ba_bm')->whereIn('account_id',$accountListC)->where('bm',$email)->where('dispose_type',0)->column('DISTINCT account_id');
+            $bmList = DB::table('ba_bm')->whereIn('account_id',$accountListC)->where('bm',$email)->where('status',0)->where('dispose_type',0)->column('DISTINCT account_id');
             $dataList = [];
             $error = [];
             $adminArr = $this->getPermissionUser($accountListC); //权限判断
