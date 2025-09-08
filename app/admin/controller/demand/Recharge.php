@@ -667,7 +667,7 @@ class Recharge extends Backend
         ])->field('name,expired_time')->select()->toArray();
 
         $accountReturn = DB::table('ba_account_return')->where('status',0)->count();
-        $accountKeep = DB::table('ba_account')->where('is_keep',1)->where('keep_succeed',0)->count();
+        $accountKeep = DB::table('ba_account')->where('status',4)->where('is_keep',1)->where('keep_succeed',0)->count();
         
         $this->success('', [
             'list'   =>$list,
