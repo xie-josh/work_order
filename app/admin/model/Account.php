@@ -62,4 +62,18 @@ class Account extends Model
     {
         return $this->hasOne(AccountrequestProposal::class,'account_id','account_id');
     }
+
+    public function getImagesAttr($value): array
+    {
+        if ($value === '' || $value === null) return [];
+        if (!is_array($value)) {
+            return explode(',', $value);
+        }
+        return $value;
+    }
+
+    public function setImagesAttr($value): string
+    {
+        return is_array($value) ? implode(',', $value) : $value;
+    }
 }
