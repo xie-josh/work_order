@@ -994,6 +994,134 @@ class Bm extends Backend
 
         $this->error(__('Parameter error'));
     }
+    
+    //批量解绑
+    public function batchUnbindAdd(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) $this->error(__('Parameter %s can not be empty', ['']));
+
+            $accountList = $data['account_list'];
+            $bmList = $data['bm_list'];
+            $bmList = array_column($bmList,'bm');
+
+            if(empty($accountList) || empty($bmList)) $this->error('参数错误');
+            if(count($accountList) > 100) $this->error('批量添加不能超过100条');
+            
+            try {
+                $errorList = [];
+                $dataList  = [];
+
+                $adminId = $this->auth->id;
+                $groupid = $this->uidGetGroupId();
+                $whereC = [];
+                if(in_array($groupid,[3,4])) $whereC['account.admin_id'] =  $adminId;
+                $accountListC = DB::table('ba_account')->alias('account')
+                ->field('accountrequest_proposal.account_id,accountrequest_proposal.status')
+                ->whereIn('account.account_id',$accountList)
+                ->where($whereC)// ->where('account.admin_id',$adminId)
+                ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+                ->select()
+                ->toArray();
+                $nOTConsumptionStatus = config('basics.NOT_consumption_status');
+
+                foreach($accountListC as $k => $v){
+                    if(in_array($v['status'],$nOTConsumptionStatus))
+                    {
+                        $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已经终止使用，不可操作，请联系管理员！'];
+                        unset($accountListC[$k]);
+                    }
+                }
+
+                $accountListC = array_column($accountListC,'account_id');
+
+                if(count($accountList) != count($accountListC)) $errorList[] = ['bm'=>'','msg'=>'你填写的账户ID我们只找到部分，未找到的已经跳过!'];
+
+                $adminArr   = $this->getPermissionUser($accountListC); //权限判断
+
+                $bmListC = [];
+                foreach($bmList as $v ){
+                    if(filter_var($v, FILTER_VALIDATE_EMAIL)){
+                        $bmListC[] = [
+                            'bm'=>$v,
+                            'bm_type'=>2,
+                        ];                        
+                    }else if (preg_match('/^\d+$/', $v)) {
+                        $bmListC[] = [
+                            'bm'=>$v,
+                            'bm_type'=>1,
+                        ];
+                    }else{
+                        $errorList[] = ['bm'=>$v,'msg'=>'BM格式错误,请填写正确的BM或邮箱!'];
+                    }
+                }
+
+                foreach($accountListC as $v)
+                {
+                    foreach($bmListC as $k => $v2)
+                    {
+                        $bm = Db::table('ba_bm')
+                            ->where('account_id', $v)
+                            ->where('bm', $v2['bm'])
+                            ->whereIn('demand_type', [1,4])
+                            ->where('new_status', 1) 
+                            ->where(function($query) { 
+                                $query->where(function($q) {
+                                    $q->where('status', '<>', '2')
+                                    ->where('dispose_type', '<>', '2');
+                                })->whereOr(function($q) {
+                                    $q->where('dispose_type', '1');
+                                });
+                            })
+                        ->value('bm');
+                        $noBmList = DB::table('ba_bm')->where('account_id',$v)->where('bm',$v2['bm'])->where('status',0)->where('dispose_type',0)->column('DISTINCT account_id');
+                        // $bm = Db::table('ba_bm')
+                        //     ->where('account_id', $v)
+                        //     ->where('bm', $v2['bm'])
+                        //     ->where('demand_type', 1)
+                        //     ->where('new_status', 1)                            
+                        //     ->where('dispose_type', 1)
+                        // ->value('bm');
+                       if(!empty($noBmList)) 
+                       {
+                            $errorList[] = ['bm'=>'(账户)'.$v.' - (BM)'.$v2['bm'],'msg'=>'该BM存在待处理的需求，无法提交解绑!'];
+                            continue;
+                       }
+                       if(empty($bm)) 
+                       {
+                            $errorList[] = ['bm'=>'(账户)'.$v.' - (BM)'.$v2['bm'],'msg'=>'该BM没有最新的绑定，无法提交解绑!'];
+                            continue;
+                       }
+                       if($v2['bm_type'] == 2) {
+                           $isEmail = (new \app\services\Basics())->isEmail($v2['bm']);
+                           if($isEmail['code'] != 1) {
+                               $errorList[] = ['bm'=>$v2['bm'],'msg'=>$isEmail['msg']];
+                               continue;
+                           }
+                       }
+                        $dataList[] = [
+                            'demand_type'=>2, //解绑
+                            'account_id'=>$v,
+                            'bm'=>$v2['bm'],
+                            'bm_type'=>$v2['bm_type'],
+                            // 'choice_jurisdiction'=>$v2['choice_jurisdiction'],
+                            'account_name'=>'',
+                            'admin_id'=>$adminArr?$adminArr[$v]:$this->auth->id,
+                            'add_operate_user'=>$this->auth->id,
+                            'create_time'=>time()
+                        ];
+                    }      
+                }
+                DB::table('ba_bm')->insertAll($dataList);
+            } catch (\Exception $th) {
+                $this->error('参数错误!');
+            }
+            $this->success(__('Added successfully'),['error_list'=>$errorList]);
+        }
+
+        $this->error(__('Parameter error'));
+    }
 
 
     /**
@@ -1113,7 +1241,7 @@ class Bm extends Backend
                     continue;
                 } 
                 $dataList[] = [
-                    'demand_type'=>2,
+                    'demand_type'=>2, 
                     'account_id'=>$v['account_id'],
                     'bm'=>$v['bm'],
                     'bm_type'=>2,
