@@ -15,12 +15,13 @@ class Photonpay extends Backend implements CardInterface
     protected $privateKey;
     protected $publicKey;
     protected $platformKey;
+    protected $matrixAccount;
     //protected $header;
 
     function __construct($cardAccount)
     {
         //'https://x-api1.uat.photontech.cc'
-        // $token = json_decode($cardAccount['token'],true);
+        $token = json_decode($cardAccount['token'],true);
         $this->url = env('CARD.PHOTONPAY_RUL');
         // $this->appId = $token['appId'];
         // $this->appSecret = $token['appSecret'];
@@ -64,6 +65,7 @@ class Photonpay extends Backend implements CardInterface
         if(empty($result['token']['access_token'])) throw new \Exception("账户授权错误");
         $this->token = $result['token']['access_token'];
         $this->privateKey = $result['token']['private_key'];
+        $this->matrixAccount = $token['matrixAccount']??'';
     }
 
     function cardCreate($params): array{
@@ -99,6 +101,7 @@ class Photonpay extends Backend implements CardInterface
             // 'memberId'=>'2024102145150870'
             'createdAtStart'=>$params['from_updated_at']  
         ];
+        if(!empty($this->matrixAccount)) $param['matrixAccount'] = $this->matrixAccount;
         $result = $this->curlHttp($url,$method,$header,$param);
         if($result['msg'] == 'succeed'){
             $data = [
