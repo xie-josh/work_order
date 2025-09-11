@@ -62,9 +62,14 @@ class Account extends Backend
 
         array_push($this->withJoinTable,'accountrequestProposal');
 
-        
-        
+        $adminChannel = Db::table('ba_admin')->column('nickname','id');
         foreach($where as $k => &$v){
+            if($v[0] == 'accountrequestProposal.admin_id' && $v[1] == 'LIKE'){
+                $v[1] = '=';
+                $v[2] = array_flip($adminChannel)[substr($v[2], 1, -1)]??'';
+                continue;
+                // unset($where[$k]);
+            }
             if($v[0] == 'account.id' && $v[1] == 'IN'){
                 foreach($v[2] as &$item){
                     if (preg_match('/\d+/', $item, $matches)) {
@@ -123,15 +128,12 @@ class Account extends Backend
                 continue;
             }
         }
-
-        
         if($status == 1){
             array_push($where,['account.status','in',[1,3,4,5,6]]);
         }elseif($status == 3){
             //array_push($where,['account.status','in',[3,4]]);
             array_push($where,['account.status','in',[4]]);
         }
-   
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -141,7 +143,6 @@ class Account extends Backend
             })
             ->order('id','desc')
             ->paginate($limit);
-           
         $dataList = $res->toArray()['data'];
         if($dataList){
             $resultTypeList = DB::table('ba_account_type')->select()->toArray();
@@ -179,11 +180,13 @@ class Account extends Backend
                     $v['account_id'] = '';
                     $v['status'] = 3;
                 }
-                
                 $v['admin'] = [
                     'username'=>$v['admin']['username']??"",
                     'nickname'=>$v['admin']['nickname']??""
                 ];
+                if(isset($v['accountrequestProposal']['admin_id']) && $adminChannel[$v['accountrequestProposal']['admin_id']]){
+                    $v['channelName'] = $adminChannel[$v['accountrequestProposal']['admin_id']];
+                }
             }
         }
         //$res->visible(['admin' => ['username']]);
