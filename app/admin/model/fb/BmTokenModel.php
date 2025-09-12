@@ -26,4 +26,9 @@ class BmTokenModel extends Model
         return implode(',', $value);
     }
 
+    public function personalBmTokenModel()
+    {
+        return $this->hasOne(PersonalBmTokenModel::class,'id','personalbm_token_ids');
+    }
+
 }

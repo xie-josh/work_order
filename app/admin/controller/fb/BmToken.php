@@ -30,6 +30,35 @@ class BmToken extends Backend
         $this->model = new \app\admin\model\fb\BmTokenModel();
     }
 
+    /**
+     * 查看
+     * @throws Throwable
+     */
+    public function index(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        array_push($this->withJoinTable,'personalBmTokenModel');
+
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+// dd($this->model->getLastSql());
+        $this->success('', [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
+
+
     public function add(): void
     {
         if ($this->request->isPost()) {
@@ -159,5 +188,6 @@ class BmToken extends Backend
             'remark' => get_route_remark(),
         ]);
     }
+    
 
 }
