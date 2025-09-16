@@ -241,15 +241,13 @@ class Admin extends Backend
 
             if(isset($data['account_number'])) if($data['account_number'] < $openAccountNumber) $this->error('调整后的数量不能小于已经使用的数量！');
 
-
-            if ($this->auth->id == $data['id'] && $data['status'] == '0') {
+            if ($this->auth->id == $data['id'] ) { //&& $data['status'] == '0'
                 $this->error(__('Please use another administrator account to disable the current account!'));
             }
 
             if (isset($data['password']) && $data['password']) {
                 $this->model->resetPassword($data['id'], $data['password']);
             }
-
             $groupAccess = [];
             if ($data['group_arr']) {
                 $checkGroups = [];
