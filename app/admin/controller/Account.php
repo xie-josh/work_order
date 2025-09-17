@@ -1166,8 +1166,8 @@ class Account extends Backend
                 $accountDataList = DB::table('ba_account')->whereIn('account_id',$accountList)->select()->toArray();
                 $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->select()->toArray();;
                 $rechargeDataList = DB::table('ba_recharge')->whereIn('account_id',$accountList)->select()->toArray();
-                if(empty($bmDataList)) throw new \Exception(implode(',',$accountList)."账户ID没有可回收的账户！");
-                $diffData = array_diff($accountList,array_column($bmDataList,'account_id'));
+                if(empty($accountDataList)) throw new \Exception(implode(',',$accountList)."账户ID没有可回收的账户！");
+                $diffData = array_diff($accountList,array_column($accountDataList,'account_id'));
                 foreach ($accountList as $value) {
                     $accountId = $value;
                     DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>2,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
