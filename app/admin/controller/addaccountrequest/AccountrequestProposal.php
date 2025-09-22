@@ -44,7 +44,6 @@ class AccountrequestProposal extends Backend
      */
     public function index(): void
     {
-
         $type = $this->request->param('type');
         $status = $this->request->param('status');
         if($type == 2) $result = $this->userIndex3();
@@ -78,7 +77,7 @@ class AccountrequestProposal extends Backend
         list($where, $alias, $limit, $order) = $this->queryBuilder(); 
         if($status === "0") array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
         if($limit == 999) $limit = 2500;
-
+        
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -1063,33 +1062,39 @@ class AccountrequestProposal extends Backend
                 ];
                 if(!empty($timeZone)) $proposalData['time_zone'] = $timeZone;
 
+                $adminId = DB::table('ba_account')->where('account_id',$accountId)->value('admin_id');
+                
                 $param = [];
                 $param['card_id'] = $cards['card_id'];
                 $param['nickname'] = $this->getNickname($accountrequestProposal['account_id']);
                 switch($typr){
                     case 1:
-                        $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
-                        $param['transaction_limit_type'] = 'limited';
-                        $param['transaction_limit_change_type'] = 'increase';
-                        $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
-                        $param['transaction_is'] = 1;
-
-                        $resultCards =  $cardModel->updateCard($cards,$param);
-                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-                        
+                       //SX-用户不改限额
+                       if(!in_array($adminId,[200,201]))
+                       {
+                            $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                            $param['transaction_limit_type'] = 'limited';
+                            $param['transaction_limit_change_type'] = 'increase';
+                            $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
+                            $param['transaction_is'] = 1;
+                        }
+                            $resultCards =  $cardModel->updateCard($cards,$param);
+                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         break;
                     case 2:
-                        $resultCards =  $cardModel->updateCard($cards,$param);
-                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-
+                            $resultCards =  $cardModel->updateCard($cards,$param);
+                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         break;
                     case 3:
-                        $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
-                        $param['transaction_limit_type'] = 'limited';
-                        $param['transaction_limit_change_type'] = 'increase';
-                        $param['transaction_limit'] = $limited;
-                        $param['transaction_is'] = 1;
-
+                        //SX-用户不改限额
+                       if(!in_array($adminId,[200,201]))
+                       {
+                            $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                            $param['transaction_limit_type'] = 'limited';
+                            $param['transaction_limit_change_type'] = 'increase';
+                            $param['transaction_limit'] = $limited;
+                            $param['transaction_is'] = 1;
+                       }
                         $resultCards =  $cardModel->updateCard($cards,$param);
                         if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
 

@@ -22,6 +22,7 @@ class Recharge
         $this->model = new \app\admin\model\demand\Recharge();
         $this->auth = $auth ?? new \stdClass();
     }
+    //充值
     public function spendUp($params)
     {
         $result = false;
@@ -107,10 +108,13 @@ class Recharge
                         if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$cards['card_id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                         $isCardStatus = true;
                     }
-
-                    $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
-                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-
+                    //SX-用户不改限额
+                    if(!in_array($result['admin_id'],[200,201]))
+                    {
+                        $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                    }
+            
                     $isCards = true;
                 }
             }
@@ -295,7 +299,7 @@ class Recharge
             return ['code'=>0,'msg'=>''];
         }
     }
-
+    //清零
     public function spendDelete($params)
     {
         $result = false;
@@ -345,8 +349,12 @@ class Recharge
                             'transaction_limit'=>"5000",
                             'transaction_is'=>'2'
                         ];
-                        $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
-                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                       //SX-用户不改限额
+                       if(!in_array($result['admin_id'],[200,201]))
+                       {
+                            $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                       }
                     }
 
                     if($cards['card_status'] == 'normal'){
@@ -429,7 +437,7 @@ class Recharge
             return ['code'=>0,'msg'=>''];
         }
     }
-
+    //扣款
     public function spendDeductions($params)
     {
         $result = false;
@@ -507,9 +515,12 @@ class Recharge
                             'transaction_limit_change_type'=>'decrease',
                             'transaction_limit'=>$result['number'],
                         ];
-
-                        $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
-                        if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        //SX-用户不改限额
+                        if(!in_array($result['admin_id'],[200,201]))
+                        {
+                            $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
+                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                        }
                     }
                 }
             }

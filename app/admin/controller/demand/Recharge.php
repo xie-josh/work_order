@@ -338,8 +338,12 @@ class Recharge extends Backend
                                 //TODO...
                                 throw new \Exception("未找到分配的卡");
                             }else{
-                                $resultCards = (new CardsModel())->updateCard($cards,$param);
-                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                 //SX-用户不改限额
+                                if(!in_array($v['admin_id'],[200,201]))
+                                {   
+                                    $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                }
                             }
                         }elseif($v['type'] == 2){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
@@ -356,8 +360,12 @@ class Recharge extends Backend
                                 //TODO...
                                 throw new \Exception("未找到分配的卡");
                             }else{
-                                $resultCards = (new CardsModel())->updateCard($cards,$param);
-                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                //SX-用户不改限额
+                                if(!in_array($v['admin_id'],[200,201]))
+                                {
+                                    $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                    if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                }
                             }
                         }elseif($v['type'] == 3 || $v['type'] == 4){
 

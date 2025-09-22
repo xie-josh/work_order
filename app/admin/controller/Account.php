@@ -623,9 +623,13 @@ class Account extends Backend
                             ];
 
                             // Cache::store('redis')->set($key, '1', 180);
-                            $resultCards = (new CardsModel())->updateCard($cards,$param);
+                              //SX-用户不改限额
+                              if(!in_array($v['admin_id'],[200,201]))
+                              {   
+                                  $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                  if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                              }
                             // Cache::store('redis')->delete($key);
-                            if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         }
 
                     }                                                                     //4开户完成->6待开户绑定
