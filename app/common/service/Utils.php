@@ -26,9 +26,9 @@ class Utils
             // 创建文件夹，第三个参数 true 表示递归创建多级目录
             mkdir($puth, 0755, true);
             // 将文件夹归属到 www 组
-            chown($puth, 'www');
+            // chown($puth, 'www');
             // 设置文件夹权限为 755
-            chmod($puth, 0644);
+            chmod($puth, 0755);
         } 
 
         $milliseconds = (int)round(microtime(true) * 1000);
