@@ -114,7 +114,7 @@ class ConsumptionStatistics extends Backend
 
         $where = [
             ['date','=',$time],
-            ['admin_id','=',''],
+            ['admin_id','null','NULL'],
         ];
         $summaryCount = DB::table('ba_settlement')->where($where)->count();
         

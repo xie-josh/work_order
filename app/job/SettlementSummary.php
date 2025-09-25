@@ -113,7 +113,7 @@ class SettlementSummary
 
         $result = DB::table('ba_settlement')->where(
             [
-                ['admin_id','=',''],
+                ['admin_id','null','NULL'],
                 ['date','=',$params['end_time']],
                 ['settlement_time','=',$params['settlement_time']]
             ]
