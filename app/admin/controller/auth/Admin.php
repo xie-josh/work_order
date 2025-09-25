@@ -165,7 +165,6 @@ class Admin extends Backend
 
             $salt   = Random::build('alnum', 16);
             $passwd = encrypt_password($data['password'], $salt);
-
             $data   = $this->excludeFields($data);
             $result = false;
             if ($data['group_arr']) $this->checkGroupAuth($data['group_arr']);
@@ -183,6 +182,12 @@ class Admin extends Backend
                         ];
                     }
                     Db::name('admin_group_access')->insertAll($groupAccess);
+                }
+                //费率处理
+                if(isset($data['rate'])&&!empty($data['rate']))
+                {
+                    $inserData  = ['create_time'=>date('Y-m-d',time()),'admin_id'=>$this->model->id,'rate'=>$data['rate']];
+                    DB::table('ba_rate')->insert($inserData);
                 }
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -270,6 +275,21 @@ class Admin extends Backend
             $data   = $this->excludeFields($data);
             $result = false;
             $this->model->startTrans();
+            //费率处理
+            if(isset($data['rate'])&&!empty($data['rate']))
+            {
+                $rateResult = DB::table('ba_rate')->where('admin_id',$id)->order('create_time desc')->find();
+                $inserData  = ['create_time'=>date('Y-m-d',time()),'admin_id'=>$id,'rate'=>$data['rate']];
+                if(!empty($rateResult))
+                {
+                    if($rateResult['create_time'] == date('Y-m-d',time()))
+                        DB::table('ba_rate')->where(['admin_id'=>$id,'create_time'=>date('Y-m-d',time())])->update(['rate'=>$data['rate']]);
+                    else
+                        DB::table('ba_rate')->insert($inserData);
+                }else{
+                        DB::table('ba_rate')->insert($inserData);
+                }
+            }
             try {
                 $result = $row->save($data);
                 if ($groupAccess) Db::name('admin_group_access')->insertAll($groupAccess);

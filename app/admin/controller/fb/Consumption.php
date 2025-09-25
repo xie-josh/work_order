@@ -677,9 +677,11 @@ class Consumption extends Backend
             ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
             ->where(['id'=>$adminId])->find();
         $dataList = [];
+        $thePreviousDayDollar = 0;
         if($v) {
-               $consumptionService = new \app\admin\services\fb\Consumption();
+                $consumptionService = new \app\admin\services\fb\Consumption();
                 $totalDollar = $consumptionService->getTotalDollar($v['id']);
+                $thePreviousDayDollar = $consumptionService->thePreviousDay($v['id']); //前一天消耗总金额
                 $money = $v['money'] ?? 0;
                 $remainingAmount = bcsub((string)$money,(string)$totalDollar,'2');
                 $dataList[] = [
@@ -692,15 +694,15 @@ class Consumption extends Backend
         }
         //--------------------------------------------------------------------------------------------
         $dayList = $this->model->dayConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
-        $monthList = $this->model->monthConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
+        // $monthList = $this->model->monthConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
         $list = [];
-        foreach($monthList as $value)
-        {
-            $list['month'][] = [
-                'total_dollar'=>$value['total_dollar'],
-                "date_start"=>$value['date_start'],
-            ];
-        }
+        // foreach($monthList as $value)
+        // {
+        //     $list['month'][] = [
+        //         'total_dollar'=>$value['total_dollar'],
+        //         "date_start"=>$value['date_start'],
+        //     ];
+        // }
         foreach($dayList as $value2)
         {
             $list['day'][] = [
@@ -719,20 +721,57 @@ class Consumption extends Backend
         // $order = ['id'=>"desc"];
         $limit = 999;
         array_push($where,['admin_id','=',$adminId]);
-        $res = DB::table('ba_admin_money_log')
-            // ->withJoin($this->withJoinTable, "LEFT")
-            // ->alias($alias)
-            ->where($where)->select()->toArray();
-        // $res->visible(['admin' => ['username']]);
+        $res = DB::table('ba_admin_money_log')->where($where)->select()->toArray();
+        
+        $result = DB::table('ba_rate')->where('admin_id',$adminId)->order('create_time asc')->select()->toArray();
+        $section = [];
+        if(!empty($result))foreach($result as $k => $v)
+        {
+            $section[] =  ['start_tmie' => $v['create_time'],'end_tmie' => isset($result[$k+1]['create_time'])?$result[$k+1]['create_time']:'','rate'=>$v['rate']];
+        }
+        //上上2个月的总消耗和总费率
+        $archived =  DB::table('ba_archived')
+        ->where('admin_id',$adminId)->field('month_total_dollar total_dollar,month date_start,rate_total_dollar rate','month')
+        ->where(function($query) {
+            $query->where('month', date("Y-m", strtotime("-2 month")))->whereOr('month', date("Y-m", strtotime("-3 month")));
+        })->order('month desc')->select()->toArray();
+
+        $section = array_reverse($section);
         foreach($list['all'] AS $k => &$v){
              $v['money'] = $dataList[$k]['money']??'';
-             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';
-             $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
-             $v['month_date_start'] = $list['month'][$k]['date_start']??'';
+
+            //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
+            //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
              $v['money1'] = $res[$k]['money']??'';
              $v['raw_money'] = $res[$k]['raw_money']??'';
-             if(isset($res[$k]['create_time']))$v['create_time'] = date('Y-m-d H:i',$res[$k]['create_time']);
+             if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d H:i',$res[$k]['create_time']);
              else $v['create_time'] = '';
+             $v['rate'] = 0;
+             //服务费率
+             if(!empty($section))foreach($section as $kk => $vv)
+             {
+                 $start = strtotime($vv['start_tmie']);
+                 $end   = strtotime($vv['end_tmie']);
+                 //大于设定日期,设定当日不生效
+                 if (strtotime($v['date_start']) > $start && strtotime($v['date_start']) <= $end) {
+                    //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
+                    $v['rate'] =  $v['total_dollar']*$vv['rate'];
+                 }
+                 if (strtotime($v['date_start']) > $start && empty($v['date_start'])) {
+                    //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
+                    $v['rate'] =  $v['total_dollar']*$vv['rate'];
+                 }
+             }
+        }
+        if(!empty($archived))foreach($archived as $kk =>&$vv)
+        {
+            if($kk == count($archived)-1)
+            {
+                $vv['remaining_amount'] = $dataList[0]['remaining_amount']??'';    //可用金额
+                $vv['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
+                $vv['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
+            }
+            array_unshift($list['all'], $vv);
         }
         unset($list['day']);
         unset($list['month']);
