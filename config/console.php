@@ -16,5 +16,7 @@ return [
         'AccountListBackupTask' => 'app\command\AccountListBackupTask',
         'AuditExceptionTask' => 'app\command\AuditExceptionTask',
         'GetRateTask' => 'app\command\GetRateTask',
+        'SettlementTask' => 'app\command\SettlementTask',
+        'MonthConsumptionTotalTask' => 'app\command\MonthConsumptionTotalTask',
     ],
 ];
