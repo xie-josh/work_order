@@ -64,15 +64,14 @@ class AccountReturn extends Backend
                     $value['account']['nickname'] = $nickname;
                     $value['accountrequestProposal']['bm'] = $bm;
                     $value['accountrequestProposal']['status'] = $status;
-                    if(isset($value['accountrequestProposal']['spend_cap']))
-                    {
-                        $spendCap = $value['accountrequestProposal']['spend_cap'] == 0.01?0:$value['accountrequestProposal']['spend_cap'];
-                        $amountSpent = $value['accountrequestProposal']['amount_spent'];
-                        $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');
-                        $value['accountrequestProposal']['balance'] = $balance;
-                    }
                 }
-         
+                if(isset($value['accountrequestProposal']['spend_cap']))
+                {
+                    $spendCap = $value['accountrequestProposal']['spend_cap'] == 0.01?0:$value['accountrequestProposal']['spend_cap'];
+                    $amountSpent = $value['accountrequestProposal']['amount_spent'];
+                    $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');
+                    $value['accountrequestProposal']['balance'] = $balance??0;
+                }
  
             }
         }
