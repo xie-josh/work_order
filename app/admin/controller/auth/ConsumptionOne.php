@@ -49,7 +49,7 @@ class ConsumptionOne extends Backend
             {   
                 $dataList[] = [
                     'date_start' => $v['date_start'],
-                    'dollar' => $v['dollar']
+                    'dollar' => number_format($v['dollar'], 2)
                 ];
             }
         }
