@@ -45,6 +45,7 @@ class SettlementTask extends Command
             $data = [];
             $data['start_time'] = date('Y-m-01',time());
             $data['end_time'] = date('Y-m-d',time());
+            $data['settlement_time'] = $time;
             $jobHandlerClassName = 'app\job\SettlementSummary';
             $jobQueueName = 'SettlementSummary';
             Queue::later(1800, $jobHandlerClassName, $data, $jobQueueName);

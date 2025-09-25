@@ -27,6 +27,7 @@ class Settlement
                 $job->delete();
             }else{
                $this->exportExcel($data);
+               $job->delete();
             }
         } catch (\Throwable $th) {
             (new \app\services\Basics())->logs('settlementJobError',$data,$th->getMessage());
@@ -80,6 +81,8 @@ class Settlement
         $excelName = $nickname."-{$month}月日消耗-{$month}{$day}";
 
         $name = $excelName.'.xlsx';
+
+        if($total == 0) return true;
 
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
