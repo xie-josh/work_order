@@ -765,11 +765,11 @@ class Consumption extends Backend
                  //大于设定日期,设定当日不生效
                  if (strtotime($v['date_start']) > $start && strtotime($v['date_start']) <= $end) {
                     //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
-                    $v['rate'] =  $v['total_dollar']*$vv['rate'];
+                    $v['rate'] =  round($v['total_dollar']*$vv['rate'], 2);
                  }
                  if (strtotime($v['date_start']) > $start && empty($end)) {
                     //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
-                    $v['rate'] =  $v['total_dollar']*$vv['rate'];
+                    $v['rate'] =  round($v['total_dollar']*$vv['rate'], 2);
                  }
              }
         }

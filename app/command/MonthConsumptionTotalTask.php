@@ -67,7 +67,7 @@ class MonthConsumptionTotalTask extends Command
                 }
             }
 
-            DB::table('ba_archived')->insert(['create_time'=>date("Y-m-d", time()),'month'=>$month,'admin_id'=>$admin_id,'month_total_dollar'=>$total_dollar,'month_total_dollar'=>$total_dollar_rate]); 
+            DB::table('ba_archived')->insert(['create_time'=>date("Y-m-d", time()),'month'=>$month,'admin_id'=>$admin_id,'month_total_dollar'=>round($total_dollar, 2),'month_total_dollar'=>round($total_dollar_rate, 2)]); 
             // 在这里编写你的定时任务逻辑
             $output->writeln($month."总金额统计为$total_dollar".PHP_EOL."<br/>服务费统计为$total_dollar_rate");
       }
