@@ -114,8 +114,8 @@ class SettlementSummary
                     ->setColumn('D:D', 5)
                     ->setColumn('E:E', 10)
                     ->setColumn('F:F', 13)
-                    ->setColumn('G:G', 10)
-                    ->setColumn('H:H', 10);
+                    ->setColumn('G:G', 12)
+                    ->setColumn('H:H', 12);
 
         $excel->output();
 

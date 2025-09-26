@@ -115,8 +115,8 @@ class Settlement
                     ->setColumn('C:C', 20)
                     ->setColumn('D:D', 5)
                     ->setColumn('E:E', 10)
-                    ->setColumn('F:F', 10)
-                    ->setColumn('G:G', 10);
+                    ->setColumn('F:F', 12)
+                    ->setColumn('G:G', 12);
 
         $excel->output();
 
