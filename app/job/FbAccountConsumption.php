@@ -58,7 +58,7 @@ class FbAccountConsumption
             if(!empty($result) && $result['code'] == 4){
                 $jobHandlerClassName = 'app\job\FbAccountConsumption';
                 $jobQueueName = 'FbAccountConsumption';
-                Queue::later(3600, $jobHandlerClassName, $params, $jobQueueName);
+                Queue::later(1200, $jobHandlerClassName, $params, $jobQueueName);
                 return true;
             }
 
