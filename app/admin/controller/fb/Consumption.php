@@ -737,11 +737,21 @@ class Consumption extends Backend
         })->order('month desc')->select()->toArray();
 
         $section = array_reverse($section);
+        if(!empty($archived))foreach($archived as $kk =>&$vv)
+        {
+            array_unshift($list['all'], $vv);
+        }
         foreach($list['all'] AS $k => &$v){
              $v['money'] = $dataList[$k]['money']??'';
 
             //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
             //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
+             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??''; //可用金额
+             if($k == 0)
+             {
+                $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
+                $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
+             }
              $v['money1'] = $res[$k]['money']??'';
              $v['raw_money'] = $res[$k]['raw_money']??'';
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d H:i',$res[$k]['create_time']);
@@ -763,16 +773,7 @@ class Consumption extends Backend
                  }
              }
         }
-        if(!empty($archived))foreach($archived as $kk =>&$vv)
-        {
-            if($kk == count($archived)-1)
-            {
-                $vv['remaining_amount'] = $dataList[0]['remaining_amount']??'';    //可用金额
-                $vv['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
-                $vv['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
-            }
-            array_unshift($list['all'], $vv);
-        }
+      
         unset($list['day']);
         unset($list['month']);
         return $this->success('',$list);
