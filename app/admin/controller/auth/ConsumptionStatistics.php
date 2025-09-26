@@ -139,7 +139,8 @@ class ConsumptionStatistics extends Backend
 
         if(!is_dir($path)) $this->error('文件不存在！');
 
-        $name = '/settlement.zip';
+        $date = date('Ymd');
+        $name = "/settlement-{$date}.zip";
         $folderPath = $path;
         $zipPath = $path . $name;
         $resultPath = $pathExcel . $name;
