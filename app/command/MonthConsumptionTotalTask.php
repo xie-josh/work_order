@@ -59,7 +59,7 @@ class MonthConsumptionTotalTask extends Command
                     $total_dollar_rate +=  $v['dollar']*$vv['rate'];
                     $output->writeln($vv['start_tmie'].">--"."命中区间".$v['date_start']."费率为".$vv['rate']."<=--".$vv['end_tmie']);
                     }
-                    if (strtotime($v['date_start']) > $start && empty($v['date_start'])) {
+                    if (strtotime($v['date_start']) > $start && empty($end)) {
                     //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
                     $total_dollar_rate +=  $v['dollar']*$vv['rate'];
                     $output->writeln($vv['start_tmie']."-->"."命中区间".$v['date_start']."费率为".$vv['rate']."No Null--".$vv['end_tmie']);

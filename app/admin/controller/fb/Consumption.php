@@ -767,7 +767,7 @@ class Consumption extends Backend
                     //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
                     $v['rate'] =  $v['total_dollar']*$vv['rate'];
                  }
-                 if (strtotime($v['date_start']) > $start && empty($v['date_start'])) {
+                 if (strtotime($v['date_start']) > $start && empty($end)) {
                     //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
                     $v['rate'] =  $v['total_dollar']*$vv['rate'];
                  }
