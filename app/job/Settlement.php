@@ -60,7 +60,14 @@ class Settlement
 
 
         $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
-        $folders = (new \app\common\service\Utils)->getExcelFolders("excel/".date('Ym').'/settlement'.date('d'),0);
+
+        if($params['prepayment_type'] == 1){
+            $prepaymentName ='预付实销';
+        }else{
+            $prepaymentName = '预付';
+        }
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders("excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName,0);
         $header = [
             '账户状态',
             '账户名称',
@@ -92,7 +99,7 @@ class Settlement
                     $v['serial_name'],
                     $v['account_id'],
                     $v['currency'],
-                    $v['spend'],
+                    (float)$v['spend'],
                     $v['date_start'],
                     $v['date_start'],
                 ];
@@ -102,6 +109,14 @@ class Settlement
             ->header($header)
             ->data($dataList);        
         }
+
+        $filePath->setColumn('A:A', 13)
+                    ->setColumn('B:B', 55)
+                    ->setColumn('C:C', 20)
+                    ->setColumn('D:D', 5)
+                    ->setColumn('E:E', 10)
+                    ->setColumn('F:F', 10)
+                    ->setColumn('G:G', 10);
 
         $excel->output();
 

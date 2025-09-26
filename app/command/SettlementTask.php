@@ -26,7 +26,7 @@ class SettlementTask extends Command
             ['admin.settlement_time','=',$time],
         ];
         $adminList = DB::table('ba_admin')->alias('admin')
-        ->field('admin.id,admin.settlement_time,admin.nickname')
+        ->field('admin.id,admin.settlement_time,admin.nickname,admin.prepayment_type')
         ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
         ->where($where)
         ->select()->toArray();

@@ -58,9 +58,10 @@ class SettlementSummary
         $adminList = Db::table('ba_admin')->where('status',1)->field('id,nickname')->select()->toArray();
         $adminList = array_column($adminList,'nickname','id');
 
+        $prepaymentName ='预付实销';
 
         $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
-        $folders = (new \app\common\service\Utils)->getExcelFolders("excel/".date('Ym').'/settlement'.date('d'),0);
+        $folders = (new \app\common\service\Utils)->getExcelFolders("excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName,0);
         $header = [
             '账户状态',
             '账户名称',
@@ -95,7 +96,7 @@ class SettlementSummary
                     $v['serial_name'],
                     $v['account_id'],
                     $v['currency'],
-                    $v['spend'],
+                    (float)$v['spend'],
                     $adminList[$v['admin_id']]??'未找到用户',
                     $v['date_start'],
                     $v['date_start'],
@@ -106,6 +107,15 @@ class SettlementSummary
             ->header($header)
             ->data($dataList);
         }
+
+        $filePath->setColumn('A:A', 13)
+                    ->setColumn('B:B', 55)
+                    ->setColumn('C:C', 20)
+                    ->setColumn('D:D', 5)
+                    ->setColumn('E:E', 10)
+                    ->setColumn('F:F', 13)
+                    ->setColumn('G:G', 10)
+                    ->setColumn('H:H', 10);
 
         $excel->output();
 
