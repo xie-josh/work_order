@@ -840,7 +840,7 @@ class Account extends Backend
         if($admin['prepayment_type'] == 1)
         {
             $consumptionService = new \app\admin\services\fb\Consumption();
-            $totalDollar = $consumptionService->getTotalDollar($v['id']);
+            $totalDollar = $consumptionService->getTotalDollar($this->auth->id);
             $money = $admin['money'] ?? 0;
             $data['usableMoney'] = bcsub((string)$money,(string)$totalDollar,'2');
         }else{
