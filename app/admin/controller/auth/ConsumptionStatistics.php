@@ -69,16 +69,21 @@ class ConsumptionStatistics extends Backend
                 $money = $adminMoneyList[$v['id']] ?? 0;
                 $adminConsumption = $adminConsumptionList[$v['id']] ?? 0;
                 $adminTotalConsumption = $adminTotalConsumptionList[$v['id']] ?? 0;
-
+                $money = bcadd((string)$money,'0',2);
                 $dataList[] = [
                     'id' => $v['id'],
                     'nickname' => $v['nickname'],
                     'money' => $money,
                     'consumption' => bcadd((string)$adminConsumption,'0',2),
-                    'remaining_amount' => bcsub((string)$money,(string)$adminTotalConsumption,'2'),
+                    'remaining_amount' => bcsub($money,(string)$adminTotalConsumption,'2'),
                 ];
             }
+            
+            $sort = array_column($dataList, 'remaining_amount'); // 提取某列
+            array_multisort($sort, SORT_ASC, $dataList);
         }
+
+        
 
         $this->success('', [
             'list'   => $dataList,

@@ -327,8 +327,8 @@ class CardList
                 ];
                 $cardList = (new CardService($accountId))->cardList($param);
                 
-                $cardList = $cardList['data'];
-                $list = $cardList['data'];
+                $cardList = $cardList['data']??[];
+                $list = $cardList['data']??[];
                 if(empty($list)) 
                 {
                     $is_ = false;
@@ -372,10 +372,10 @@ class CardList
                 Db::commit();
             } catch (\Throwable $th) {
                 Db::rollback();
-                $logs = '错误:('.$th->getLine().')'.json_encode($th->getMessage());
+                $logs = '错误:('.$th->getLine().')'.json_encode($th->getMessage()).json_encode($param);
                 $result = false;
                 $is_ = false;
-                DB::table('ba_card_account')->where('id',$accountId)->update(['status'=>2,'update_time'=>date('Y-m-d H:i:s',time()),'logs'=>$logs]);
+                DB::table('ba_card_account')->where('id',$accountId)->update(['update_time'=>date('Y-m-d H:i:s',time()),'logs'=>$logs]);
             }
         }
 

@@ -182,10 +182,14 @@ class Slash extends Backend implements CardInterface
         $param = [];
         if(!empty($params['nickname'])) $param['name'] = $params['nickname'];
         if(!empty($params['max_on_percent'])) $param['spendingConstraint']['spendingRule']['transactionSizeLimit'] = ['minimum'=>['amountCents'=>0],'maximum'=>['amountCents'=>$params['max_on_percent'] * 100]];
-        if(!empty($params['transaction_limit'])) {
+        if(!empty($params['transaction_limit'])) {            
             $param['spendingConstraint']['spendingRule']['utilizationLimit']['limitAmount'] = ['amountCents'=>$params['transaction_limit'] * 100];
             $param['spendingConstraint']['spendingRule']['utilizationLimit']['preset'] = 'collective';
         }
+
+        if(!empty($params['transaction_limit_type']) && $params['transaction_limit_type'] == 'unlimited') $param['spendingConstraint'] = null;
+
+        // if($params['card_id'] == 'c_2ft6cz81lsto4') dd($param);
 
         $url = "$this->url/card/{$params['card_id']}";
         $method = 'PATCH';
@@ -386,6 +390,31 @@ class Slash extends Backend implements CardInterface
     }
 
 
+    public function cancelCard($params):array
+    {
+        $param = [
+            'status'=>'closed'
+        ];
+        $url = "$this->url/card/{$params['card_id']}";
+        $method = 'PATCH';
+        $header = [
+            'Content-Type'=>'application/json',
+            'X-API-Key'=>$this->token
+        ];
+        $result = $this->curlHttp($url,$method,$header,$param);
+        if(isset($result['status'])){
+            return $this->returnSucceed(['cardStatus'=>$this->cardStatus[$result['status']??'NO']]);
+        }else{
+            DB::table('ba_cards_logs')->insert([
+                'type'=>'card_freeze',
+                'data'=>json_encode($param),
+                'logs'=>$result['msg']??'',
+                'create_time'=>date('Y-m-d H:i:s',time())
+            ]);
+            return $this->returnError($result['msg']);
+        }
+    }
+
     //https://x-api.photonpay.com/vcc/open/v2/sandBoxTransaction
     public function test($params):array
     {
@@ -476,5 +505,30 @@ class Slash extends Backend implements CardInterface
         }
     }
 
+
+    public function getVirtualAccount()
+    {
+        //subaccount_3htl994rvabwn
+        $url = "$this->url/virtual-account/subaccount_3htl994rvabwn";
+        $method = 'GET';
+        $header = [
+            'Content-Type'=>'application/json',
+            'X-API-Key'=>$this->token
+        ];
+
+        $param = [
+            
+        ];
+        $result = $this->curlHttp($url,$method,$header,$param);
+        if(isset($result['virtualAccount'])){
+            $item = [
+                'balanceAmountCents'=>bcdiv((string)$result['balance']['amountCents'],'100',2)??0,
+                'spendAmountCents'=>bcdiv((string)$result['spend']['amountCents'],'100',2)??0
+            ];
+            return $this->returnSucceed( $item);
+        }else{
+            return $this->returnError($result['msg']);
+        }
+    }
 
 }
