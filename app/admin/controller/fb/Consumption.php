@@ -730,11 +730,11 @@ class Consumption extends Backend
             $section[] =  ['start_tmie' => $v['create_time'],'end_tmie' => isset($result[$k+1]['create_time'])?$result[$k+1]['create_time']:'','rate'=>$v['rate']];
         }
         //上上2个月的总消耗和总费率
-        $archived =  DB::table('ba_archived')
-        ->where('admin_id',$adminId)->field('month_total_dollar total_dollar,month date_start,rate_total_dollar rate','month')
-        ->where(function($query) {
-            $query->where('month', date("Y-m", strtotime("-2 month")))->whereOr('month', date("Y-m", strtotime("-3 month")));
-        })->order('month desc')->select()->toArray();
+        $archived =  DB::table('ba_archived')->where('admin_id',$adminId)->field('month_total_dollar total_dollar,month date_start,rate_total_dollar rate','month')
+        ->order('month desc')->select()->toArray();
+        // ->where(function($query) {
+        //     $query->where('month', date("Y-m", strtotime("-2 month")))->whereOr('month', date("Y-m", strtotime("-3 month")));
+        // })
 
         $section = array_reverse($section);
         if(!empty($archived))foreach($archived as $kk =>&$vv)
