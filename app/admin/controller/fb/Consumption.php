@@ -758,7 +758,7 @@ class Consumption extends Backend
              else $v['create_time'] = '';
              $v['rate'] = 0;
              //服务费率
-             if(!empty($section))foreach($section as $kk => $vv)
+             if(!empty($section)&&count($archived)<=$k)foreach($section as $kk => $vv)
              {
                  $start = strtotime($vv['start_tmie']);
                  $end   = strtotime($vv['end_tmie']);
