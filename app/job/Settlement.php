@@ -67,7 +67,10 @@ class Settlement
             $prepaymentName = '预付';
         }
 
-        $folders = (new \app\common\service\Utils)->getExcelFolders("excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName,0);
+        $resultPath = "excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName;
+        // if(file_exists($resultPath)) unlink($resultPath);
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
         $header = [
             '账户状态',
             '账户名称',
@@ -93,6 +96,7 @@ class Settlement
 
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $dataList = [];
              foreach($data as $v){
                 $dataList[]  = [
                     $accountStatus[$v['account_status']]??'未找到状态',

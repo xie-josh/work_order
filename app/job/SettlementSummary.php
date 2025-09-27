@@ -59,9 +59,12 @@ class SettlementSummary
         $adminList = array_column($adminList,'nickname','id');
 
         $prepaymentName ='预付实销';
-
         $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
-        $folders = (new \app\common\service\Utils)->getExcelFolders("excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName,0);
+        
+        $resultPath = "excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName;
+        // if(file_exists($resultPath)) unlink($resultPath);
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
         $header = [
             '账户状态',
             '账户名称',
