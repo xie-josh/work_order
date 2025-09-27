@@ -418,13 +418,32 @@ class Slash extends Backend implements CardInterface
     //https://x-api.photonpay.com/vcc/open/v2/sandBoxTransaction
     public function test($params):array
     {
-        
+        // $this->cc();
+        // dd(333);
+        if(!empty($params['type']) && $params['type'] == 'getVirtualAccount'){
+            $result = $this->getVirtualAccount();
+            if($result['code'] == 1){
+                return $result;
+            }else{
+                return $this->returnError($result['msg']);
+            }
+        }
         // $this->createCard($params);
         // return [];
         // $UUID = $this->getUUID();
 
         if(!empty($params['type']) && $params['type'] == 'transactionDetail'){
             $result = $this->transactionDetail2($params);
+            if($result['code'] == 1){
+                return $result;
+            }else{
+                return $this->returnError($result['msg']);
+            }
+        }
+
+        if(!empty($params['type']) && $params['type'] == 'closed')
+        {
+            $result = $this->cancelCard($params);
             if($result['code'] == 1){
                 return $result;
             }else{
