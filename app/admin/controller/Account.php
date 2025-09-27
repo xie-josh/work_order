@@ -837,7 +837,15 @@ class Account extends Backend
         $admin = DB::table('ba_admin')->where('id',$this->auth->id)->find();
         $data['totalMoney'] = floor($admin['money'] * 100) / 100;
         $data['usedMoney'] = floor($admin['used_money'] * 100) / 100;
-        $data['usableMoney'] = floor((($admin['money'] - $admin['used_money'])) * 100) / 100;
+        if($admin['prepayment_type'] == 1)
+        {
+            $consumptionService = new \app\admin\services\fb\Consumption();
+            $totalDollar = $consumptionService->getTotalDollar($v['id']);
+            $money = $admin['money'] ?? 0;
+            $data['usableMoney'] = bcsub((string)$money,(string)$totalDollar,'2');
+        }else{
+            $data['usableMoney'] = floor((($admin['money'] - $admin['used_money'])) * 100) / 100;
+        }
 
         // if($this->auth->isSuperAdmin()){
         //     $money = $this->model->where('is_',1)->sum('money');
