@@ -150,7 +150,41 @@ class AdminMoneyLog extends Backend
 
     public function edit(): void
     {
-        $this->error('暂不支持编辑');
+        $pk  = $this->model->getPk();
+        $id  = $this->request->param($pk);
+        $row = $this->model->find($id);
+        if (!$row) {
+            $this->error(__('Record not found'));
+        }
+    
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $data   = $this->excludeFields($data);
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+                if(empty($data['images'])) throw new \Exception("请上传凭证");
+                $result = $row->save(['images'=>$data['images']??[]]);
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+
+        $this->success('', [
+            'row' => $row
+        ]);
     }
 
     public function moneyLogList()
