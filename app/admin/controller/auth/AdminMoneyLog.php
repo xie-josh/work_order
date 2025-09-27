@@ -20,9 +20,13 @@ class AdminMoneyLog extends Backend
 
     protected array|string $preExcludeFields = ['id', 'create_time', 'update_time'];
 
+    protected array $noNeedPermission = ['index'];
+
     protected array $withJoinTable = ['admin'];
 
     protected string|array $quickSearchField = ['id'];
+
+    protected bool|string|int $dataLimit = 'parent';
 
     public function initialize(): void
     {
@@ -51,7 +55,7 @@ class AdminMoneyLog extends Backend
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
-            ->order($order)
+            ->order('create_time','desc')
             ->paginate($limit);
         $res->visible(['admin' => ['username','nickname']]);
 
@@ -71,10 +75,10 @@ class AdminMoneyLog extends Backend
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
 
-            $data = $this->excludeFields($data);
-            if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
-                $data[$this->dataLimitField] = $this->auth->id;
-            }
+            // $data = $this->excludeFields($data);
+            // if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
+            //     $data[$this->dataLimitField] = $this->auth->id;
+            // }
 
             $result = false;
             $this->model->startTrans();
@@ -113,19 +117,20 @@ class AdminMoneyLog extends Backend
                     'comment'=>$comment,
                     'rate'=>$rate['rate'],
                     'credit_money'=>$creditMoney,
+                    'images'=>$data['images']??[],
                     'recharge_channel_name'=>$rate['name'],
                 ];
 
 
-                $applicationData = [
-                    'status'=>1,
-                    'type_id'=>1,
-                    'admin_id'=>$data['admin_id'],
-                    'amount'=>$rechargeMoney,
-                    'create_time'=>time(),
+                // $applicationData = [
+                //     'status'=>1,
+                //     'type_id'=>1,
+                //     'admin_id'=>$data['admin_id'],
+                //     'amount'=>$rechargeMoney,
+                //     'create_time'=>time(),
                     
-                ];
-                DB::table('ba_wallet_account_application')->insert($applicationData);
+                // ];
+                // DB::table('ba_wallet_account_application')->insert($applicationData);
 
                 $result = $this->model->save($data);
                 $this->model->commit();
@@ -143,6 +148,10 @@ class AdminMoneyLog extends Backend
         $this->error(__('Parameter error'));
     }
 
+    public function edit(): void
+    {
+        $this->error('暂不支持编辑');
+    }
 
     public function moneyLogList()
     {
