@@ -13,7 +13,7 @@ class ConsumptionModel extends Model
 {
     protected $name = 'account_consumption';
     protected $autoWriteTimestamp = true;
-    protected $time = '-2';
+    protected $time = '-1';
 
 
     function dayConsumption($adminId,string $startDate = '',string $endDate = '')
