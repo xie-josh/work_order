@@ -77,8 +77,18 @@ class Admin extends Backend
             ->order($order)
             ->paginate($limit);
 
+        $dataList = $res->toArray()['data'];
+        if($dataList){
+            
+            foreach($dataList as &$v){
+                
+                $v['userNick'] = $v['nickname'].'('.($v['username']??'').')';
+            }
+        }
+        
+
         $this->success('', [
-            'list'   => $res->items(),
+            'list'   => $dataList,
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
