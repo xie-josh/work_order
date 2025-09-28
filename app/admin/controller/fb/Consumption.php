@@ -741,29 +741,9 @@ class Consumption extends Backend
         {
             array_unshift($list['all'], $vv);
         }
-        //合计处理
-        $sunAllData =[];
-        $sunAllData['rate'] = array_sum(array_column($list['all'], 'rate'));
-        $sunAllData['total_dollar'] = array_sum(array_column($list['all'], 'total_dollar'));
-        $sunAllData['date_start'] = "合计";
-        array_unshift($list['all'], $sunAllData);
 
-        foreach($list['all'] AS $k => &$v){
-             $v['money'] = $dataList[$k]['money']??'';
-
-            //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
-            //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
-             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??''; //可用金额
-             if($k == 0)
-             {
-                $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
-                $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
-             }
-             $v['money1'] = $res[$k]['money']??'';
-             $v['raw_money'] = $res[$k]['raw_money']??'';
-             $v['total_dollar'] = round($v['total_dollar'], 2);
-             if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
-             else $v['create_time'] = '';
+        foreach($list['all'] AS $k => &$v)
+        {
              //服务费率
              if(!empty($section)&&count($archived)<=$k)foreach($section as $kk => $vv)
              {
@@ -780,7 +760,30 @@ class Consumption extends Backend
                  }
              }
         }
-      
+        //合计处理
+        $sunAllData =[];
+        $sunAllData['rate'] = round(array_sum(array_column($list['all'], 'rate')), 2);
+        $sunAllData['total_dollar'] = round(array_sum(array_column($list['all'], 'total_dollar')), 2);
+        $sunAllData['date_start'] = "合计";
+        array_unshift($list['all'], $sunAllData);
+        foreach($list['all'] AS $k => &$v)
+        {
+             $v['money'] = $dataList[$k]['money']??'';
+            //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
+            //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
+             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??''; //可用金额
+             if($k == 0)
+             {
+                $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
+                $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
+             }
+             $v['money1'] = $res[$k]['money']??'';
+             $v['raw_money'] = $res[$k]['raw_money']??'';
+             $v['total_dollar'] = round($v['total_dollar'], 2);
+             if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
+             else $v['create_time'] = '';
+        }
+        
         unset($list['day']);
         unset($list['month']);
         return $this->success('',$list);
