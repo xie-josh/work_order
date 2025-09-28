@@ -754,7 +754,8 @@ class Consumption extends Backend
              }
              $v['money1'] = $res[$k]['money']??'';
              $v['raw_money'] = $res[$k]['raw_money']??'';
-             if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d H:i',$res[$k]['create_time']);
+             $v['total_dollar'] = round($v['total_dollar'], 2);
+             if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
              else $v['create_time'] = '';
              //服务费率
              if(!empty($section)&&count($archived)<=$k)foreach($section as $kk => $vv)
