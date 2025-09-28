@@ -17,14 +17,17 @@ class MonthConsumptionTotalTask extends Command
     protected function execute(Input $input, Output $output)
     {
         //php think MonthConsumptionTotalTask
-        $month = date("Y-m", strtotime("-2 month"));
+        $month = date("Y-m", strtotime("-1 month"));   //测试
+        // $month = date("Y-m", strtotime("-2 month"));//正式
         $start = date('Y-m-01', strtotime($month));
         $end   = date('Y-m-01', strtotime($month . ' +1 month'));
         $output->writeln("统计月份". $month . PHP_EOL);
         //用户组
         $adminIds = DB::table('ba_admin')->alias('admin')
         ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
-        ->where(['admin_group_access.group_id'=>3])->column('admin.id');
+        ->where(['admin_group_access.group_id'=>3])
+        ->where(['admin.id'=>122])//测试
+        ->column('admin.id');
         foreach($adminIds as $admin_id)
         {
             $consumptionResult = DB::table('ba_account_consumption')
@@ -35,8 +38,7 @@ class MonthConsumptionTotalTask extends Command
             ->select()->toArray();
     
             // $result = DB::table('ba_rate')->where('admin_id',$adminId)->order('create_time asc')->select()->toArray();
-            $result = DB::table('ba_rate')->where('admin_id',$admin_id
-            )->order('create_time asc')->select()->toArray();
+            $result = DB::table('ba_rate')->where('admin_id',$admin_id)->order('create_time asc')->select()->toArray();
             $section = [];
             if(!empty($result))foreach($result as $k => $v)
             {
