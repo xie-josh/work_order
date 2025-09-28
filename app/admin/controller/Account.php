@@ -269,14 +269,18 @@ class Account extends Backend
                 $isAccount = $admin['is_account'];
                 $usableMoney = ($admin['money'] - $admin['used_money']);
                 if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
-                if($usableMoney <= 0 || $usableMoney < $data['money']) throw new \Exception("余额不足,请联系管理员！");
+
+                if($admin['prepayment_type'] == 2){
+                    if($usableMoney <= 0 || $usableMoney < $data['money']) throw new \Exception("余额不足,请联系管理员！");
+                    DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
+                }
+
 
                 $time = date('Y-m-d',time());
                 $openAccountNumber = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
                 if($openAccountNumber >= $accountNumber) throw new \Exception("今.开户数量已经不足，不能再提交开户需求,请联系管理员！");
 
                 // DB::table('ba_account')->where('id',$account['id'])->inc('money',$data['number'])->update(['update_time'=>time()]);
-                DB::table('ba_admin')->where('id',$this->auth->id)->inc('used_money',$data['money'])->update();
                 
                 if(isset($data['is_keep']) && in_array($data['type'],[1,3]) && $data['is_keep'] == 1) $data['is_keep'] = 1;
                 else $data['is_keep'] = 0;

@@ -159,10 +159,11 @@ class Recharge extends Backend
                     if($cc == 4) throw new \Exception("该账号暂停充值，请联系管理员！");
 
                     $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
-                    $usableMoney = ($admin['money'] - $admin['used_money']);
-                    if($usableMoney <= 0 || $usableMoney < $data['number']) throw new \Exception("余额不足,请联系管理员！");
-
-                    DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
+                    if($admin['prepayment_type'] == 2){
+                        $usableMoney = ($admin['money'] - $admin['used_money']);
+                        if($usableMoney <= 0 || $usableMoney < $data['number']) throw new \Exception("余额不足,请联系管理员！");
+                        DB::table('ba_admin')->where('id',$account['admin_id'])->inc('used_money',$data['number'])->update();
+                    }
                 }elseif(in_array($data['type'],[3,4])){
                     $recharge = $this->model->where('account_id',$data['account_id'])->where('status',1)->whereIn('type',[3,4])->order('id','desc')->find();
 
@@ -873,9 +874,11 @@ class Recharge extends Backend
                             if($amount <= 0) throw new \Exception("充值金额不能小于零");
 
                             $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
-                            $usableMoney = bcadd((string)$amount,(string)$admin['used_money'],2);
-                            if($usableMoney > $admin['money']) throw new \Exception("余额不足,请联系管理员！");
-                            DB::table('ba_admin')->where('id',$account['admin_id'])->update(['used_money'=>$usableMoney]);
+                            if($admin['prepayment_type'] == 2){
+                                $usableMoney = bcadd((string)$amount,(string)$admin['used_money'],2);
+                                if($usableMoney > $admin['money']) throw new \Exception("余额不足,请联系管理员！");
+                                DB::table('ba_admin')->where('id',$account['admin_id'])->update(['used_money'=>$usableMoney]);
+                            }
                         }else if($type == 2)
                         {
 
