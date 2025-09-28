@@ -17,8 +17,8 @@ class MonthConsumptionTotalTask extends Command
     protected function execute(Input $input, Output $output)
     {
         //php think MonthConsumptionTotalTask
-        $month = date("Y-m", strtotime("-1 month"));   //测试
-        // $month = date("Y-m", strtotime("-2 month"));//正式
+        // $month = date("Y-m", strtotime("-1 month"));   //测试
+        $month = date("Y-m", strtotime("-2 month"));//正式
         $start = date('Y-m-01', strtotime($month));
         $end   = date('Y-m-01', strtotime($month . ' +1 month'));
         $output->writeln("统计月份". $month . PHP_EOL);
@@ -26,7 +26,7 @@ class MonthConsumptionTotalTask extends Command
         $adminIds = DB::table('ba_admin')->alias('admin')
         ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
         ->where(['admin_group_access.group_id'=>3])
-        ->where(['admin.id'=>122])//测试
+        // ->where(['admin.id'=>122])//测试
         ->column('admin.id');
         foreach($adminIds as $admin_id)
         {
