@@ -743,8 +743,8 @@ class Consumption extends Backend
         }
         //合计处理
         $sunAllData =[];
-        $sunAllData['rate'] = array_sum(array_column($array, 'rate'));
-        $sunAllData['total_dollar'] = array_sum(array_column($array, 'total_dollar'));
+        $sunAllData['rate'] = array_sum(array_column($list['all'], 'rate'));
+        $sunAllData['total_dollar'] = array_sum(array_column($list['all'], 'total_dollar'));
         $sunAllData['total_dollar'] = "合计";
         array_unshift($list['all'], $sunAllData);
 
