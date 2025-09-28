@@ -756,7 +756,6 @@ class Consumption extends Backend
              $v['raw_money'] = $res[$k]['raw_money']??'';
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d H:i',$res[$k]['create_time']);
              else $v['create_time'] = '';
-             $v['rate'] = 0;
              //服务费率
              if(!empty($section)&&count($archived)<=$k)foreach($section as $kk => $vv)
              {
