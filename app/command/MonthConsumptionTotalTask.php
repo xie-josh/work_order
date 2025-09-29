@@ -18,7 +18,11 @@ class MonthConsumptionTotalTask extends Command
     {
         //php think MonthConsumptionTotalTask
         // $month = date("Y-m", strtotime("-1 month"));   //测试
-        $month = date("Y-m", strtotime("-2 month"));//正式
+
+        $day = date('d');
+        if($day < '10') return true;
+
+        $month = date("Y-m", strtotime("-1 month"));//正式
         $start = date('Y-m-01', strtotime($month));
         $end   = date('Y-m-01', strtotime($month . ' +1 month'));
         $output->writeln("统计月份". $month . PHP_EOL);
@@ -68,6 +72,9 @@ class MonthConsumptionTotalTask extends Command
                     }
                 }
             }
+
+            $archivedId = DB::table('ba_archived')->where([['month','=',$month],['admin_id','=',$admin_id]])->value('id');
+            if($archivedId) DB::table('ba_archived')->where('id',$archivedId)->delete();
 
             DB::table('ba_archived')->insert(['create_time'=>date("Y-m-d", time()),'month'=>$month,'admin_id'=>$admin_id,'month_total_dollar'=>round($total_dollar, 2),'rate_total_dollar'=>round($total_dollar_rate, 2)]); 
             // 在这里编写你的定时任务逻辑
