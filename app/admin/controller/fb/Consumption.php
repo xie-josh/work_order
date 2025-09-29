@@ -711,7 +711,7 @@ class Consumption extends Backend
             ];
         }
         $list['day'] = array_reverse($list['day']);
-        $list['all'] = $list['day'];
+        $list['all'] = $list['day']; //  array_slice($list['day'], 0, 3);
         // array_merge($list['month'],$list['day']);
         //---------------------------------------------------------------------------------------------
 
@@ -722,7 +722,7 @@ class Consumption extends Backend
         $limit = 999;
         array_push($where,['admin_id','=',$adminId]);
         $res = DB::table('ba_admin_money_log')->where($where)->select()->toArray();
-        
+
         $result = DB::table('ba_rate')->where('admin_id',$adminId)->order('create_time asc')->select()->toArray();
         $section = [];
         if(!empty($result))foreach($result as $k => $v)
@@ -739,9 +739,10 @@ class Consumption extends Backend
         $section = array_reverse($section);
         if(!empty($archived))foreach($archived as $kk =>&$vv)
         {
+            $vv['date_start'] = str_replace("-", "年", $vv['date_start'])."月";
             array_unshift($list['all'], $vv);
         }
-
+        //跑出汇率
         foreach($list['all'] AS $k => &$v)
         {
              //服务费率
@@ -783,7 +784,22 @@ class Consumption extends Backend
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
              else $v['create_time'] = '';
         }
-        
+
+        //追加付款记录
+        if(count($list['all']) < count($res))
+        {
+            $cha = count($res)-count($list['all']);
+            $last2 = array_splice($res, -$cha);
+            foreach($last2 AS $kk => $vxx)
+            {
+                $d['money1'] = $vxx['money']??'';
+                $d['raw_money'] = $vxx['raw_money']??'';
+                if(isset($last2[$kk]['create_time'])) $d['create_time'] = date('Y-m-d',$last2[$kk]['create_time']);
+                else $d['create_time'] = '';
+                array_push($list['all'],$d);
+            }
+        }
+
         unset($list['day']);
         unset($list['month']);
         return $this->success('',$list);
