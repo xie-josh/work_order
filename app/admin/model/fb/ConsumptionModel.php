@@ -26,10 +26,10 @@ class ConsumptionModel extends Model
             $start =  date('Y-m-10', time());
             // $end   = date('Y-m-01', strtotime($month . ' +1 month'));
             if (strtotime($start1) < strtotime($start)) {
-                $startDate = date('Y-m-01', strtotime("-2 month"));
-            } elseif (strtotime($start1) >= strtotime($start)) {
                 $startDate = date('Y-m-01', strtotime("-1 month"));
-            } 
+            } elseif (strtotime($start1) >= strtotime($start)) {
+                $startDate = date('Y-m-01', time());
+            }
             // $startDate = date('Y-m-01', strtotime("$this->time month"));
             array_push($where, ['consumption.date_start', '>=', $startDate]);
         }
