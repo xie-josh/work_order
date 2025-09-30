@@ -79,6 +79,7 @@ class AccountrequestProposal extends Backend
         if($limit == 999) $limit = 2500;
         
         $res = $this->model
+            ->distinct(true)
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
