@@ -109,7 +109,7 @@ class Recharge
                         $isCardStatus = true;
                     }
                     //SX-用户不改限额
-                    if(!in_array($result['admin_id'],config('basics.QUOTA_USER')))
+                    if(false && !in_array($result['admin_id'],config('basics.QUOTA_USER')))
                     {
                         $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                         if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -350,7 +350,7 @@ class Recharge
                             'transaction_is'=>'2'
                         ];
                        //SX-用户不改限额
-                       if(!in_array($result['admin_id'],config('basics.QUOTA_USER')))
+                       if(false && !in_array($result['admin_id'],config('basics.QUOTA_USER')))
                        {
                             $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -516,7 +516,7 @@ class Recharge
                             'transaction_limit'=>$result['number'],
                         ];
                         //SX-用户不改限额
-                        if(!in_array($result['admin_id'],config('basics.QUOTA_USER')))
+                        if(false && !in_array($result['admin_id'],config('basics.QUOTA_USER')))
                         {
                             $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);

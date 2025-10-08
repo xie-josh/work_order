@@ -628,8 +628,8 @@ class Account extends Backend
 
                             // Cache::store('redis')->set($key, '1', 180);
                               //SX-用户不改限额
-                              if(!in_array($v['admin_id'],config('basics.QUOTA_USER')))
-                              {   
+                              if(false && !in_array($v['admin_id'],config('basics.QUOTA_USER')))
+                              {
                                   $resultCards = (new CardsModel())->updateCard($cards,$param);
                                   if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                               }
