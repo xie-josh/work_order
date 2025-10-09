@@ -25,7 +25,7 @@ class CopyYesterdayConsumptionTask extends Command
         {
             $count = count($v);
             DB::table('ba_account_consumption_yesterday')->insertAll($v);
-            $output->writeln("本次插入$count！"."条消耗！！");
+            $output->writeln("本次插入".$count."条消耗！！");
         }
         // 在这里编写你的定时任务逻辑
         $output->writeln("消耗插入完毕!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!！");
