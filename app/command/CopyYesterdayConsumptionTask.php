@@ -19,6 +19,7 @@ class CopyYesterdayConsumptionTask extends Command
         //php think CopyYesterdayConsumptionTask
         //$month = date("Y-m", strtotime("-1 month"));   //测试
         $time = date("Y-m-d", time());
+        DB::table('ba_account_consumption_yesterday')->where(['date_start'=>$time])->delete();
         $result =  DB::table('ba_account_consumption')->field('account_id,spend,dollar,date_start,date_stop,admin_id,create_time')->where(['date_start'=>$time])->select()->toArray();
         $chunkResult = array_chunk($result, 1000);
         if(!empty($chunkResult))foreach($chunkResult as $k => $v)
