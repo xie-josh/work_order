@@ -42,7 +42,8 @@ class ConsumptionModel extends Model
 
         $list = $this->where($where)
         ->alias('consumption')
-        ->field('sum(consumption.dollar) total_dollar,consumption.admin_id,consumption.date_start')
+        ->field('sum(consumption.dollar) total_dollar,consumption.admin_id,consumption.date_start,sum(consumption_yesterday.dollar) yesterday_total_dollar')
+        ->leftJoin('ba_account_consumption_yesterday consumption_yesterday','consumption_yesterday.account_id=consumption.account_id and consumption_yesterday.date_start=consumption.date_start')
         ->group('consumption.admin_id,consumption.date_start')
         ->select()->toArray();
 
@@ -57,16 +58,19 @@ class ConsumptionModel extends Model
             if(isset($listData[$currentDate]))
             {
                 $totalDollar = bcadd((string)$listData[$currentDate]['total_dollar'],'0',4);
+                $yesterdayTotalDollar = bcadd((string)$listData[$currentDate]['yesterday_total_dollar'],'0',4);
                 $list[] = [
                     "total_dollar" => $totalDollar,
                     "admin_id" => $adminId,
-                    "date_start" => $currentDate
+                    "date_start" => $currentDate,
+                    "yesterday_total_dollar" => $yesterdayTotalDollar,
                 ];
             }else{
                 $list[] = [
                     "total_dollar" => "0.0000",
                     "admin_id" => $adminId,
-                    "date_start" => $currentDate
+                    "date_start" => $currentDate,
+                    "yesterday_total_dollar" => "0.0000",
                 ];
             }
             

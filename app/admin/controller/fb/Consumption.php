@@ -707,6 +707,7 @@ class Consumption extends Backend
         {
             $list['day'][] = [
                'total_dollar'=>$value2['total_dollar'],
+               'yesterday_total_dollar'=>$value2['yesterday_total_dollar'],
                 "date_start"=>$value2['date_start'],
             ];
         }
@@ -781,6 +782,7 @@ class Consumption extends Backend
              $v['money1'] = $res[$k]['money']??'';
              $v['raw_money'] = $res[$k]['raw_money']??'';
              $v['total_dollar'] = round($v['total_dollar'], 2);
+             $v['yesterday_total_dollar'] = round($v['total_dollar'], 2);
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
              else $v['create_time'] = '';
         }
