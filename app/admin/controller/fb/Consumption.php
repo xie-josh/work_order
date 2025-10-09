@@ -741,6 +741,7 @@ class Consumption extends Backend
         if(!empty($archived))foreach($archived as $kk =>&$vv)
         {
             $vv['date_start'] = str_replace("-", "年", $vv['date_start'])."月";
+            $vv['yesterday_total_dollar'] = $vv['total_dollar'];
             array_unshift($list['all'], $vv);
         }
         //跑出汇率
@@ -766,7 +767,9 @@ class Consumption extends Backend
         $sunAllData =[];
         $sunAllData['rate'] = round(array_sum(array_column($list['all'], 'rate')), 2);
         $sunAllData['total_dollar'] = round(array_sum(array_column($list['all'], 'total_dollar')), 2);
+        $sunAllData['yesterday_total_dollar'] = $sunAllData['total_dollar'];
         $sunAllData['date_start'] = "合计";
+
         array_unshift($list['all'], $sunAllData);
         foreach($list['all'] AS $k => &$v)
         {
@@ -782,7 +785,7 @@ class Consumption extends Backend
              $v['money1'] = $res[$k]['money']??'';
              $v['raw_money'] = $res[$k]['raw_money']??'';
              $v['total_dollar'] = round($v['total_dollar'], 2);
-             $v['yesterday_total_dollar'] = round($v['total_dollar'], 2);
+             $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
              else $v['create_time'] = '';
         }
