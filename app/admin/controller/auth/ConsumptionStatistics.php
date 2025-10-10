@@ -38,7 +38,7 @@ class ConsumptionStatistics extends Backend
         $time2 = [];
         foreach($where as $k => &$v){
             if($v[0] == 'admin.time2'){
-                $time2 = [$v[2][0],$v[2][1]];
+                $time2 = [date('Y-m-d',$v[2][0]),date('Y-m-d',$v[2][1])];
                 unset($where[$k]);
                 continue;
             }
