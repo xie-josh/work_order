@@ -51,21 +51,21 @@ class MonthConsumptionTotalTask extends Command
             $section = array_reverse($section);
             $total_dollar = 0;
             $total_dollar_rate = 0;
-            foreach($consumptionResult AS $k => &$v)
+            foreach($consumptionResult AS $k => $v)
             {
                 $total_dollar += $v['dollar'];
                 //服务费率
                 if(!empty($section))foreach($section as $kk => $vv)
                 {
-                    $start = strtotime($vv['start_tmie']);
-                    $end   = strtotime($vv['end_tmie']);
+                    $start_tmie = strtotime($vv['start_tmie']);
+                    $end_tmie   = strtotime($vv['end_tmie']);
                     //大于设定日期,设定当日不生效
-                    if (strtotime($v['date_start']) > $start && strtotime($v['date_start']) <= $end) {
+                    if (strtotime($v['date_start']) > $start_tmie && strtotime($v['date_start']) <= $end_tmie) {
                     //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
                     $total_dollar_rate +=  $v['dollar']*$vv['rate'];
                     $output->writeln($vv['start_tmie'].">--"."命中区间".$v['date_start']."费率为".$vv['rate']."<=--".$vv['end_tmie']);
                     }
-                    if (strtotime($v['date_start']) > $start && empty($end)) {
+                    if (strtotime($v['date_start']) > $start_tmie && empty($end_tmie)) {
                     //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
                     $total_dollar_rate +=  $v['dollar']*$vv['rate'];
                     $output->writeln($vv['start_tmie']."-->"."命中区间".$v['date_start']."费率为".$vv['rate']."No Null--".$vv['end_tmie']);
@@ -78,7 +78,7 @@ class MonthConsumptionTotalTask extends Command
 
             DB::table('ba_archived')->insert(['create_time'=>date("Y-m-d", time()),'month'=>$month,'admin_id'=>$admin_id,'month_total_dollar'=>round($total_dollar, 2),'rate_total_dollar'=>round($total_dollar_rate, 2)]); 
             // 在这里编写你的定时任务逻辑
-            $output->writeln($month."总金额统计为$total_dollar".PHP_EOL."<br/>服务费统计为$total_dollar_rate");
+            $output->writeln($admin_id."用户".$month."总金额统计为$total_dollar"."服务费统计为$total_dollar_rate"."<br/>");
       }
     }
 }
