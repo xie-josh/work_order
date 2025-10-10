@@ -35,6 +35,14 @@ class ConsumptionStatistics extends Backend
 
         array_push($where,['admin_group_access.group_id','in',[3]]);
         array_push($where,['admin.status','=',1]);
+        $time2 = [];
+        foreach($where as $k => &$v){
+            if($v[0] == 'admin.time2'){
+                $time2 = [$v[2][0],$v[2][1]];
+                unset($where[$k]);
+                continue;
+            }
+        }
 
         $time = $this->request->get('time');
         if(empty($time)) $this->error('请选择时间');
@@ -52,11 +60,18 @@ class ConsumptionStatistics extends Backend
             $adminMoneyList = DB::table('ba_admin_money_log')->field('admin_id,sum(money) money')->group('admin_id')->select()->toArray();
             $adminMoneyList = array_column($adminMoneyList,'money','admin_id');
 
+            $consumptionWhere = [];
+            if(!empty($time2))
+            {
+                $consumptionWhere[] = ['date_start','>=',$time2[0]];
+                $consumptionWhere[] = ['date_start','<=',$time2[1]];
+            }else{
+                $consumptionWhere[] = ['date_start','>=',$month.'-01'];
+                $consumptionWhere[] = ['date_start','<=',$time];
+            }
+
             $adminConsumptionList = DB::table('ba_account_consumption')->field('admin_id,sum(dollar) dollar')
-            ->where([
-                ['date_start','>=',$month.'-01'],
-                ['date_start','<=',$time],
-            ])
+            ->where($consumptionWhere)
             ->group('admin_id')
             ->select()->toArray();
             $adminConsumptionList = array_column($adminConsumptionList,'dollar','admin_id');
