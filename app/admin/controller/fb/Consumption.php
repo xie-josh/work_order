@@ -722,7 +722,7 @@ class Consumption extends Backend
         // $order = ['id'=>"desc"];
         $limit = 999;
         array_push($where,['admin_id','=',$adminId]);
-        $res = DB::table('ba_admin_money_log')->where($where)->select()->toArray();
+        $res = DB::table('ba_admin_money_log')->where($where)->order('create_time desc')->select()->toArray();
 
         $result = DB::table('ba_rate')->where('admin_id',$adminId)->order('create_time asc')->select()->toArray();
         $section = [];
