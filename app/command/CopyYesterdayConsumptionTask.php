@@ -18,10 +18,13 @@ class CopyYesterdayConsumptionTask extends Command
     {
         //php think CopyYesterdayConsumptionTask
         //$month = date("Y-m", strtotime("-1 month"));   //测试
-        $time = date("Y-m-d", time());
-        DB::table('ba_account_consumption_yesterday')->where(['date_start'=>$time])->delete();
-        $result =  DB::table('ba_account_consumption')->field('account_id,spend,dollar,date_start,date_stop,admin_id,create_time')->where(['date_start'=>$time])->select()->toArray();
-        $chunkResult = array_chunk($result, 1000);
+        $params['stort_time'] = date('Y-m-d', strtotime('-15 days'));
+        // $params['stort_time'] = '2024-11-01';
+        $params['stop_time'] = date('Y-m-d',time());
+        $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);dd($sSTimeList);
+        DB::table('ba_account_consumption_yesterday')->whereIn('date_start',$sSTimeList)->delete();
+        $result =  DB::table('ba_account_consumption')->field('account_id,spend,dollar,date_start,date_stop,admin_id,create_time')->whereIn('date_start',$sSTimeList)->select()->toArray();
+        $chunkResult = array_chunk($result, 2000);
         if(!empty($chunkResult))foreach($chunkResult as $k => $v)
         {
             $count = count($v);
@@ -30,6 +33,15 @@ class CopyYesterdayConsumptionTask extends Command
         }
         // 在这里编写你的定时任务逻辑
         $output->writeln("消耗插入完毕!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!！");
+    }
 
+    function generateTimeArray($startDate, $endDate) {
+        $startTimestamp = strtotime($startDate);
+        $endTimestamp = strtotime($endDate);
+        $timeArray = [];
+        for ($currentTimestamp = $startTimestamp; $currentTimestamp <= $endTimestamp; $currentTimestamp += 86400) {
+            $timeArray[] = date('Y-m-d', $currentTimestamp);
+        }
+        return $timeArray;
     }
 }
