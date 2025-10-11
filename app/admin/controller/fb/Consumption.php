@@ -782,6 +782,18 @@ class Consumption extends Backend
              {
                 $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
                 $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
+
+                $thisDay = $AllList[date('Y-m-d', time())]??0;   
+                $yesterDay = $AllList[date('Y-m-d', strtotime('-1 day'))]??0;
+                $temp = $v['remaining_amount'] - $thisDay - $yesterDay;
+                if($temp<$yesterDay)
+                {
+                    $v['atLeast_money']    = floor($yesterDay / 1000) * 1000;
+                    $v['suggestzui_money'] = $v['atLeast_money']+5000;
+                }else{
+                    $v['atLeast_money']    = 0;
+                    $v['suggestzui_money'] = 5000;
+                } 
              }
              $v['money1'] = $res[$k]['money']??'';
              $v['raw_money'] = $res[$k]['raw_money']??'';
@@ -789,17 +801,6 @@ class Consumption extends Backend
              $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
              else $v['create_time'] = '';
-
-
-             $thisDay = $AllList[date('Y-m-d', time())]??0;
-             $yesterDay = $AllList[date('Y-m-d', strtotime('-1 day'))]??0;
-             
-            $temp = $v['remaining_amount'] - $thisDay - $yesterDay;
-            if($temp<$yesterDay)
-            {
-                $v['remaining_amount']  = round($yesterDay / 1000) * 1000;
-                $v['suggestzui_money'] += 5000;
-            } 
         }
 
         //追加付款记录
