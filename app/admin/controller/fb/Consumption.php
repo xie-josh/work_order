@@ -770,13 +770,14 @@ class Consumption extends Backend
         $sunAllData['yesterday_total_dollar'] = $sunAllData['total_dollar'];
         $sunAllData['date_start'] = "合计";
 
-        array_unshift($list['all'], $sunAllData);
+        array_unshift($list['all'], $sunAllData); 
+        $AllList = array_column($list['all'],'total_dollar','create_time');
         foreach($list['all'] AS $k => &$v)
         {
              $v['money'] = $dataList[$k]['money']??'';
             //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
             //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
-             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??''; //可用金额
+             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
              if($k == 0)
              {
                 $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
@@ -788,6 +789,17 @@ class Consumption extends Backend
              $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
              else $v['create_time'] = '';
+
+
+             $thisDay = $AllList[date('Y-m-d', time())]??0;
+             $yesterDay = $AllList[date('Y-m-d', strtotime('-1 day'))]??0;
+             
+            $temp = $v['remaining_amount'] - $thisDay - $yesterDay;
+            if($temp<$yesterDay)
+            {
+                $v['remaining_amount']  = round($yesterDay / 1000) * 1000;
+                $v['suggestzui_money'] += 5000;
+            } 
         }
 
         //追加付款记录
