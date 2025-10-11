@@ -110,6 +110,8 @@ class AdminMoneyLog extends Backend
                 //$money = floor(($money + $rechargeMoney) * 100) / 100;
                 $money = Db::table('ba_admin')->where('id',$data['admin_id'])->update(['money'=>$money]);
                 
+                $createTime = $data['create_time']??'';                
+
                 $data = [
                     'admin_id'=>$data['admin_id'],
                     'money'=>$rechargeMoney,
@@ -120,7 +122,7 @@ class AdminMoneyLog extends Backend
                     'images'=>$data['images']??[],
                     'recharge_channel_name'=>$rate['name'],
                 ];
-
+                if(!empty($createTime)) $data['create_time'] = strtotime($createTime);
 
                 // $applicationData = [
                 //     'status'=>1,
@@ -131,7 +133,6 @@ class AdminMoneyLog extends Backend
                     
                 // ];
                 // DB::table('ba_wallet_account_application')->insert($applicationData);
-
                 $result = $this->model->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
