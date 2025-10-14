@@ -1620,6 +1620,82 @@ class AccountrequestProposal extends Backend
     
 
 
+    function editAccountName()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $data   = $this->excludeFields($data);
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+                
+                $params = [];
+                $params['account_id'] = $data['account_id'];
+                $params['name'] = $data['serial_name'];
+                $result = (new \app\admin\services\fb\FbService())->editAdAccounts($params);
+                if($result['code'] != 1) throw new \Exception($result['msg']);
+                DB::table('ba_accountrequest_proposal')->where('account_id',$data['account_id'])->update(['serial_name'=>$data['serial_name']]);
+
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
+    function allEditAccountName()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $errorList = [];
+            $data   = $this->excludeFields($data);
+            $result = false;
+            $this->model->startTrans();
+            try {
+                // 模型验证
+
+
+
+                $errorList = [];
+                foreach($data['list'] as $v)
+                {
+                    $v =  preg_replace('/\s+/', '', $v);
+                    $item = explode('|',$v);
+                    $params = [];
+                    $params['account_id'] = $item[0];
+                    $params['name'] = $item[1];
+                    $result = (new \app\admin\services\fb\FbService())->editAdAccounts($params);
+                    if($result['code'] != 1) $errorList[] = $item[0].':'.$result['msg'];
+                    DB::table('ba_accountrequest_proposal')->where('account_id',$params['account_id'])->update(['serial_name'=>$item[1]]);
+                }                
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'),['errrorList'=>$errorList]);
+            } else {
+                $this->error(__('No rows updated'),['errrorList'=>$errorList]);
+            }
+        }
+    }
+
 
     
     /**
