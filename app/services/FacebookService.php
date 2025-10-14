@@ -243,6 +243,91 @@ class FacebookService
         }
     }
 
+
+    public function adAccounts2($params){
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id']??'439626741939329';
+            
+            $param = [
+                'fields'=> 'spend_cap,amount_spent,balance,currency,account_status,name,funding_source_details',
+            ];
+            $url = "https://graph.facebook.com/v21.0/act_".$accountId;
+            $method = 'get';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+
+            dd($result);
+            if(isset($result['id'])){
+                //未限制FB额度 - 不可查看
+                //FB数据限制，异常状态
+                //冻卡异常
+                //添加FB操作日志记录，记录所有操作失败的原因与参数
+                
+                //if(empty($result['spend_cap'])) throw new \Exception("错误: 未限制额度！");
+                
+                $balanceAmount = $result['spend_cap'] == 0 ? 0 : (($result['spend_cap'] - $result['amount_spent']) / 100);
+                $data = [
+                    "spend_cap" => $result['spend_cap'] == 0 ? 0 : $result['spend_cap'] / 100,
+                    "amount_spent" => $result['amount_spent'] == 0 ? 0 : $result['amount_spent'] / 100,
+                    'balance_amount'=>$balanceAmount,
+                    "balance" => $result['balance'],
+                    "currency" => $result['currency'],
+                    "account_status" => $result['account_status'],
+                    "id" => $accountId,
+                ];
+                return $this->returnSucceed($data);
+            }else{
+                $this->log('FB_adAccounts',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_adAccounts',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+    public function editAdAccounts($params){
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id'];
+            
+            if(!empty($params['name'])){
+                $param['name'] = $params['name'];
+            }
+            if(!empty($params['spend_cap_action'])){
+                $param['spend_cap_action'] = $params['spend_cap_action'];
+            }
+            if(!empty($params['spend']) && $params['spend'] > 0){
+                $param['spend_cap'] = $params['spend'];
+            }
+
+            $url = "https://graph.facebook.com/v21.0/act_".$accountId;
+            $method = 'POST';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+
+            if(isset($result['success']) && $result['success'] == true){                                
+                $data = [
+                    'account_id'=>$accountId,
+                    // 'name'=>$name,
+                ];
+                return $this->returnSucceed($data);
+            }else{
+                $this->log('FB_editAdAccounts',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_editAdAccounts',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+
     public function adAccountsDelete($params){
         try {
             $token = $params['token'];
