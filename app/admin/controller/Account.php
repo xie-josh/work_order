@@ -483,7 +483,8 @@ class Account extends Backend
                         $this->model->where('id',$v['id'])->update($data);
                         $allocateTime = date('md',time());
 
-                        $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
+                        if(!in_array($v['admin_id'],[200,87,234])) $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
+                        else $getSerialName = $v['name'];
 
 
                         $data = ['status'=>1,'allocate_time'=>$allocateTime,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time(),'serial_name'=>$getSerialName,'currency'=>$v['currency']];
@@ -533,6 +534,12 @@ class Account extends Backend
 
                         $this->model->whereIn('id',$v['id'])->update(['open_money'=>$v['money']]);
                         
+                        //修改名称
+                        $editAdAccounts = [];
+                        $editAdAccounts['account_id'] = $resultProposal['account_id'];
+                        $editAdAccounts['name'] = $resultProposal['serial_name'];
+                        (new \app\admin\services\fb\FbService())->assignedUsers($editAdAccounts);
+                        (new \app\admin\services\fb\FbService())->editAdAccounts($editAdAccounts);
 
 
                         //根据bes生成对等个数的开户绑定条数
@@ -951,7 +958,9 @@ class Account extends Backend
                     DB::table('ba_account')->where('id',$resultAccount['id'])->update($data);
                     $allocateTime = date('md',time());
 
-                    $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($v);
+                    if(!in_array($v['admin_id'],[200,87,234])) $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
+                    else $getSerialName = $v['name'];
+                    
                     $data = ['status'=>1,'affiliation_admin_id'=>$resultAccount['admin_id'],'allocate_time'=>$allocateTime,'update_time'=>time(),'serial_name'=>$getSerialName,'currency'=>$resultAccount['currency']];
                     if(empty($v['time_zone']) && !empty($resultAccount['time_zone'])) $data['time_zone'] = $resultAccount['time_zone'];
                     DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->update($data);
