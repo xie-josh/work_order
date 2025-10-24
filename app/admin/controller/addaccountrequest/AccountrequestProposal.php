@@ -1071,7 +1071,7 @@ class AccountrequestProposal extends Backend
                 switch($typr){
                     case 1:
                     //    //SX-用户不改限额
-                       if(false && !in_array($adminId,config('basics.QUOTA_USER')))
+                       if(env('APP.IS_QUOTA'))
                        {
                             $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
                             $param['transaction_limit_type'] = 'limited';
@@ -1088,7 +1088,7 @@ class AccountrequestProposal extends Backend
                         break;
                     case 3:
                         //SX-用户不改限额
-                       if(false && !in_array($adminId,config('basics.QUOTA_USER')))
+                       if(env('APP.IS_QUOTA'))
                        {
                             $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
                             $param['transaction_limit_type'] = 'limited';
