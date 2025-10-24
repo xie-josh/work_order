@@ -31,8 +31,9 @@ class RechargeRecycleModel extends Model
     public function getCurrencyNumberAttr($value,$data){
         $currency = $this->accountrequestProposal()->where('account_id',$data['account_id'])->value('currency');
         $currencyNumber =  '';
-        if(!empty($this->currencyRate[$currency])){
-            $currencyNumber = bcmul((string)$data['number'], $this->currencyRate[$currency],2);
+        $currencyRate = json_decode(env('APP.currency'),true);
+        if(!empty($currencyRate[$currency])){
+            $currencyNumber = bcmul((string)$data['number'], $currencyRate[$currency],2);
         }else{
             $currencyNumber = (string)$data['number'];
         }

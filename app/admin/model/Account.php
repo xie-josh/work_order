@@ -29,8 +29,9 @@ class Account extends Model
     public function getCurrencyNumberAttr($value,$data){
         $currency = $this->accountrequestProposal()->where('account_id',$data['account_id'])->value('currency');
         $currencyNumber =  '';
-        if(!empty($this->currencyRate[$currency])){
-            $currencyNumber = bcmul((string)$data['money'], $this->currencyRate[$currency],2);
+        $currencyRate = json_decode(env('APP.currency'),true);
+        if(!empty($currencyRate[$currency])){
+            $currencyNumber = bcmul((string)$data['money'], $currencyRate[$currency],2);
         }else{
             $currencyNumber = (string)$data['money'];
         }
@@ -40,8 +41,9 @@ class Account extends Model
     public function getCurrencyOpenMoneyAttr($value,$data){
         $currency = $this->accountrequestProposal()->where('account_id',$data['account_id'])->value('currency');
         $currencyNumber =  '';
-        if(!empty($this->currencyRate[$currency])){
-            $currencyNumber = bcmul((string)$data['open_money'], $this->currencyRate[$currency],2);
+        $currencyRate = json_decode(env('APP.currency'),true);
+        if(!empty($currencyRate[$currency])){
+            $currencyNumber = bcmul((string)$data['open_money'], $currencyRate[$currency],2);
         }else{
             $currencyNumber = (string)$data['open_money'];
         }

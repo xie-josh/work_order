@@ -30,7 +30,7 @@ class AccountrequestProposal extends Backend
 
     protected bool|string|int $dataLimit = 'parent';
 
-    protected $currencyRate = ["EUR"=>"0.8","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000","VND"=>"23500","GBP"=>"0.7"];
+    protected $currencyRate = [];
 
     public function initialize(): void
     {
@@ -318,7 +318,7 @@ class AccountrequestProposal extends Backend
         if(!empty($result['data'])) {
             $dataList = $result['data'];
 
-            $currencyRate = config('basics.currency');
+            $currencyRate = json_decode(env('APP.currency'),true);
 
             $accountListIds = array_column($dataList,'account_id');
 
@@ -863,7 +863,7 @@ class AccountrequestProposal extends Backend
 
         $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountrequestProposal['account_id'])->where('date_start','>=',$openTime)->sum('spend');
 
-        $currencyRate = config('basics.currency');
+        $currencyRate = json_decode(env('APP.currency'),true);
 
         $balance = '';
 
@@ -1546,7 +1546,7 @@ class AccountrequestProposal extends Backend
         })
         ->field('sum(spend_cap) spend_cap,sum(amount_spent) amount_spent,currency')->group('currency')->select()->toArray(); 
 
-        $currencyRate = config('basics.currency');
+        $currencyRate = json_decode(env('APP.currency'),true);
 
         $tokenCapSpent = 0;
         $tokenAmountSpent = 0;

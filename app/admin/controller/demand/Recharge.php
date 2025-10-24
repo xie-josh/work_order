@@ -373,8 +373,9 @@ class Recharge extends Backend
                             $currency = $resultProposal['currency'];
 
                             $currencyNumber =  '';
-                            if(!empty($this->currencyRate[$currency])){
-                                $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
+                            $currencyRate = json_decode(env('APP.currency'),true);
+                            if(!empty($currencyRate[$currency])){
+                                $currencyNumber = bcdiv((string)$money, $currencyRate[$currency],2);
                             }else{
                                 $currencyNumber = (string)$money;
                             }
@@ -566,8 +567,9 @@ class Recharge extends Backend
                 $currency = $accountrequestProposal['currency'];
 
                 $currencyNumber =  '';
-                if(!empty($this->currencyRate[$currency])){
-                    $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
+                $currencyRate = json_decode(env('APP.currency'),true);
+                if(!empty($currencyRate[$currency])){
+                    $currencyNumber = bcdiv((string)$money, $currencyRate[$currency],2);
                 }else{
                     $currencyNumber = (string)$money;
                 }

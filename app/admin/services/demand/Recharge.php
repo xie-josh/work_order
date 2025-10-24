@@ -74,9 +74,10 @@ class Recharge
 
             $fbNumber = $result['number'];
             $accountMoney = $account['money'];
-            if(!empty($this->currencyRate[$currency])){
-                $fbNumber = bcmul((string)$fbNumber, $this->currencyRate[$currency],2);
-                $spendCapUs = bcdiv((string)$spendCapUs, $this->currencyRate[$currency],2);
+            $currencyRate = json_decode(env('APP.currency'),true);
+            if(!empty($currencyRate[$currency])){
+                $fbNumber = bcmul((string)$fbNumber, $currencyRate[$currency],2);
+                $spendCapUs = bcdiv((string)$spendCapUs, $currencyRate[$currency],2);
             }            
             
             if($spendCapUs == 0.01) $spendCapUs = 0;
@@ -383,9 +384,10 @@ class Recharge
 
             $currencyNumber =  '';
             $spendCap = $fbBoney;
-            if(!empty($this->currencyRate[$currency])){
-                $currencyNumber = bcdiv((string)$money, $this->currencyRate[$currency],2);
-                $spendCap = bcdiv((string)$fbBoney, $this->currencyRate[$currency],2);
+            $currencyRate = json_decode(env('APP.currency'),true);
+            if(!empty($currencyRate[$currency])){
+                $currencyNumber = bcdiv((string)$money, $currencyRate[$currency],2);
+                $spendCap = bcdiv((string)$fbBoney, $currencyRate[$currency],2);
             }else{
                 $currencyNumber = (string)$money;
             }
@@ -485,9 +487,10 @@ class Recharge
             $fbNumber = $result['number'];
 
             $spendCap = $fbBoney;
-            if(!empty($this->currencyRate[$currency])){
-                $fbNumber = bcmul((string)$fbNumber, $this->currencyRate[$currency],2);
-                $spendCap = bcdiv((string)$fbBoney, $this->currencyRate[$currency],2);
+            $currencyRate = json_decode(env('APP.currency'),true);
+            if(!empty($currencyRate[$currency])){
+                $fbNumber = bcmul((string)$fbNumber, $currencyRate[$currency],2);
+                $spendCap = bcdiv((string)$fbBoney, $currencyRate[$currency],2);
             }
 
             if($spendCap == 0.01) $spendCap = 0;
