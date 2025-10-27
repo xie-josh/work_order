@@ -44,4 +44,6 @@ return  [
     "BM_EMAIL"=>["gmail","hotmail","outlook"],
     "SETTLEMENT_DAYS"=>[10,16],
     "QUOTA_USER"=>[200,201,234,121], //限额用户ID
+    "proposal_status"=>[],
+    "NOT_SERIAL_NAME"=>[200,87,234]
 ];
