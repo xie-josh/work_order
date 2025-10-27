@@ -483,7 +483,7 @@ class Account extends Backend
                         $this->model->where('id',$v['id'])->update($data);
                         $allocateTime = date('md',time());
 
-                        if(!in_array($v['admin_id'],[200,87,234])) $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
+                        if(!in_array($v['admin_id'],config('basics.NOT_SERIAL_NAME'))) $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
                         else $getSerialName = $v['name'];
 
 
@@ -958,8 +958,8 @@ class Account extends Backend
                     DB::table('ba_account')->where('id',$resultAccount['id'])->update($data);
                     $allocateTime = date('md',time());
 
-                    if(!in_array($v['admin_id'],[200,87,234])) $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($accountrequestProposal);
-                    else $getSerialName = $v['name'];
+                    if(!in_array($resultAccount['admin_id'],config('basics.NOT_SERIAL_NAME'))) $getSerialName = (new \app\admin\services\addaccountrequest\AccountrequestProposal())->getSerialName($v);
+                    else $getSerialName = $resultAccount['name'];
                     
                     $data = ['status'=>1,'affiliation_admin_id'=>$resultAccount['admin_id'],'allocate_time'=>$allocateTime,'update_time'=>time(),'serial_name'=>$getSerialName,'currency'=>$resultAccount['currency']];
                     if(empty($v['time_zone']) && !empty($resultAccount['time_zone'])) $data['time_zone'] = $resultAccount['time_zone'];
