@@ -1426,6 +1426,7 @@ class Account extends Backend
 
             $admin = Db::table('ba_admin')->where('id',$this->auth->id)->find();
             $accountNumber = $admin['account_number'];
+            $prepaymentType = $admin['prepayment_type'];
             // $isAccount = $admin['is_account'];
             // $usableMoney = ($admin['money'] - $admin['used_money']);
             // if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
@@ -1494,7 +1495,7 @@ class Account extends Backend
                 ];
                 $data[] = $d;
             }
-            if($isKeepCount>0)
+            if($isKeepCount>0 && $prepaymentType != 1)
             {
                 $amount =  bcmul($isKeepCount, '10');//---养户充值*10
                 $where['id'] = $this->auth->id;
