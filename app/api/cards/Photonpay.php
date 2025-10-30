@@ -327,6 +327,13 @@ class Photonpay extends Backend implements CardInterface
             'pageIndex'=>$params['page_index']??1,
             'pageSize'=>$params['page_size']??200,
         ];
+
+        if(!empty($params['createdAtStart']) && !empty($params['createdAtStart']))
+        {
+            $param['createdAtStart'] = $params['createdAtStart'];
+            $param['createdAtEnd'] = $params['createdAtEnd'];
+        }
+
         $result = $this->curlHttp($url,$method,$header,$param);
         if($result['msg'] == 'succeed'){
             $data = [

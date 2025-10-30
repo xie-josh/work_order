@@ -19,6 +19,7 @@ class SettlementTask extends Command
     {
         //php think SettlementTask
         $time = date('H');
+        $day = date('d');
 
         $where = [
             ['admin_group_access.group_id','in',[3]],
@@ -31,10 +32,14 @@ class SettlementTask extends Command
         ->where($where)
         ->select()->toArray();
 
+        if($day <= 5) $startTime = date('Y-m-01',strtotime('-1 month'));
+        else $startTime = date('Y-m-01',time());
+        $endTime = date('Y-m-d',time());
+
         foreach($adminList as $v)
         {
-            $v['start_time'] = date('Y-m-01',time());
-            $v['end_time'] = date('Y-m-d',time());
+            $v['start_time'] = $startTime;
+            $v['end_time'] = $endTime;
             $jobHandlerClassName = 'app\job\Settlement';
             $jobQueueName = 'Settlement';
             Queue::later(1800, $jobHandlerClassName, $v, $jobQueueName);
@@ -43,8 +48,8 @@ class SettlementTask extends Command
         $SETTLEMENT_DAYS = config('basics.SETTLEMENT_DAYS');
         if(in_array($time,$SETTLEMENT_DAYS)){
             $data = [];
-            $data['start_time'] = date('Y-m-01',time());
-            $data['end_time'] = date('Y-m-d',time());
+            $data['start_time'] = $startTime;
+            $data['end_time'] = $endTime;
             $data['settlement_time'] = $time;
             $jobHandlerClassName = 'app\job\SettlementSummary';
             $jobQueueName = 'SettlementSummary';
