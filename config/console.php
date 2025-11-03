@@ -19,6 +19,6 @@ return [
         'SettlementTask' => 'app\command\SettlementTask',
         'MonthConsumptionTotalTask' => 'app\command\MonthConsumptionTotalTask',
         'CopyYesterdayConsumptionTask' => 'app\command\CopyYesterdayConsumptionTask',
-        'AccountPendingRecycle' => 'app\command\AccountPendingRecycle',
+        'AccountPendingRecycleTask' => 'app\command\AccountPendingRecycleTask',
     ],
 ];
