@@ -9,6 +9,7 @@ use app\common\controller\Backend;
 use think\facade\Db;
 use app\services\CardService;
 use app\common\service\QYWXService;
+use think\facade\Queue;
 
 /**
  * 账户管理
@@ -1159,6 +1160,64 @@ class Account extends Backend
 
 
     public function errAccount()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            try {             
+                $accountList = $data['account_list'];
+                $accountStatus = $data['account_status']??0;
+
+                $taskCount =  Cache::store('redis')->handler()->llen('{queues:AccountRecycle}');
+
+                if($taskCount > 0) throw new \Exception('在回收，请回收完成后在加入新的任务!');
+                
+                if(empty($accountList)) throw new \Exception("Error Processing Request");
+
+                $bmDataList = DB::table('ba_bm')->whereIn('account_id',$accountList)->where('demand_type',2)->where(function($query){
+                    $query->whereOr(
+                        [
+                            ['status','=',0],
+                            ['dispose_type','=',0]
+                        ]   
+                        );
+                })->where([
+                    ['status','<>',2],
+                    ['dispose_type','<>',2]
+                ])->find();
+                if(!empty($bmDataList)) throw new \Exception("BM解绑未处理完成，请先处理BM解绑！".$bmDataList['account_id']);
+
+                $rechargeDataList = DB::table('ba_recharge')->whereIn('account_id',$accountList)
+                ->whereIn('type',[3,4])->where('status',0)->find();
+
+                if(!empty($rechargeDataList)) throw new \Exception("充值需求还有未处理的，请先处理完成！".$rechargeDataList['account_id']);
+              
+                $accountDataList = DB::table('ba_account')->whereIn('account_id',$accountList)->select()->toArray();
+                if(empty($accountDataList)) throw new \Exception(implode(',',$accountList)."账户ID没有可回收的账户！");
+
+                foreach ($accountList as $value) {
+                    $accountId = $value;
+
+                    $jobHandlerClassName = 'app\job\AccountRecycle';
+                    $jobQueueName = 'AccountRecycle';
+                    Queue::later(1, $jobHandlerClassName, ['account_id'=>$accountId,'status'=>$accountStatus], $jobQueueName);
+                }
+
+                $result = true;
+                // if(!empty($diffData)) throw new \Exception(implode(',',$diffData)."账户ID回收失败！");
+            } catch (Throwable $e) {
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
+
+
+    public function errAccount2()
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
