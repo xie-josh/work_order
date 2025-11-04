@@ -18,8 +18,23 @@ class AccountPendingRecycleTask extends Command
     protected function execute(Input $input, Output $output)
     {
         //php think AccountPendingRecycleTask
+        // $cc = ["165","171","194","220","221","225","233","256","257","268","278"];
         // 4小时更新一次
-        $accountList = DB::table('ba_account')->where('status',4)->field('id,account_id,open_time')->select()->toArray();
+
+        
+
+        $where = [
+            ['account.status','=',4],
+            ['accountrequest_proposal.admin_id','IN',["165","171","194","220","221","225","233","256","257","268","278"]],
+            ['accountrequest_proposal.account_status','IN',[1,3]],
+        ];
+
+        $accountList = DB::table('ba_account')
+        ->alias('account')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->where($where)
+        ->field('account.id,account.account_id,account.open_time')
+        ->select()->toArray();
 
         foreach($accountList as $v){
             $jobHandlerClassName = 'app\job\AccountPendingRecycle';

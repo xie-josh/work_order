@@ -18,7 +18,7 @@ class AccountPendingRecycle
             $accountId = $data['account_id'];
             $openTime = $data['open_time'];
 
-            $openDate = date('Y-m-d',$openTime);
+            $openDate = date('Y-m-d H:i:s',$openTime);
             $where = [
                 ['date_start','>=',$openDate],
                 ['spend','>',0],
@@ -45,7 +45,13 @@ class AccountPendingRecycle
                     ]
                 );                
             }
-           
+
+            DB::table('ba_account')->where('account_id',$accountId)->update(['idle_time'=>$seconds]);
+
+            $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountId)->sum('dollar');            
+            $totalConsumption = bcadd((string)$accountSpent,"0",2);
+            DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['total_consumption'=>$totalConsumption]);
+                       
             $job->delete();
         } catch (\Throwable $th) {
             (new \app\services\Basics())->logs('AccountPendingRecycleJobError',$data,$th->getMessage());
