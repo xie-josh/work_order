@@ -205,23 +205,9 @@ class AccountrequestProposal extends Backend
 
             foreach($dataList as &$v){
 
-                $openDate = date('Y-m-d',$v['open_time']);
-                $where = [
-                    ['date_start','>=',$openDate],
-                    ['spend','>',0],
-                    ['account_id','=',$v['account_id']],
-                ];
-                $consumption = DB::table('ba_account_consumption')->where($where)->order('date_start','desc')->find();
-                $consumptionDate = isset($consumption['date_start'])?$consumption['date_start']:$openDate;
-
-                $ts1 = time();
-                $ts2 = strtotime($consumptionDate);
-                
-                $seconds = $ts1 - $ts2;
-
-                if($seconds > 86400){
-                    $days = floor($seconds / 86400) - 1;
-                    $hours = floor(($seconds % 86400) / 3600);
+                if($v['idle_time'] > 86400){
+                    $days = floor($v['idle_time'] / 86400);
+                    $hours = floor(($v['idle_time'] % 86400) / 3600);
                 }else{
                     $days = 0;
                     $hours = 0;

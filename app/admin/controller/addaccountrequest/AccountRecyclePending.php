@@ -53,7 +53,7 @@ class AccountRecyclePending extends Backend
 
             foreach($dataList as &$v){
                 if($v['idle_time'] > 86400){
-                    $days = floor($v['idle_time'] / 86400) - 1;
+                    $days = floor($v['idle_time'] / 86400);
                     $hours = floor(($v['idle_time'] % 86400) / 3600);
                 }else{
                     $days = 0;
