@@ -210,7 +210,7 @@ class AccountrequestProposal extends Backend
                     $hours = floor(($v['idle_time'] % 86400) / 3600);
                 }else{
                     $days = 0;
-                    $hours = 0;
+                    $hours = floor($v['idle_time'] / 3600);
                 }                            
 
                 $spendCap = $v['spend_cap'] == 0.01?0:$v['spend_cap'];
@@ -1625,6 +1625,11 @@ class AccountrequestProposal extends Backend
         if(!empty($data['label_ids'])) $item['label_ids'] = implode(',',$data['label_ids']);
 
         $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update($item);
+
+        if(!empty($data['bm_id'])) foreach($accountIds as $v)
+        {
+            $this->assignedUsersJob($v,$data['bm_id']);
+        }
 
         if($result) $this->success('更新成功！');
         else $this->error('未找到可以更新的！');
