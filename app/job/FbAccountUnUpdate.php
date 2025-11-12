@@ -275,6 +275,7 @@ class FbAccountUnUpdate
             }else if($k == 3){
                 $resultList = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',2)->column('account_id');
                 $resultList2 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',0)->whereNotNull('pull_account_status')->column('account_id');
+                $resultList3 = DB::table('ba_accountrequest_proposal')->where([['status','<>',0]])->whereIn('account_id',$v)->where('account_status',1)->whereNotNull('pull_account_status')->column('account_id');
                 foreach($resultList as $v){
                     $dataList[] = [
                         'account_id'=>$v,
@@ -286,6 +287,13 @@ class FbAccountUnUpdate
                     $dataList[] = [
                         'account_id'=>$v,
                         'type'=>5,
+                        'create_time'=>time()
+                    ];
+                }
+                foreach($resultList3 as $v){
+                    $dataList[] = [
+                        'account_id'=>$v,
+                        'type'=>6,
                         'create_time'=>time()
                     ];
                 }
