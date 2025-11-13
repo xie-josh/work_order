@@ -293,7 +293,7 @@ class FbAccountUnUpdate
                 foreach($resultList3 as $v){
                     $dataList[] = [
                         'account_id'=>$v,
-                        'type'=>6,
+                        'type'=>7,
                         'create_time'=>time()
                     ];
                 }
