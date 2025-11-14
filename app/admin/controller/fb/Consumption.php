@@ -997,7 +997,10 @@ class Consumption extends Backend
                     }
                     foreach($dd as $item2)
                     {
-                        if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']) $openTime = $item2['strat_open_time'];
+                        if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']){
+                            $openTime = $item2['strat_open_time'];
+                            $serialName = $item2['name'];
+                        }
                     }
                 }
                 // dd($accountIskeepList['411380995335659']);
@@ -1194,10 +1197,10 @@ class Consumption extends Backend
             // ['is_keep','=',1]
             ['status','=',4]
         ];
-        $accountList = DB::table('ba_account')->field('is_keep,account_id,open_time,keep_time')->where($where)->order('id','asc')->select()->toArray();
+        $accountList = DB::table('ba_account')->field('is_keep,account_id,open_time,keep_time,name')->where($where)->order('id','asc')->select()->toArray();
         array_push($where,['open_time','<>','NULL']);
         // array_push($where,['keep_time','<>','NULL']);
-        $accountRecycleList = DB::table('ba_account_recycle')->field('is_keep,account_id,open_time,keep_time')->where($where)->order('id','asc')->select()->toArray();
+        $accountRecycleList = DB::table('ba_account_recycle')->field('is_keep,account_id,open_time,keep_time,name')->where($where)->order('id','asc')->select()->toArray();
 
 
         $list = array_merge($accountRecycleList,$accountList);
@@ -1232,7 +1235,8 @@ class Consumption extends Backend
 
                 $data[$value2['account_id']]['open'][] = [
                     'strat_open_time' => $value2['strat_open_time'],
-                    'end_open_time' => $value2['end_open_time']
+                    'end_open_time' => $value2['end_open_time'],
+                    'name'=>$value2['name']
                 ];
             }
         }

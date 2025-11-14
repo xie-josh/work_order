@@ -97,11 +97,25 @@ class Settlement
 
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $accountIds = array_unique(array_column($data,'account_id'));
+            $accountNameList = $this->accountNameList($accountIds);
             $dataList = [];
-             foreach($data as $v){
+            foreach($data as $v){
+                $serialName = $v['serial_name'];
+                if(isset($accountNameList[$v['account_id']]))
+                {
+                    $dd = $accountNameList[$v['account_id']];
+                    foreach($dd as $item2)
+                    {
+                        if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']){
+                            $serialName = $item2['name'];
+                        }
+                    }
+                }                
+
                 $dataList[]  = [
                     $accountStatus[$v['account_status']]??'未找到状态',
-                    $v['serial_name'],
+                    $serialName,
                     $v['account_id'],
                     $v['currency'],
                     (float)$v['spend'],
@@ -145,6 +159,42 @@ class Settlement
             'create_time'=>time(),
         ]);
         return true;
+    }
+    public function accountNameList($accountIds)
+    {
+        $where = [
+            ['status','=',4],
+            ['account_id','IN',$accountIds]
+        ];
+        $accountList = DB::table('ba_account')->field('is_keep,account_id,open_time,keep_time,name')->where($where)->order('id','asc')->select()->toArray();
+        array_push($where,['open_time','<>','NULL']);
+        $accountRecycleList = DB::table('ba_account_recycle')->field('is_keep,account_id,open_time,keep_time,name')->where($where)->order('id','asc')->select()->toArray();
+
+
+        $list = array_merge($accountRecycleList,$accountList);
+        $data = [];
+
+        $accountRecycleList = [];
+        foreach ($list as $key => $item) {
+            $item['open_time'] = date('Y-m-d',$item['open_time']);
+            $accountRecycleList[$item['account_id']][] = $item;
+        }
+
+        foreach($accountRecycleList as $key => &$value){
+            foreach ($value as $key2 => &$value2) {  
+                $value2['strat_open_time'] = $value2['open_time'];
+                $value2['end_open_time'] = '';
+                if(isset($value[$key2+1])) $value2['end_open_time'] = $value[$key2+1]['open_time'];
+                else $value2['end_open_time'] = date('Y-m-d',time());
+
+                $data[$value2['account_id']][] = [
+                    'strat_open_time' => $value2['strat_open_time'],
+                    'end_open_time' => $value2['end_open_time'],
+                    'name'=>$value2['name']
+                ];
+            }
+        }
+        return $data;
     }
 
 }
