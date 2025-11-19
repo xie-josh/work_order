@@ -410,7 +410,28 @@ class Recharge extends Backend
                     foreach($ids as $v){
                         if($v['type'] == 1){
                             //DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
-                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
+                            
+                            
+                            // DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
+                            $usedMoney =  $this->auditTeamUsedMoney($v['number'],$v['account_id']);
+                            if($usedMoney['code'] != 1)  throw new \Exception($usedMoney['msg']);
+
+                        }else if($v['type'] == 3 || $v['type'] == 4)
+                        {
+
+                            $cards = DB::table('ba_accountrequest_proposal')
+                            ->field('cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id')
+                            ->alias('accountrequest_proposal')
+                            ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+                            ->where('accountrequest_proposal.account_id',$v['account_id'])
+                            ->find();
+                            //$cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();
+                            if(!empty($cards) && $cards['card_status'] == 'frozen') {
+                                $resultCards = (new CardService($cards['account_id']))->cardUnFreeze(['card_id'=>$cards['card_id']]);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                                if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
+                            }
+                            (new \app\admin\services\card\Cards())->allCardUnFreeze($cards['account_id']);
                         }
                     }
                 }
@@ -724,7 +745,7 @@ class Recharge extends Backend
     {
         $jobHandlerClassName = 'app\job\AccountSpendDelete';
         $jobQueueName = 'AccountSpendDelete';
-        Queue::later(3600, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        Queue::later(259200, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
         return true;
     }
 
