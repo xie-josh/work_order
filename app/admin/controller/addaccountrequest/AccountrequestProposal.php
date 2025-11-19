@@ -210,7 +210,7 @@ class AccountrequestProposal extends Backend
                     $hours = floor(($v['idle_time'] % 86400) / 3600);
                 }else{
                     $days = 0;
-                    $hours = floor($v['idle_time'] / 3600);
+                    $hours = 0;
                 }                            
 
                 $spendCap = $v['spend_cap'] == 0.01?0:$v['spend_cap'];
@@ -981,7 +981,7 @@ class AccountrequestProposal extends Backend
             $id = DB::table('ba_recharge')->insertGetId($data);
             $jobHandlerClassName = 'app\job\AccountSpendDelete';
             $jobQueueName = 'AccountSpendDelete';
-            Queue::later(1, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+            Queue::later(60, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
         }
         $this->success('',[]);
     }
@@ -1610,7 +1610,7 @@ class AccountrequestProposal extends Backend
         $accountIds = $data['account_ids'];        
 
         $item = [];
-        if(!empty($data['status'])){
+        if(isset($data['status'])){
             $item['status'] = $data['status'];
             if($data['status'] == 99) $item['account_status'] = 0;
         }
