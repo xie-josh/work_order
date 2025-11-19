@@ -1610,7 +1610,7 @@ class AccountrequestProposal extends Backend
         $accountIds = $data['account_ids'];        
 
         $item = [];
-        if(isset($data['status'])){
+        if(!empty($data['status'])){
             $item['status'] = $data['status'];
             if($data['status'] == 99) $item['account_status'] = 0;
         }
