@@ -63,6 +63,8 @@ class Recharge extends Backend
             }
         }
 
+        array_push($where,['recharge.audit_status','=',2]);
+
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
@@ -74,14 +76,14 @@ class Recharge extends Backend
             $result = $res->toArray();
             $dataList = [];
             // $adminNameArr = DB::table('ba_admin')->column('username','id');
-            $adminNameArr = DB::table('ba_admin')->field('username,id,prepayment_type')->select()->toArray();
+            $adminNameArr = DB::table('ba_admin')->field('nickname,id,prepayment_type')->select()->toArray();
             if(!empty($result['data'])) {
                 $dataList = $result['data'];
                 $adminNameArr = array_column($adminNameArr,null,'id');
                 
                 // dd($adminNameArr);
                 foreach($dataList as &$v){
-                    $v['username'] = $adminNameArr[$v['admin_id']]['username']??"";
+                    $v['username'] = $adminNameArr[$v['admin_id']]['nickname']??"";
                     $v['prepayment_type'] = $adminNameArr[$v['admin_id']]['prepayment_type']??"";
                     if(in_array($v['account_id'],$wk)){
                         $v['wk_type'] = 1;
@@ -299,7 +301,7 @@ class Recharge extends Backend
             foreach($redisLockList as $v){
                 $key = 'recharge_audit_'.$v;
                 $acquired = $redisLock->acquire($key, 'audit', 180);
-                if(!$acquired)  $this->error($v.":该需求被锁定，处理中！");               
+                // if(!$acquired)  $this->error($v.":该需求被锁定，处理中！");               
             }
 
             $result = false;
@@ -318,12 +320,7 @@ class Recharge extends Backend
                 if($status == 1){
                     foreach($ids as $v){
 
-                        // $key = 'recharge_audit_'.$v['id'];
-                        // $redisValue = Cache::store('redis')->get($key);
-                        // if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
-                        // Cache::store('redis')->set($key, '1', 180);
-
-                        $accountIs_ = DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->value('is_');
+                        // $accountIs_ = DB::table('ba_account')->where('account_id',$v['account_id'])->inc('money',$v['number'])->value('is_');
                         //if($accountIs_ != 1) throw new \Exception("错误：账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
 
                         $resultProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->find();
@@ -352,7 +349,10 @@ class Recharge extends Backend
                             }
                         }elseif($v['type'] == 2){
                             DB::table('ba_account')->where('account_id',$v['account_id'])->dec('money',$v['number'])->update(['update_time'=>time()]);
-                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
+                            // DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['number'])->update();
+                            $usedMoney =  $this->auditTeamUsedMoney($v['number'],$v['account_id']);
+                            if($usedMoney['code'] != 1)  throw new \Exception($usedMoney['msg']);
+                            
 
                             $param = [
                                 'transaction_limit_type'=>'limited',
@@ -384,6 +384,9 @@ class Recharge extends Backend
                                 $currencyNumber = (string)$money;
                             }
 
+                            $accountMoney = DB::table('ba_account')->where('account_id',$v['account_id'])->value('money');
+                            if($accountMoney < $currencyNumber) throw new \Exception('警告：清零金额不可大于账户总充值！');
+
                             $data = [
                                 'fb_money'=>$fbBoney,
                                 'number'=>$currencyNumber,
@@ -391,8 +394,10 @@ class Recharge extends Backend
                             ];
                             $this->model->where('id',$v['id'])->update($data);
                             DB::table('ba_account')->where('account_id',$v['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
-                            DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$currencyNumber)->update();
+                            // DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$currencyNumber)->update();
 
+                            $usedMoney =  $this->auditTeamUsedMoney($currencyNumber,$v['account_id']);
+                            if($usedMoney['code'] != 1)  throw new \Exception($usedMoney['msg']);
                             
                             if($resultProposal['is_cards'] == 2) continue;
                             $cards = DB::table('ba_cards_info')->where('cards_id',$resultProposal['cards_id']??0)->find();

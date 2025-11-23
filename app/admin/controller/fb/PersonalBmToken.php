@@ -6,6 +6,7 @@ use Throwable;
 use ba\Random;
 use app\common\controller\Backend;
 use app\admin\model\User as UserModel;
+use think\facade\Db;
 
 class PersonalBmToken extends Backend
 {
@@ -29,10 +30,40 @@ class PersonalBmToken extends Backend
     }
 
 
-    // public function del(array $ids = []): void
-    // {
-    //     $this->error('该功能被禁用，请联系管理员！',[]);
-    // }
+
+
+    public function index(): void
+    {
+        if ($this->request->param('select')) {
+            $this->select();
+        }
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $res = $this->model
+            ->field($this->indexField)
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+        $result = $res->toArray();
+        $dataList = [];
+        if(!empty($result['data'])) {
+            $dataList = $result['data'];
+            foreach($dataList as &$v)
+            {
+                $sum = DB::table('ba_fb_bm_token')->where('personalbm_token_ids',$v['id'])->where('pull_status',1)->count();
+                $v['bm_token_total'] = $sum;
+            }
+        }
+
+        $this->success('', [
+            'list'   => $dataList,
+            'total'  => $res->total(),
+            'remark' => get_route_remark(),
+        ]);
+    }
 
     public function getList()
     {
@@ -67,6 +98,6 @@ class PersonalBmToken extends Backend
         } else {
             $this->error(__('No rows updated'));
         }
-    }
+    }    
 
 }

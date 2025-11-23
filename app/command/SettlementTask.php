@@ -22,13 +22,11 @@ class SettlementTask extends Command
         $day = date('d');
 
         $where = [
-            ['admin_group_access.group_id','in',[3]],
-            ['admin.status','=',1],
-            ['admin.settlement_time','=',$time],
+            ['status','=',1],
+            ['settlement_time','=',$time],
         ];
-        $adminList = DB::table('ba_admin')->alias('admin')
-        ->field('admin.id,admin.settlement_time,admin.nickname,admin.prepayment_type')
-        ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
+        $companyList = DB::table('ba_company')
+        ->field('id,settlement_time,company_name,prepayment_type')
         ->where($where)
         ->select()->toArray();
 
@@ -36,7 +34,7 @@ class SettlementTask extends Command
         else $startTime = date('Y-m-01',time());
         $endTime = date('Y-m-d',time());
 
-        foreach($adminList as $v)
+        foreach($companyList as $v)
         {
             $v['start_time'] = $startTime;
             $v['end_time'] = $endTime;

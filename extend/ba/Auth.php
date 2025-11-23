@@ -52,10 +52,11 @@ class Auth
      * @return array
      * @throws Throwable
      */
-    public function getMenus(int $uid): array
+    public function getMenus(int $uid,int $type,int $prepaymentType): array
     {
         $this->children  = [];
-        $originAuthRules = $this->getOriginAuthRules($uid);
+        if($type == 1) $originAuthRules = $this->getOriginAuthRules($uid);
+        else $originAuthRules = $this->getClientOriginAuthRules($uid,$prepaymentType);
         foreach ($originAuthRules as $rule) {
             $this->children[$rule['pid']][] = $rule;
         }
@@ -170,9 +171,9 @@ class Auth
     {
         $ids = $this->getRuleIds($uid);
         if (empty($ids)) return [];
-
         $where   = [];
         $where[] = ['status', '=', '1'];
+        $where[] = ['is_client','=','2'];
         // 如果没有 * 则只获取用户拥有的规则
         if (!in_array('*', $ids)) {
             $where[] = ['id', 'in', $ids];
@@ -183,12 +184,71 @@ class Auth
             ->order('weigh desc,id asc')
             ->select()
             ->toArray();
+
         foreach ($rules as $key => $rule) {
             if (!empty($rule['keepalive'])) {
                 $rules[$key]['keepalive'] = $rule['name'];
             }
         }
+        return $rules;
+    }
 
+    public function getClientOriginAuthRules(int $uid,int $prepaymentType):array
+    {
+        $ids = $this->getRuleIds($uid);
+        if (empty($ids)) return [];
+        $where   = [];
+        $where[] = ['status', '=', '1'];
+        $where[] = ['is_client','=','1'];
+
+
+        if($prepaymentType == 2) $where[] = ['id','<>','423'];
+
+        // $where[] = ['type','=','menu_dir'];
+        // 如果没有 * 则只获取用户拥有的规则
+        if (!in_array('*', $ids)) {
+            $where[] = ['id', 'in', $ids];
+        }
+        $rules = Db::name($this->config['auth_rule'])
+            ->withoutField(['remark', 'status', 'weigh', 'update_time', 'create_time'])
+            ->where($where)
+            ->order('weigh desc,id asc')
+            ->select()
+            ->toArray();
+
+        foreach ($rules as $key => $rule) {
+            if (!empty($rule['keepalive'])) {
+                $rules[$key]['keepalive'] = $rule['name'];
+            }
+        }
+        return $rules;
+    }
+
+    public function getClientSubmenuOriginAuthRules(int $uid,int $pid):array
+    {
+        $ids = $this->getRuleIds($uid);
+        if (empty($ids)) return [];
+        $where   = [];
+        $where[] = ['status', '=', '1'];
+        $where[] = ['is_client','=','1'];
+        $where[] = ['type','=','menu'];
+        $where[] = ['pid','=',$pid];
+        // 如果没有 * 则只获取用户拥有的规则
+        if (!in_array('*', $ids)) {
+            $where[] = ['id', 'in', $ids];
+        }
+        $rules = Db::name($this->config['auth_rule'])
+            ->withoutField(['remark', 'status', 'weigh', 'update_time', 'create_time'])
+            ->where($where)
+            ->order('weigh desc,id asc')
+            ->select()
+            ->toArray();
+
+        foreach ($rules as $key => $rule) {
+            if (!empty($rule['keepalive'])) {
+                $rules[$key]['keepalive'] = $rule['name'];
+            }
+        }
         return $rules;
     }
 

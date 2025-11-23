@@ -142,7 +142,7 @@ class Account extends Backend
             ->where(function($query) use($whereOr){
                 $query->whereOr($whereOr);
             })
-            ->order('id','desc')
+            ->order('id','desc')//->find(); dd($this->model->getLastSql());
             ->paginate($limit);
         $dataList = $res->toArray()['data'];
         if($dataList){
@@ -225,6 +225,7 @@ class Account extends Backend
                         $validate->check($data);
                     }
                 }
+                if($this->auth->type == 4) throw new \Exception("不可添加！");
                 
                 $money = $data['money']??0;
                 if(empty($data['time_zone']) || empty($data['type'])) throw new \Exception("时区与投放类型不能为空!");
@@ -1158,6 +1159,15 @@ class Account extends Backend
         return $nickname;
     }
 
+    // public function getAccountRecycleJobErrorCount()
+    // {
+    //     $taskCount =  Cache::store('redis')->handler()->llen('{queues:AccountPendingRecycle}');
+    //     $comment = '';
+    //     if($taskCount >0){
+    //         $comment = "消耗查询任务正在执行中！( $taskCount )";
+    //     }
+    //     $this->success('', ['comment' => $comment]);
+    // }
 
     public function errAccount()
     {
@@ -1456,9 +1466,9 @@ class Account extends Backend
 
             unset($fileObject[0],$fileObject[1],$fileObject[2]);
             $authAdminId = $this->auth->id;
-            if($this->auth->isSuperAdmin()){
+            if($this->auth->type == 4){
                 // $adminId = 0;
-                throw new \Exception("管理员不可申请！");
+                throw new \Exception("不可申请！");
             }else{
                 $adminId = $this->auth->id;
             }
@@ -1480,7 +1490,7 @@ class Account extends Backend
             if($countNumber < 1) throw new \Exception("Error Processing Request");
             
 
-            //dd($fileObject,$filteredArray);
+            // dd($fileObject,$filteredArray);
             // $countAmout = array_sum(array_column($fileObject, '4'));
 
             $admin = Db::table('ba_admin')->where('id',$this->auth->id)->find();
@@ -1545,6 +1555,7 @@ class Account extends Backend
                     'bm_type'=>2,
                     'money'=>$open_money,
                     // 'open_money'=>$open_money, //---养户充值10
+                    'company_id'=>$this->auth->company_id,
                     'admin_id'=>$adminId,
                     'status'=>$authAdminId==1?1:0,
                     'currency'=>$currency,

@@ -55,6 +55,8 @@ class AccountrequestProposal extends Backend
     public function adminIndex($status)
     {
         // 如果是 select 则转发到 select 方法，若未重写该方法，其实还是继续执行 index
+        
+        $this->withJoinTable = [];
         if ($this->request->param('select')) {
             $this->select();
         }
@@ -65,7 +67,7 @@ class AccountrequestProposal extends Backend
         }
 
         
-        array_push($this->withJoinTable,'affiliationAdmin');
+        // array_push($this->withJoinTable,'affiliationAdmin');
         array_push($this->withJoinTable,'cards');
         array_push($this->withJoinTable,'account');
 
@@ -85,13 +87,8 @@ class AccountrequestProposal extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
-        $res->visible(['admin' => ['username','nickname'],'cards'=>['card_no'],'account'=>['id','is_']]);
+        $res->visible(['cards'=>['card_no'],'account'=>['id','is_','open_time','idle_time','admin_id']]);
 
-        // return [
-        //     'list'   => $res->items(),
-        //     'total'  => $res->total(),
-        //     'remark' => get_route_remark(),
-        // ];
 
         $result = $res->toArray();
         $dataList = [];
@@ -99,7 +96,24 @@ class AccountrequestProposal extends Backend
 
         if(!empty($result['data'])) {
             $dataList = $result['data'];
+
+            // dd($dataList);
+
+            // $channel = DB::table('ba_account_channel')->field('id,name')->select()->toArray();
+            // $channelList = array_column($channel,'name','id');
+
+            $admin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
+            $adminList = array_column($admin,'nickname','id');
+
             foreach($dataList as &$v){
+                $accountAdminId = $v['account']['admin_id']??'';
+                $channelAdminId = $v['admin_id']??'';
+
+                $v['account']['nickname'] = $adminList[$accountAdminId]??'';
+                $v['channel']['nickname'] = $adminList[$channelAdminId]??'';
+                $idleTime = $v['account']['idle_time']??'';
+
+
                 $v['label_name'] = '';
                 if(!empty($v['label_ids'])){ //标签处理
                   $arr =  $v['label_ids']??[];
@@ -109,6 +123,37 @@ class AccountrequestProposal extends Backend
                   }
                   $v['label_name'] = implode(',',$label_arr);
                 }
+
+                if($idleTime > 86400){
+                    $days = floor($idleTime / 86400);
+                    $hours = floor(($idleTime % 86400) / 3600);
+                }else{
+                    $days = 0;
+                    $hours = 0;
+                }  
+
+                $spendCap = $v['spend_cap'] == 0.01?0:$v['spend_cap'];
+                $amountSpent = $v['amount_spent'];
+                $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');
+                
+
+                $openTime = $v['account']['open_time']??'';
+                $accountSpent2 = 0;
+                if(!empty($openTime)){
+                    $openAccountTime = date('Y-m-d',$openTime);
+                    $consumptionWhere = [
+                        ['account_id','=',$v['account_id']],
+                        ['date_start','>=',$openAccountTime]
+                    ];
+                    $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+                }
+                
+                $v['fb_balance'] = $balance;
+                $v['fb_spand'] = bcadd( (string)$accountSpent2,'0',2);
+                $v['consumption_date'] = [
+                    'days'=>$days,
+                    'hours'=>$hours
+                ];
            }
        }
 

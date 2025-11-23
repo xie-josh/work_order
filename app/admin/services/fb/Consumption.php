@@ -15,17 +15,17 @@ class Consumption
         $this->auth = $auth??new \stdClass;
     }
 
-    public function getTotalDollar($adminId)
+    public function getTotalDollar($companyId)
     {
         $model = $this->model;
-        $result = $model->field('sum(dollar) totalDollar')->where('admin_id', $adminId)->group('admin_id')->find();
+        $result = $model->field('sum(dollar) totalDollar')->where('company_id', $companyId)->group('company_id')->find();
         return isset($result['totalDollar']) ? $result['totalDollar'] : 0;
     }
 
-    public function thePreviousDay($adminId)
+    public function thePreviousDay($companyId)
     {
         $day = date('Y-m-d', strtotime('-1 day'));
-        $where['admin_id'] = $adminId;
+        $where['company_id'] = $companyId;
         $where['date_start'] = $day;
         $result = $this->model->field('sum(dollar) totalDollar')->where($where)->find();
         return isset($result['totalDollar']) ? $result['totalDollar'] : 0;

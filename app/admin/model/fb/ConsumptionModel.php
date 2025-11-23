@@ -16,10 +16,10 @@ class ConsumptionModel extends Model
     protected $time = '-1';
 
 
-    function dayConsumption($adminId,string $startDate = '',string $endDate = '')
+    function dayConsumption($companyId,string $startDate = '',string $endDate = '')
     {
         $where = [];
-        array_push($where, ['consumption.admin_id', '=', $adminId]);
+        array_push($where, ['consumption.company_id', '=', $companyId]);
         if (!empty($startDate))  array_push($where, ['consumption.date_start', '>=', $startDate]);
         else{
             $start1 = date('Y-m-d', time());
@@ -42,9 +42,9 @@ class ConsumptionModel extends Model
 
         $list = $this->where($where)
         ->alias('consumption')
-        ->field('sum(consumption.dollar) total_dollar,consumption.admin_id,consumption.date_start,sum(consumption_yesterday.dollar) yesterday_total_dollar')
+        ->field('sum(consumption.dollar) total_dollar,consumption.company_id,consumption.date_start,sum(consumption_yesterday.dollar) yesterday_total_dollar')
         ->leftJoin('ba_account_consumption_yesterday consumption_yesterday','consumption_yesterday.account_id=consumption.account_id and consumption_yesterday.date_start=consumption.date_start')
-        ->group('consumption.admin_id,consumption.date_start')
+        ->group('consumption.company_id,consumption.date_start')
         ->select()->toArray();
 
         $listData = array_column($list,null,'date_start');
@@ -61,14 +61,14 @@ class ConsumptionModel extends Model
                 $yesterdayTotalDollar = bcadd((string)$listData[$currentDate]['yesterday_total_dollar'],'0',4);
                 $list[] = [
                     "total_dollar" => $totalDollar,
-                    "admin_id" => $adminId,
+                    "company_id" => $companyId,
                     "date_start" => $currentDate,
                     "yesterday_total_dollar" => $yesterdayTotalDollar,
                 ];
             }else{
                 $list[] = [
                     "total_dollar" => "0.0000",
-                    "admin_id" => $adminId,
+                    "company_id" => $companyId,
                     "date_start" => $currentDate,
                     "yesterday_total_dollar" => "0.0000",
                 ];

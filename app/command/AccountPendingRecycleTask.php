@@ -31,7 +31,7 @@ class AccountPendingRecycleTask extends Command
 
         $accountList = DB::table('ba_account')
         ->alias('account')
-        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id,account.company_id')
         ->where($where)
         ->field('account.id,account.account_id,account.open_time')
         ->select()->toArray();

@@ -120,12 +120,12 @@ class FbAccountConsumption
 
             foreach($sSTimeList as $v){
 
-                $adminId = '';
+                $companyId = '';
                 $dollar = 0;
                 foreach($accountTimeList as $v1)
                 {
                     if($v >= $v1['strat_open_time'] && $v <= $v1['end_open_time']){
-                        $adminId = $v1['admin_id'];
+                        $companyId = $v1['company_id'];
                         break;
                     }
                 }
@@ -139,7 +139,7 @@ class FbAccountConsumption
                         'dollar'=>$dollar,
                         'date_start'=>$v,
                         'date_stop'=>$v,
-                        'admin_id'=>$adminId,
+                        'company_id'=>$companyId,
                         'create_time'=>time(),
                     ];
                 }else{
@@ -161,7 +161,7 @@ class FbAccountConsumption
                         'dollar'=>$dollar,
                         'date_start'=>$consumption['date_start'],
                         'date_stop'=>$consumption['date_stop'],
-                        'admin_id'=>$adminId,
+                        'company_id'=>$companyId,
                         'create_time'=>time(),
                     ];
                 }

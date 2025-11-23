@@ -13,12 +13,11 @@ class MonthConsumptionTotalTask extends Command
     {
         $this->setName('MonthConsumptionTotalTask')->setDescription('MonthConsumptionTotalTask: Run scheduled tasks');
     }
-
+    //上月消耗费率区间计算
     protected function execute(Input $input, Output $output)
     {
         //php think MonthConsumptionTotalTask
-        // $month = date("Y-m", strtotime("-1 month"));   //测试
-
+        //$month = date("Y-m", strtotime("-1 month"));   //测试
         $day = date('d');
         if($day < '10') return true;
 
@@ -27,22 +26,18 @@ class MonthConsumptionTotalTask extends Command
         $end   = date('Y-m-01', strtotime($month . ' +1 month'));
         $output->writeln("统计月份". $month . PHP_EOL);
         //用户组
-        $adminIds = DB::table('ba_admin')->alias('admin')
-        ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
-        ->where(['admin_group_access.group_id'=>3])
-        // ->where(['admin.id'=>122])//测试
-        ->column('admin.id');
-        foreach($adminIds as $admin_id)
+        $companyAll = DB::table('ba_company')->where(['status'=>1])->column('id');
+        foreach($companyAll as $company_id)
         {
             $consumptionResult = DB::table('ba_account_consumption')
             ->field('dollar,date_start')
-            ->where('admin_id',$admin_id)
+            ->where('company_id',$company_id)
             ->where('date_start', '>=', $start)
             ->where('date_start', '<', $end)
             ->select()->toArray();
     
-            // $result = DB::table('ba_rate')->where('admin_id',$adminId)->order('create_time asc')->select()->toArray();
-            $result = DB::table('ba_rate')->where('admin_id',$admin_id)->order('create_time asc')->select()->toArray();
+            // $result = DB::table('ba_rate')->where('company_id',$adminId)->order('create_time asc')->select()->toArray();
+            $result = DB::table('ba_rate')->where('company_id',$company_id)->order('create_time asc')->select()->toArray();
             $section = [];
             if(!empty($result))foreach($result as $k => $v)
             {
@@ -63,7 +58,7 @@ class MonthConsumptionTotalTask extends Command
                     if (strtotime($v['date_start']) > $start_tmie && strtotime($v['date_start']) <= $end_tmie) {
                     //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
                     $total_dollar_rate +=  $v['dollar']*$vv['rate'];
-                    $output->writeln($vv['start_tmie'].">--"."命中区间".$v['date_start']."费率为".$vv['rate']."<=--".$vv['end_tmie']);
+                    $output->writeln($vv['start_tmie'].">--"."命中区间".$v['datestart']."费率为".$vv['rate']."<=--".$vv['end_tmie']);
                     }
                     if (strtotime($v['date_start']) > $start_tmie && empty($end_tmie)) {
                     //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
@@ -73,12 +68,12 @@ class MonthConsumptionTotalTask extends Command
                 }
             }
 
-            $archivedId = DB::table('ba_archived')->where([['month','=',$month],['admin_id','=',$admin_id]])->value('id');
+            $archivedId = DB::table('ba_archived')->where([['month','=',$month],['company_id','=',$company_id]])->value('id');
             if($archivedId) DB::table('ba_archived')->where('id',$archivedId)->delete();
 
-            DB::table('ba_archived')->insert(['create_time'=>date("Y-m-d", time()),'month'=>$month,'admin_id'=>$admin_id,'month_total_dollar'=>round($total_dollar, 2),'rate_total_dollar'=>round($total_dollar_rate, 2)]); 
+            DB::table('ba_archived')->insert(['create_time'=>date("Y-m-d", time()),'month'=>$month,'company_id'=>$company_id,'month_total_dollar'=>round($total_dollar, 2),'rate_total_dollar'=>round($total_dollar_rate, 2)]); 
             // 在这里编写你的定时任务逻辑
-            $output->writeln($admin_id."用户".$month."总金额统计为$total_dollar"."服务费统计为$total_dollar_rate"."<br/>");
+            $output->writeln($company_id."用户".$month."总金额统计为$total_dollar"."服务费统计为$total_dollar_rate"."<br/>");
       }
     }
 }

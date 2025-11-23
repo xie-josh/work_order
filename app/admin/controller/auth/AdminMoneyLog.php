@@ -22,11 +22,11 @@ class AdminMoneyLog extends Backend
 
     protected array $noNeedPermission = ['index'];
 
-    protected array $withJoinTable = ['admin'];
+    protected array $withJoinTable = ['company'];
 
     protected string|array $quickSearchField = ['id'];
 
-    protected bool|string|int $dataLimit = 'parent';
+    protected bool|string|int $dataLimit = false;
 
     public function initialize(): void
     {
@@ -57,7 +57,7 @@ class AdminMoneyLog extends Backend
             ->where($where)
             ->order('create_time','desc')
             ->paginate($limit);
-        $res->visible(['admin' => ['username','nickname']]);
+        $res->visible(['company' => ['company_name']]);
 
         $this->success('', [
             'list'   => $res->items(),
@@ -74,11 +74,6 @@ class AdminMoneyLog extends Backend
             if (!$data) {
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
-
-            // $data = $this->excludeFields($data);
-            // if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
-            //     $data[$this->dataLimitField] = $this->auth->id;
-            // }
 
             $result = false;
             $this->model->startTrans();
@@ -104,36 +99,27 @@ class AdminMoneyLog extends Backend
 
                 $creditMoney =  bcsub((string)($data['money']) ,(string)$rechargeMoney,2);
 
-                $money = Db::table('ba_admin')->where('id',$data['admin_id'])->value('money');
+                $money = Db::table('ba_company')->where('id',$data['company_id'])->value('money');
                 
                 $money = bcadd((string)$money,(string)$rechargeMoney,2);
                 //$money = floor(($money + $rechargeMoney) * 100) / 100;
-                $money = Db::table('ba_admin')->where('id',$data['admin_id'])->update(['money'=>$money]);
+                $money = Db::table('ba_company')->where('id',$data['company_id'])->update(['money'=>$money]);
                 
                 $createTime = $data['create_time']??'';                
 
                 $data = [
-                    'admin_id'=>$data['admin_id'],
+                    'company_id'=>$data['company_id'],
                     'money'=>$rechargeMoney,
                     'raw_money'=>$data['money'],
                     'comment'=>$comment,
                     'rate'=>$rate['rate'],
                     'credit_money'=>$creditMoney,
-                    'images'=>$data['images']??[],
+                    'images'=>implode(',', $data['images']??[]),
                     'recharge_channel_name'=>$rate['name'],
                 ];
                 if(!empty($createTime)) $data['create_time'] = strtotime($createTime);
 
-                // $applicationData = [
-                //     'status'=>1,
-                //     'type_id'=>1,
-                //     'admin_id'=>$data['admin_id'],
-                //     'amount'=>$rechargeMoney,
-                //     'create_time'=>time(),
-                    
-                // ];
-                // DB::table('ba_wallet_account_application')->insert($applicationData);
-                $result = $this->model->save($data);
+                $result = DB::table('ba_admin_money_log')->insert($data);
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -170,7 +156,11 @@ class AdminMoneyLog extends Backend
             try {
                 // 模型验证
                 if(empty($data['images'])) throw new \Exception("请上传凭证");
-                $result = $row->save(['images'=>$data['images']??[]]);
+                
+                $result = DB::table('ba_admin_money_log')->where('id',$row['id'])->update([
+                    'images'=>implode(',', $data['images']??[]),
+                ]);
+                // $result = $row->save(['images'=>$data['images']??[]]);
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -200,7 +190,7 @@ class AdminMoneyLog extends Backend
         
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         $limit = 999;
-        array_push($where,['admin_id','=',$adminId]);
+        array_push($where,['company_id','=',$adminId]);
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)

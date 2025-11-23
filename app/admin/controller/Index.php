@@ -69,13 +69,13 @@ class Index extends Backend
         $this->success('', [
             'adminInfo'  => $adminInfo,
             'menus'      => $menus,
-            'siteConfig' => [
-                'siteName' => get_sys_config('site_name'),
-                'version'  => get_sys_config('version'),
-                'cdnUrl'   => full_url(),
-                'apiUrl'   => Config::get('buildadmin.api_url'),
-                'upload'   => get_upload_config(),
-            ],
+            // 'siteConfig' => [
+            //     'siteName' => get_sys_config('site_name'),
+            //     'version'  => get_sys_config('version'),
+            //     'cdnUrl'   => full_url(),
+            //     'apiUrl'   => Config::get('buildadmin.api_url'),
+            //     'upload'   => get_upload_config(),
+            // ],
             'terminal'   => [
                 'installServicePort' => Config::get('terminal.install_service_port'),
                 'npmPackageManager'  => Config::get('terminal.npm_package_manager'),
@@ -83,6 +83,12 @@ class Index extends Backend
         ]);
     }
 
+    function getClientSubmenuOriginAuthRules(int $pid=0)
+    {
+        if(empty($pid)) $this->error('未找到菜单!');
+        $menus = $this->auth->getClientSubmenuOriginAuthRules(0,$pid);
+        $this->success('', [ 'menus'      => $menus]);
+    }
     /**
      * 管理员登录
      * @return void

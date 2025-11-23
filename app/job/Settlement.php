@@ -42,10 +42,10 @@ class Settlement
         $batchSize = 5000;
         $processedCount = 0;
 
-        $nickname = $params['nickname'];
+        $nickname = $params['company_name'];
 
         $where = [
-            ['consumption.admin_id','=',$params['id']],
+            ['consumption.company_id','=',$params['id']],
             ['consumption.date_start','>=',$params['start_time']],
             ['consumption.date_start','<=',$params['end_time']],
         ];
@@ -143,7 +143,7 @@ class Settlement
 
         $result = DB::table('ba_settlement')->where(
             [
-                ['admin_id','=',$params['id']],
+                ['company_id','=',$params['id']],
                 ['date','=',$params['end_time']],
                 ['settlement_time','=',$params['settlement_time']]
             ]
@@ -152,7 +152,7 @@ class Settlement
         if($result) return true;
 
         DB::table('ba_settlement')->insert([
-            'admin_id'=>$params['id'],
+            'company_id'=>$params['id'],
             'date'=>$params['end_time'],
             'settlement_time'=>$params['settlement_time'],
             'url'=>$path,

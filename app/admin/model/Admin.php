@@ -93,6 +93,16 @@ class Admin extends Model
         return json_decode($value,true);
     }
 
+    public function getTeamIdAttr($value)
+    {
+        if(empty($value)) return -1;
+        return $value;
+    }
 
+    public function getPrepaymentTypeAttr($value,$row)
+    {
+        $prepaymentType = DB::table('ba_company')->where('id',$row['company_id'])->value('prepayment_type');
+        return $prepaymentType;
+    }
 
 }

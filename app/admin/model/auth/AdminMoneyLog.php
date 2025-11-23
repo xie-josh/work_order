@@ -31,6 +31,11 @@ class AdminMoneyLog extends Model
     
     public function admin(): \think\model\relation\BelongsTo
     {
-        return $this->belongsTo(\app\admin\model\Admin::class, 'admin_id', 'id');
+        return $this->belongsTo(\app\admin\model\Admin::class, 'company_id', 'id');
+    }
+
+    public function company(): \think\model\relation\BelongsTo
+    {
+        return $this->belongsTo(\app\admin\model\user\Company::class, 'company_id', 'id');
     }
 }

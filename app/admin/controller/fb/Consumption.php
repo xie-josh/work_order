@@ -31,6 +31,7 @@ class Consumption extends Backend
 
     public function export()
     {
+        $this->error('导出功能维护中!');
         set_time_limit(600);
 
         $data = $this->request->post();
@@ -666,34 +667,30 @@ class Consumption extends Backend
         return $this->success('',['progress' => $progress]);
     }
 
-    //新统计
+    //新统计-------------------------------
     public function newStatistics()
     {
         $data = $this->request->post();
-        $adminId  = $data['id'];
-        $v = DB::table('ba_admin')
-            ->alias('admin')
-            ->field('admin.id,admin.nickname,admin.money,admin_group_access.group_id')
-            ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
-            ->where(['id'=>$adminId])->find();
+        $companyId  = $data['id'];
+        $v = DB::table('ba_company')->field('*')->where(['id'=>$companyId])->find();
         $dataList = [];
         $thePreviousDayDollar = 0;
         if($v) {
                 $consumptionService = new \app\admin\services\fb\Consumption();
                 $totalDollar = $consumptionService->getTotalDollar($v['id']);
                 $thePreviousDayDollar = $consumptionService->thePreviousDay($v['id']); //前一天消耗总金额
-                $money = DB::table('ba_admin_money_log')->where('admin_id',$v['id'])->sum('money'); //总消耗
+                $money = DB::table('ba_admin_money_log')->where('company_id',$v['id'])->sum('money'); //总消耗
                 $remainingAmount = bcsub((string)$money,(string)$totalDollar,'2');
                 $dataList[] = [
                     'id' => $v['id'],
-                    'nickname' => $v['nickname'],
+                    // 'nickname' => $v['nickname'],
                     'money' => $money,
                     // 'total_dollar' => bcadd((string)$totalDollar,'0',2),
                     'remaining_amount' => $remainingAmount,
                 ];
         }
         //--------------------------------------------------------------------------------------------
-        $dayList = $this->model->dayConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
+        $dayList = $this->model->dayConsumption($companyId, $data['start_date'] ?? '', $data['end_date'] ?? '');
         // $monthList = $this->model->monthConsumption($adminId, $data['start_date'] ?? '', $data['end_date'] ?? '');
         $list = [];
         // foreach($monthList as $value)
@@ -721,17 +718,17 @@ class Consumption extends Backend
         // $alias = ['ba_admin_money_log'=>'admin_money_log'];
         // $order = ['id'=>"desc"];
         $limit = 999;
-        array_push($where,['admin_id','=',$adminId]);
+        array_push($where,['company_id','=',$companyId]);
         $res = DB::table('ba_admin_money_log')->where($where)->order('create_time desc')->select()->toArray();
 
-        $result = DB::table('ba_rate')->where('admin_id',$adminId)->order('create_time asc')->select()->toArray();
+        $result = DB::table('ba_rate')->where('company_id',$companyId)->order('create_time asc')->select()->toArray();
         $section = [];
         if(!empty($result))foreach($result as $k => $v)
         {
             $section[] =  ['start_tmie' => $v['create_time'],'end_tmie' => isset($result[$k+1]['create_time'])?$result[$k+1]['create_time']:'','rate'=>$v['rate']];
         }
         //上上2个月的总消耗和总费率
-        $archived =  DB::table('ba_archived')->where('admin_id',$adminId)->field('month_total_dollar total_dollar,month date_start,rate_total_dollar rate','month')
+        $archived =  DB::table('ba_archived')->where('company_id',$companyId)->field('month_total_dollar total_dollar,month date_start,rate_total_dollar rate','month')
         ->order('month desc')->select()->toArray();
         // ->where(function($query) {
         //     $query->where('month', date("Y-m", strtotime("-2 month")))->whereOr('month', date("Y-m", strtotime("-3 month")));
@@ -914,18 +911,18 @@ class Consumption extends Backend
         ->alias('account_consumption')        
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
         ->leftJoin('ba_account account','account.account_id=account_consumption.account_id')
-        ->leftJoin('ba_admin admin','admin.id=account_consumption.admin_id')
+        ->leftJoin('ba_company company','company.id=account_consumption.company_id')
         ->where($where)
         ->order('account_consumption.id','asc');
 
         $statusList = config('basics.ACCOUNT_STATUS');
 
         if($isCount == 1){
-            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
-            $query->group('account_consumption.admin_id,account_id');
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
+            $query->group('account_consumption.company_id,account_id');
         }else{
             $accountRecycleWhere = [];
-            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,admin.nickname,accountrequest_proposal.currency,accountrequest_proposal.status
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,accountrequest_proposal.currency,accountrequest_proposal.status
             ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
             ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');
 
@@ -982,7 +979,7 @@ class Consumption extends Backend
                 $adminChannel = $adminChannelList[$v['admin_channel']]??'';
                 $statusValue = $statusList[$v['status']]??'未找到状态';
                 
-                $nickname = $v['nickname'];                
+                $nickname = $v['company_name'];                
                 $serialName = $v['serial_name'];
                 $spend = $v['spend']??0;
                 $dateStart =  $v['date_start'];
@@ -1249,3 +1246,4 @@ class Consumption extends Backend
         return $this->success('',['progress' => $progress]);
     }
 }
+

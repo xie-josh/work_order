@@ -23,7 +23,7 @@ class CopyYesterdayConsumptionTask extends Command
         $params['stop_time'] = date('Y-m-d',time());
         $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
         DB::table('ba_account_consumption_yesterday')->whereIn('date_start',$sSTimeList)->delete();
-        $result =  DB::table('ba_account_consumption')->field('account_id,spend,dollar,date_start,date_stop,admin_id,create_time')->whereIn('date_start',$sSTimeList)->select()->toArray();
+        $result =  DB::table('ba_account_consumption')->field('account_id,spend,dollar,date_start,date_stop,company_id,create_time')->whereIn('date_start',$sSTimeList)->select()->toArray();
         $chunkResult = array_chunk($result, 2000);
         if(!empty($chunkResult))foreach($chunkResult as $k => $v)
         {

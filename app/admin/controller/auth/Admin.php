@@ -193,12 +193,12 @@ class Admin extends Backend
                     }
                     Db::name('admin_group_access')->insertAll($groupAccess);
                 }
-                //费率处理
-                if(isset($data['rate'])&&!empty($data['rate']))
-                {
-                    $inserData  = ['create_time'=>date('Y-m-d',time()),'admin_id'=>$this->model->id,'rate'=>$data['rate']];
-                    DB::table('ba_rate')->insert($inserData);
-                }
+                // //费率处理
+                // if(isset($data['rate'])&&!empty($data['rate']))
+                // {
+                //     $inserData  = ['create_time'=>date('Y-m-d',time()),'admin_id'=>$this->model->id,'rate'=>$data['rate']];
+                //     DB::table('ba_rate')->insert($inserData);
+                // }
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -285,21 +285,21 @@ class Admin extends Backend
             $data   = $this->excludeFields($data);
             $result = false;
             $this->model->startTrans();
-            //费率处理
-            if(isset($data['rate'])&&!empty($data['rate']))
-            {
-                $rateResult = DB::table('ba_rate')->where('admin_id',$id)->order('create_time desc')->find();
-                $inserData  = ['create_time'=>date('Y-m-d',time()),'admin_id'=>$id,'rate'=>$data['rate']];
-                if(!empty($rateResult))
-                {
-                    if($rateResult['create_time'] == date('Y-m-d',time()))
-                        DB::table('ba_rate')->where(['admin_id'=>$id,'create_time'=>date('Y-m-d',time())])->update(['rate'=>$data['rate']]);
-                    else
-                        DB::table('ba_rate')->insert($inserData);
-                }else{
-                        DB::table('ba_rate')->insert($inserData);
-                }
-            }
+            // //费率处理
+            // if(isset($data['rate'])&&!empty($data['rate']))
+            // {
+            //     $rateResult = DB::table('ba_rate')->where('admin_id',$id)->order('create_time desc')->find();
+            //     $inserData  = ['create_time'=>date('Y-m-d',time()),'admin_id'=>$id,'rate'=>$data['rate']];
+            //     if(!empty($rateResult))
+            //     {
+            //         if($rateResult['create_time'] == date('Y-m-d',time()))
+            //             DB::table('ba_rate')->where(['admin_id'=>$id,'create_time'=>date('Y-m-d',time())])->update(['rate'=>$data['rate']]);
+            //         else
+            //             DB::table('ba_rate')->insert($inserData);
+            //     }else{
+            //             DB::table('ba_rate')->insert($inserData);
+            //     }
+            // }
             try {
                 $result = $row->save($data);
                 if ($groupAccess) Db::name('admin_group_access')->insertAll($groupAccess);
@@ -479,5 +479,7 @@ class Admin extends Backend
             'list'   => $list,
         ]);
     }
+
+    
 
 }

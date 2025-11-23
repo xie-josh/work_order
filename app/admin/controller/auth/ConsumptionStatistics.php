@@ -6,7 +6,6 @@ namespace app\admin\controller\auth;
 use app\common\controller\Backend;
 use think\facade\Db;
 use think\facade\Cache;
-use app\admin\model\Admin as AdminModel;
 
 class ConsumptionStatistics extends Backend
 {
@@ -22,7 +21,7 @@ class ConsumptionStatistics extends Backend
     public function initialize(): void
     {
         parent::initialize();
-        $this->model = new AdminModel();
+        $this->model = new \app\admin\model\user\Company();
     }
 
     public function index(): void 
@@ -33,8 +32,7 @@ class ConsumptionStatistics extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
-        array_push($where,['admin_group_access.group_id','in',[3]]);
-        array_push($where,['admin.status','=',1]);
+        array_push($where,['status','=',1]);
         $time2 = [];
         foreach($where as $k => &$v){
             if($v[0] == 'admin.time2'){
@@ -48,17 +46,15 @@ class ConsumptionStatistics extends Backend
         if(empty($time)) $this->error('请选择时间');
         $month = date('Y-m',strtotime($time));
 
-        $res = DB::table('ba_admin')
-            ->alias('admin')
-            ->field('admin.id,admin.nickname,admin.money,admin_group_access.group_id')
-            ->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')
+        $res = $this->model
+            ->field('id,company_name,money')
             ->where($where)
             ->order($order)
             ->paginate($limit)->appends([]);
         $dataList = [];
         if($res) {
-            $adminMoneyList = DB::table('ba_admin_money_log')->field('admin_id,sum(money) money')->group('admin_id')->select()->toArray();
-            $adminMoneyList = array_column($adminMoneyList,'money','admin_id');
+            $companyMoneyList = DB::table('ba_admin_money_log')->field('company_id,sum(money) money')->group('company_id')->select()->toArray();
+            $companyMoneyList = array_column($companyMoneyList,'money','company_id');
 
             $consumptionWhere = [];
             if(!empty($time2))
@@ -70,27 +66,27 @@ class ConsumptionStatistics extends Backend
                 $consumptionWhere[] = ['date_start','<=',$time];
             }
 
-            $adminConsumptionList = DB::table('ba_account_consumption')->field('admin_id,sum(dollar) dollar')
+            $companyConsumptionList = DB::table('ba_account_consumption')->field('company_id,sum(dollar) dollar')
             ->where($consumptionWhere)
-            ->group('admin_id')
+            ->group('company_id')
             ->select()->toArray();
-            $adminConsumptionList = array_column($adminConsumptionList,'dollar','admin_id');
+            $companyConsumptionList = array_column($companyConsumptionList,'dollar','company_id');
 
-            $adminTotalConsumptionList = DB::table('ba_account_consumption')->field('admin_id,sum(dollar) dollar')->group('admin_id')->select()->toArray();
-            $adminTotalConsumptionList = array_column($adminTotalConsumptionList,'dollar','admin_id');
+            $companyTotalConsumptionList = DB::table('ba_account_consumption')->field('company_id,sum(dollar) dollar')->group('company_id')->select()->toArray();
+            $companyTotalConsumptionList = array_column($companyTotalConsumptionList,'dollar','company_id');
             
             foreach($res->toArray()['data'] ?? [] as $v)
             {   
-                $money = $adminMoneyList[$v['id']] ?? 0;
-                $adminConsumption = $adminConsumptionList[$v['id']] ?? 0;
-                $adminTotalConsumption = $adminTotalConsumptionList[$v['id']] ?? 0;
+                $money = $companyMoneyList[$v['id']] ?? 0;
+                $companyConsumption = $companyConsumptionList[$v['id']] ?? 0;
+                $companyTotalConsumption = $companyTotalConsumptionList[$v['id']] ?? 0;
                 $money = bcadd((string)$money,'0',2);
                 $dataList[] = [
                     'id' => $v['id'],
-                    'nickname' => $v['nickname'],
+                    'nickname' => $v['company_name'],
                     'money' => $money,
-                    'consumption' => bcadd((string)$adminConsumption,'0',2),
-                    'remaining_amount' => bcsub($money,(string)$adminTotalConsumption,'2'),
+                    'consumption' => bcadd((string)$companyConsumption,'0',2),
+                    'remaining_amount' => bcsub($money,(string)$companyTotalConsumption,'2'),
                 ];
             }
             
@@ -116,16 +112,15 @@ class ConsumptionStatistics extends Backend
         $time = date("Y-m-d");
 
         $where = [
-            ['admin_group_access.group_id','in',[3]],
-            ['admin.status','=',1]
+            ['status','=',1]
         ];
-        $adminCount = DB::table('ba_admin')->alias('admin')->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')->where($where)->count();
-        $adminIds = DB::table('ba_admin')->alias('admin')->leftJoin('ba_admin_group_access admin_group_access','admin_group_access.uid = admin.id')->where($where)->column('id');
+        $adminCount = DB::table('ba_company')->where($where)->count();
+        $adminIds = DB::table('ba_company')->where($where)->column('id');
 
         $where = [
             ['date','=',$time],
-            ['admin_id','<>',''],
-            ['admin_id','in',$adminIds],
+            ['company_id','<>',''],
+            ['company_id','in',$adminIds],
         ];
         $settlementCount = DB::table('ba_settlement')->where($where)->count();
 
@@ -134,7 +129,7 @@ class ConsumptionStatistics extends Backend
 
         $where = [
             ['date','=',$time],
-            ['admin_id','null','NULL'],
+            ['company_id','null','NULL'],
         ];
         $summaryCount = DB::table('ba_settlement')->where($where)->count();
         

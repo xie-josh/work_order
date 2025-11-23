@@ -47,7 +47,7 @@ class SettlementSummary
             ['consumption.date_start','<=',$params['end_time']],
         ];
         $query = DB::table('ba_account_consumption')
-            ->field('consumption.admin_id,consumption.account_id,consumption.date_start,consumption.spend,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.serial_name')
+            ->field('consumption.company_id,consumption.account_id,consumption.date_start,consumption.spend,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.serial_name')
             ->alias('consumption')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id = consumption.account_id')
             ->where($where);
@@ -55,8 +55,8 @@ class SettlementSummary
         $query2 = clone $query;
         $total = $query2->count();
 
-        $adminList = Db::table('ba_admin')->where('status',1)->field('id,nickname')->select()->toArray();
-        $adminList = array_column($adminList,'nickname','id');
+        $companyList = Db::table('ba_company')->where('status',1)->field('id,company_name')->select()->toArray();
+        $companyList = array_column($companyList,'company_name','id');
 
         $prepaymentName ='预付实销';
         $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
@@ -100,7 +100,7 @@ class SettlementSummary
                     $v['account_id'],
                     $v['currency'],
                     (float)$v['spend'],
-                    $adminList[$v['admin_id']]??'未找到用户',
+                    $companyList[$v['company_id']]??'未找到用户',
                     $v['date_start'],
                     $v['date_start'],
                 ];
@@ -126,7 +126,7 @@ class SettlementSummary
 
         $result = DB::table('ba_settlement')->where(
             [
-                ['admin_id','null','NULL'],
+                ['company_id','null','NULL'],
                 ['date','=',$params['end_time']],
                 ['settlement_time','=',$params['settlement_time']]
             ]

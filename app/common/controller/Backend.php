@@ -7,6 +7,7 @@ use think\Model;
 use think\facade\Db;
 use think\facade\Event;
 use app\admin\library\Auth;
+use think\facade\Request;
 
 use app\common\library\token\TokenExpirationException;
 
@@ -153,6 +154,24 @@ class Backend extends Api
             }
         }
 
+        $noNeedPermissionUrl = [
+            '/admin/index/index',
+            '/admin/index/login',
+            '/admin/index/logout'
+        ];
+        $currentUrl = Request::url();
+
+        if (
+            stripos($currentUrl, '/admin/user.') === false &&
+            in_array($this->auth->type, [2, 3, 4]) &&
+            !$this->in_array_icase($currentUrl, $noNeedPermissionUrl)
+        ) {
+            $this->error(__('Please login first'), [
+                'type' => $this->auth::NEED_LOGIN
+            ], $this->auth::LOGIN_RESPONSE_CODE);
+        }
+
+        
         if ($needLogin) {
             if (!$this->auth->isLogin()) {
                 $this->error(__('Please login first'), [
@@ -169,6 +188,11 @@ class Backend extends Api
 
         // 管理员验权和登录标签位
         Event::trigger('backendInit', $this->auth);
+    }
+
+    function in_array_icase($needle, $haystack)
+    {
+        return in_array(strtolower($needle), array_map('strtolower', $haystack));
     }
 
     /**
@@ -377,4 +401,89 @@ class Backend extends Api
         $accountNameArr =   DB::table('ba_account')->whereIn('account_id',$arr)->column('admin_id','account_id');
         return $accountNameArr;
     }
+
+    public function getAccountPermission($where=[],$field='account.account_id,account.team_id,accountrequest_proposal.status',$table=['account','accountrequest_proposal'],$isReturn=2)
+    {
+        $tableRow = '';
+        
+        array_push($where,['account.company_id','=',$this->auth->company_id]);
+        if($this->auth->type == 4) array_push($where,['account.team_id','=',$this->auth->team_id]);        
+
+        if(in_array('account',$table)) $tableRow = DB::table('ba_account')->alias('account');
+        if(in_array('accountrequest_proposal',$table)) $tableRow->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id');
+
+        $list = $tableRow->field($field)
+        ->where($where)->select()->toArray();
+        return $list;
+        
+    }
+
+    public function companyUsedMoney($amount)
+    {
+        if($amount == 0)return ['code'=>1,'msg'=>''];
+        $company = Db::table('ba_company')->where('id',$this->auth->company_id)->find();
+        if($company['prepayment_type'] == 2){
+            $usableMoney = bcadd((string)$amount,(string)$company['used_money'],2);
+            if($usableMoney > $company['money']) return ['code'=>0,'msg'=>'余额不足,请联系管理员！'];
+            DB::table('ba_company')->where('id',$this->auth->company_id)->where('used_money',$company['used_money'])->update(['used_money'=>$usableMoney]);
+        }        
+        return ['code'=>1,'msg'=>''];
+    }
+
+    public function teamUsedMoney($amount,$accountId='')
+    {
+        if($amount == 0)return ['code'=>1,'msg'=>''];
+        // $teamId = $this->auth->team_id;
+        // if($this->auth->type != 4){
+        //     if(empty($accountId)) return ['code'=>0,'msg'=>'没有找到账户！'];
+        //     $teamId = DB::table('ba_account')->where('account_id',$accountId)->value('team_id');
+        // }
+
+        $company = Db::table('ba_company')->where('id',$this->auth->company_id)->find();
+        if($company['prepayment_type'] == 2){
+            $usableMoney2 = bcadd((string)$amount,(string)$company['used_money'],2);
+            if($usableMoney2 > $company['money']) return ['code'=>0,'msg'=>'余额不足,请联系管理员-1！'];
+        }
+
+        // if(!empty($teamId))
+        // {
+        //     $team = Db::table('ba_team')->where('id',$teamId)->find();
+        //     $usableMoney1 = bcadd((string)$amount,(string)$team['team_used_money'],2);
+        //     if($usableMoney1 > $team['team_money']) return ['code'=>0,'msg'=>'余额不足,请联系管理员-2！'];
+        //     $result = DB::table('ba_team')->where('id',$teamId)->where('team_used_money',$team['team_used_money'])->update(['team_used_money'=>$usableMoney1]);
+        //     if(empty($result)) throw new \Exception('出现了一点问题，请稍后或联系客服！');
+        // }        
+        if($company['prepayment_type'] == 2){
+            $result = DB::table('ba_company')->where('id',$this->auth->company_id)->where('used_money',$company['used_money'])->update(['used_money'=>$usableMoney2]);
+            if(empty($result)) throw new \Exception('出现了一点问题，请稍后或联系客服！');
+        }
+        return ['code'=>1,'msg'=>''];
+    }
+
+    public function auditTeamUsedMoney($amount,$accountId='')
+    {
+        if($amount == 0)return ['code'=>1,'msg'=>''];
+        $account = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,company_id,team_id,money')->find();
+        $companyId = $account['company_id'];
+        // $teamId = $account['team_id'];
+
+        $company = Db::table('ba_company')->where('id',$companyId)->find();
+
+        if($company['prepayment_type'] == 2){
+            $usableMoney2 = bcsub((string)$company['used_money'],(string)$amount,2);
+            $result = DB::table('ba_company')->where('id',$companyId)->where('used_money',$company['used_money'])->update(['used_money'=>$usableMoney2]);
+            if(empty($result)) throw new \Exception('出现了一点问题，请稍后或联系客服！');
+        }
+
+        // if(!empty($teamId))
+        // {
+        //     $team = Db::table('ba_team')->where('id',$teamId)->find();
+        //     $usableMoney1 = bcsub((string)$team['team_used_money'],(string)$amount,2);
+        //     $result = DB::table('ba_team')->where('id',$teamId)->where('team_used_money',$team['team_used_money'])->update(['team_used_money'=>$usableMoney1]);
+        //     if(empty($result)) throw new \Exception('出现了一点问题，请稍后或联系客服2！');
+        // }        
+
+        return ['code'=>1,'msg'=>''];
+    }
+
 }

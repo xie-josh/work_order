@@ -17,6 +17,9 @@ use app\admin\model\AdminGroup;
  * @property string $nickname   管理员昵称
  * @property string $email      管理员邮箱
  * @property string $mobile     管理员手机号
+ * @property string $company_id     公司ID
+ * @property string $type       账户类型
+ * @property string $team_id    团队ID
  */
 class Auth extends \ba\Auth
 {
@@ -87,7 +90,7 @@ class Auth extends \ba\Auth
      * 允许输出的字段
      * @var array
      */
-    protected array $allowFields = ['id', 'username', 'nickname','email', 'avatar', 'last_login_time'];
+    protected array $allowFields = ['id', 'username', 'nickname','email', 'avatar', 'last_login_time','company_id','type','prepayment_type'];
 
     public function __construct(array $config = [])
     {
@@ -390,9 +393,17 @@ class Auth extends \ba\Auth
         return parent::getRuleIds($uid ?: $this->id);
     }
 
-    public function getMenus(int $uid = 0): array
+    public function getMenus(int $uid = 0,int $type=0,int $prepaymentType=0): array
     {
-        return parent::getMenus($uid ?: $this->id);
+        $type = $this->getInfo()['type'];
+        $prepaymentType = $this->getInfo()['prepayment_type'];
+        // $type = 1;
+        return parent::getMenus($uid ?: $this->id,$type, $prepaymentType);
+    }
+
+    public function getClientSubmenuOriginAuthRules(int $uid = 0,int $pid=0): array
+    {
+        return parent::getClientSubmenuOriginAuthRules($uid ?: $this->id,$pid);
     }
 
     /**

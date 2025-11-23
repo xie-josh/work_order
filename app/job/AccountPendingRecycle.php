@@ -17,8 +17,9 @@ class AccountPendingRecycle
 
             $accountId = $data['account_id'];
             $openTime = $data['open_time'];
+            $companyId = $data['company_id'];
 
-            $openDate = date('Y-m-d H:i:s',$openTime);
+            $openDate = date('Y-m-d',$openTime);
             $where = [
                 ['date_start','>=',$openDate],
                 ['spend','>',0],
@@ -33,24 +34,30 @@ class AccountPendingRecycle
             $seconds = $ts1 - $ts2;
 
 
-            if($seconds > floor(config('basics.ACCOUNT_RECYCLE_DAYS') * 86400))
-            {
+            // if($seconds > floor(30 * 86400)) 
+            // {
 
-                $result = DB::table('ba_account_recycle_pending')->where('account_id',$accountId)->where('status',0)->find();
-                if(empty($result)) DB::table('ba_account_recycle_pending')->insert(
-                    [
-                        'account_id'=>$accountId,
-                        'status'=>0,
-                        'create_time'=>time()
-                    ]
-                );                
-            }
+            //     $result = DB::table('ba_account_recycle_pending')->where('account_id',$accountId)->where('status',0)->find();
+            //     if(empty($result)) DB::table('ba_account_recycle_pending')->insert(
+            //         [
+            //             'account_id'=>$accountId,
+            //             'status'=>0,
+            //             'create_time'=>time()
+            //         ]
+            //     );                
+            // }
 
             DB::table('ba_account')->where('account_id',$accountId)->update(['idle_time'=>$seconds]);
 
             $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountId)->sum('dollar');            
             $totalConsumption = bcadd((string)$accountSpent,"0",2);
-            DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['total_consumption'=>$totalConsumption]);
+            $accountrequestProposalData = [
+                'total_consumption'=>$totalConsumption
+            ];
+
+            $companyIsopen = DB::table('ba_company')->where('id',$companyId)->value('isopen');
+            if($seconds > floor(30 * 86400) && $companyIsopen == 1) $accountrequestProposalData = ['status'=>94];
+            DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update($accountrequestProposalData);
                        
             $job->delete();
         } catch (\Throwable $th) {

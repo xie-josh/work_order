@@ -88,6 +88,7 @@ class QYWXService
     //推送开户成功通知
     function send_notification($bm): array
     {
+        return [];
         $url = "https://api.worktool.ymdyes.cn/wework/sendRawMessage?robotId=wtxhu6fdf3pk0wj2wq8g50v86kaznydd";
         $weixinUrl = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=7e98597c-c085-445a-ac48-f1aaa87fbcd4';
         $comment = "";

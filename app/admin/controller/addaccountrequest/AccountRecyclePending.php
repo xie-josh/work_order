@@ -38,13 +38,18 @@ class AccountRecyclePending extends Backend
         
         list($where, $alias, $limit, $order) = $this->queryBuilder();    
         $type =  $this->request->get('type');
-        if($type==1) $where[] = ['accountrequest_proposal.recycle_type','=',3];
-        else $where[] = ['accountrequest_proposal.recycle_type','<>',3];
+        if($type==1) 
+                $where[] = ['accountrequest_proposal.recycle_type','=',3];
+        else 
+                $where[] = ['accountrequest_proposal.recycle_type','<>',3];
 
         $where[] = ['account.status','=',4];
         foreach($where as $k => &$v){
             if($v[0] == 'account.idle_time'){                
                 $v[2] = floor((int)$v[2] * 86400);
+            }
+            if($v[0] == 'account_recycle_pending.account_id'){                
+                $v[0] = 'account.account_id';
             }
         }
         $res = DB::table('ba_account')

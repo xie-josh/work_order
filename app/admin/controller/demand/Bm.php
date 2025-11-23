@@ -149,6 +149,7 @@ class Bm extends Backend
             array_push($where,['bm.status','=',0]);
             array_push($where,['bm.demand_type','=',4]);
         }
+        array_push($where,['bm.audit_status','=',2]);
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
