@@ -35,7 +35,7 @@ class ConsumptionStatistics extends Backend
         array_push($where,['status','=',1]);
         $time2 = [];
         foreach($where as $k => &$v){
-            if($v[0] == 'admin.time2'){
+            if($v[0] == 'company.time2'){
                 $time2 = [date('Y-m-d',$v[2][0]),date('Y-m-d',$v[2][1])];
                 unset($where[$k]);
                 continue;
@@ -98,6 +98,7 @@ class ConsumptionStatistics extends Backend
                     'money' => $money,
                     'consumption' => bcadd((string)$companyConsumption,'0',2),
                     'remaining_amount' => bcsub($money,(string)$companyTotalConsumption,'2'),
+                    'company_name' => $v['company_name']
                 ];
             }
             
