@@ -39,12 +39,23 @@ class ConsumptionStatistics extends Backend
                 $time2 = [date('Y-m-d',$v[2][0]),date('Y-m-d',$v[2][1])];
                 unset($where[$k]);
                 continue;
+            } 
+            if($v[0] == 'company.nickname'){
+                $companyIds = DB::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('company_id');
+                array_push($where,['id','IN',$companyIds]);
+                unset($where[$k]);
+                continue;
             }
         }
 
         $time = $this->request->get('time');
         if(empty($time)) $this->error('请选择时间');
         $month = date('Y-m',strtotime($time));
+
+        $adminList = Db::table('ba_admin')->where('type',2)->field('nickname,company_id')->select()->toArray();
+        $adminList = array_column($adminList,'nickname','company_id');
+
+        // dd($adminList);
 
         $res = $this->model
             ->field('id,company_name,money')
@@ -83,7 +94,7 @@ class ConsumptionStatistics extends Backend
                 $money = bcadd((string)$money,'0',2);
                 $dataList[] = [
                     'id' => $v['id'],
-                    'nickname' => $v['company_name'],
+                    'nickname' => $adminList[$v['id']]??'',
                     'money' => $money,
                     'consumption' => bcadd((string)$companyConsumption,'0',2),
                     'remaining_amount' => bcsub($money,(string)$companyTotalConsumption,'2'),

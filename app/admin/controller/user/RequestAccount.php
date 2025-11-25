@@ -26,7 +26,7 @@ class RequestAccount extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['index','userIndex','accountRefresh','gitIndexCount','batchRecycle'];
+    protected array $noNeedPermission = ['index','userIndex','accountRefresh','gitIndexCount','batchRecycle','manageExport','getManageExportProgress'];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -437,9 +437,9 @@ class RequestAccount extends Backend
 
         $query = DB::table('ba_account')
         ->alias('account')
-        ->field('accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,account.account_id,account.open_money,account.open_time,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,admin.nickname,accountrequest_proposal.status accountrequest_proposal_status')
+        ->field('accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,account.account_id,account.open_money,account.open_time,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status accountrequest_proposal_status')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
-        ->leftJoin('ba_admin admin','admin.company_id=account.company_id')
+        // ->leftJoin('ba_admin admin','admin.company_id=account.company_id')
         ->order('account.id','desc')
         ->where($where)
         ->where(function($query) {       
@@ -456,6 +456,7 @@ class RequestAccount extends Backend
                 $query->whereOr($whereOr);
             }
         });
+
         $query2 = clone $query;
         $total = $query2->count(); 
 
@@ -536,6 +537,12 @@ class RequestAccount extends Backend
         Cache::store('redis')->delete('export_manage');
 
         $this->success('',['path'=>$folders['filePath'].'/'.$name]);  
+    }
+
+    public function getManageExportProgress()
+    {
+        $progress = Cache::store('redis')->get('export_manage', 0); // 获取进度
+        return $this->success('',['progress' => $progress]);
     }
 
     public function accountRefresh()
@@ -709,5 +716,6 @@ class RequestAccount extends Backend
         }
         $this->error(__('Parameter error'));
     }
+
 
 }
