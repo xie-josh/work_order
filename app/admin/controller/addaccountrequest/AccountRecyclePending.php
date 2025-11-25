@@ -51,6 +51,14 @@ class AccountRecyclePending extends Backend
             if($v[0] == 'account_recycle_pending.account_id'){                
                 $v[0] = 'account.account_id';
             }
+            if($v[0] == 'account_recycle_pending.account_status'){                
+                $v[0] = 'accountrequest_proposal.account_status';
+            }
+            if($v[0] == 'account_recycle_pending.admin_a_nickname'){      
+                $adminIds = Db::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('id');          
+                array_push($where,['accountrequest_proposal.admin_id','IN',$adminIds]);
+                unset($where[$k]);
+            }
         }
         $res = DB::table('ba_account')
         ->alias('account')
