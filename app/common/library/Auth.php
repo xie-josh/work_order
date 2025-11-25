@@ -483,9 +483,9 @@ class Auth extends \ba\Auth
         return parent::getRuleIds($uid ?: $this->id);
     }
 
-    public function getMenus(int $uid = 0): array
+    public function getMenus(int $uid = 0,int $type=0,int $prepaymentType=0): array
     {
-        return parent::getMenus($uid ?: $this->id);
+        return parent::getMenus($uid ?: $this->id,0,0);
     }
 
     /**
