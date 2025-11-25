@@ -632,7 +632,7 @@ class Account extends Backend
             
             //$path = '/www/wwwroot/workOrder.test/public/storage/excel';
             $path = $_SERVER['DOCUMENT_ROOT'].'/storage/excel';
-            $fineName = 'accountImport.xlsx';
+            $fineName = 'accountImport'.time().'.xlsx';
             $info = $file->move($path,$fineName);
     
             $config = [
@@ -642,7 +642,6 @@ class Account extends Backend
             $excel = new \Vtiful\Kernel\Excel($config);
 
             $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
-
             $accountType = config('basics.account_type');
             $accountTypeList = array_flip($accountType);
 
@@ -708,6 +707,8 @@ class Account extends Backend
 
             $company = Db::table('ba_company')->where('id',$this->auth->company_id)->find();
             $accountNumber = $company['account_number'];
+            $prepaymentType = $company['prepayment_type'];
+            $usedMoney = $company['used_money'];
             // $isAccount = $admin['is_account'];
             // $usableMoney = ($admin['money'] - $admin['used_money']);
             // if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
@@ -780,13 +781,19 @@ class Account extends Backend
             if($isKeepCount>0)
             {
                 $amount =  bcmul($isKeepCount, '10');//---养户充值*10
-                $where['id'] = $this->auth->company_id;
-                $result =  DB::table('ba_company')
-                            ->whereRaw("money - used_money > $amount")
-                            ->where($where)
-                            ->inc('used_money', $amount)                   
-                            ->update();
-                if(!$result) throw new \Exception("养户所需余额不足请充值！");
+
+                if($prepaymentType != 1)
+                {
+                    if($usedMoney < 0) throw new \Exception("养户所需余额不足请充值！");
+                    $where['id'] = $this->auth->company_id;
+                    $result =  DB::table('ba_company')
+                                ->whereRaw("money - used_money > $amount")
+                                ->where($where)
+                                ->inc('used_money', $amount)                   
+                                ->update();
+                    if(!$result) throw new \Exception("养户所需余额不足请充值！");
+                }
+                
             }
             DB::table('ba_account')->insertAll($data);
             $result = true;

@@ -44,6 +44,7 @@ class AccountRecyclePending extends Backend
                 $where[] = ['accountrequest_proposal.recycle_type','<>',3];
 
         $where[] = ['account.status','=',4];
+        $totalConsumption = 0;
         foreach($where as $k => &$v){
             if($v[0] == 'account.idle_time'){                
                 $v[2] = floor((int)$v[2] * 86400);
@@ -53,6 +54,10 @@ class AccountRecyclePending extends Backend
             }
             if($v[0] == 'account_recycle_pending.account_status'){                
                 $v[0] = 'accountrequest_proposal.account_status';
+            }
+            if($v[0] == 'accountrequest_proposal.total_consumption'){                
+                // $v[2] = 1000;
+                $totalConsumption = floor($v[2]);
             }
             if($v[0] == 'account_recycle_pending.admin_a_nickname'){      
                 $adminIds = Db::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('id');          
@@ -66,10 +71,12 @@ class AccountRecyclePending extends Backend
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
-        ->where($where)
-        ->paginate($limit);
-        // dd($where);
+        ->where($where);
+        
+        if(!empty($totalConsumption)) $res = $res->whereRaw("COALESCE(accountrequest_proposal.total_consumption, 0) + 0 > $totalConsumption");
 
+        $res = $res->paginate($limit);
+        // dd($where);
 
         $result = $res->toArray();
         $dataList = [];
