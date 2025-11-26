@@ -68,7 +68,7 @@ class Admin extends Backend
             }
            
         } 
-        if($type =2 ){
+        if($type == 2){
             array_push($where,['admin.type','=',2]); 
         }
         // dd($where);
