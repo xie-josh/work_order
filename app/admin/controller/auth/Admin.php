@@ -58,6 +58,7 @@ class Admin extends Backend
         //     array_push($where,['id','IN',$adminIds]);
         // }
 
+        
        foreach($where as $k => &$v){
             if($v[0] == 'admin.admin_group_id'){
                 $adminIds = DB::table('ba_admin_group_access')->where('group_id',$v[2])->column('uid');
