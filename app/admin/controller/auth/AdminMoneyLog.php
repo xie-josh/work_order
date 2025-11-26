@@ -60,7 +60,7 @@ class AdminMoneyLog extends Backend
         $res->visible(['company' => ['company_name']]);
         $dataList = $res->toArray()['data'];
         
-        $naickArr = Db::table('ba_admin')->column('nickname','company_id');
+        $naickArr = Db::table('ba_admin')->where('type',2)->column('nickname','company_id');
         foreach($dataList as &$v){
             $v['nickname'] = $naickArr[$v['company_id']]??'';
         }

@@ -45,14 +45,14 @@ class Admin extends Backend
         if ($this->request->param('select')) {
             $this->select();
         }
-
+        $type =  $this->request->get('type');
         $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
         if($groupsId == 2) {
             $this->dataLimit = false;
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-
+     
         // if($this->request->param('admin_group_id')){
         //     $adminIds = DB::table('ba_admin_group_access')->where('group_id',$this->request->param('admin_group_id'))->column('uid');
         //     array_push($where,['id','IN',$adminIds]);
@@ -66,8 +66,12 @@ class Admin extends Backend
                 unset($where[$k]);
                 continue;
             }
+           
+        } 
+        if($type =2 ){
+            array_push($where,['admin.type','=',2]); 
         }
-        
+        // dd($where);
         $res = $this->model
             ->field('*,ROUND((money - used_money),2) usableMoney')
             ->withoutField('login_failure,password,salt')
