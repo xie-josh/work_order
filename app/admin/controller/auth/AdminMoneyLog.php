@@ -58,9 +58,15 @@ class AdminMoneyLog extends Backend
             ->order('create_time','desc')
             ->paginate($limit);
         $res->visible(['company' => ['company_name']]);
+        $dataList = $res->toArray()['data'];
+        
+        $naickArr = Db::table('ba_admin')->column('nickname','company_id');
+        foreach($dataList as &$v){
+            $v['nickname'] = $naickArr[$v['company_id']]??'';
+        }
 
         $this->success('', [
-            'list'   => $res->items(),
+            'list'   => $dataList,
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
