@@ -19,7 +19,7 @@ class Company extends Backend
     
     protected array $noNeedPermission = ['index','add','edit'];
 
-    protected string|array $quickSearchField = 'name';
+    protected string|array $quickSearchField = 'company_name';
 
     public function initialize(): void
     {
@@ -94,8 +94,8 @@ class Company extends Backend
          {
                 $v['alias'] = $v['company_name'];
                 $v['rate']     =  $rateArr[$v['id']]??0;
-                $v['username'] = $adminArr[$v['id']]['username']??'';    
-                $v['nickname'] = $adminArr[$v['id']]['nickname']??'';    
+                $v['username'] =  $adminArr[$v['id']]['username']??'';    
+                $v['nickname'] =  $adminArr[$v['id']]['nickname']??'';     
                 $v['totalMoney']   = ROUND($moneyArr[$v['id']]??0, 2);      //总金额
                 $v['totalconsume'] = ROUND($consumptionArr[$v['id']]??0, 2);//总消耗
                 $v['kyMoney'] = bcsub($v['totalMoney'], $v['totalconsume']);//可用余额
