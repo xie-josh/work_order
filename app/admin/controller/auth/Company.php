@@ -45,6 +45,15 @@ class Company extends Backend
             $sortType  = array_values($order)[0] == 'asc'?SORT_ASC:SORT_DESC;
             $order = ['id'=>'asc'];
         }
+
+        foreach($where as $k => $v){
+            if($v[0] == 'company.nickname'){
+                $adminIds = Db::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('company_id');          
+                array_push($where,['company.id','IN',$adminIds]);
+                unset($where[$k]);
+            }
+        }
+
         $res = $this->model
                     ->field('*,ROUND((money - used_money),2) usableMoney')
                     ->withJoin($this->withJoinTable, $this->withJoinType)
