@@ -13,7 +13,7 @@ class Admin extends Validate
         'nickname'  => 'require',
         'password'  => 'require|regex:^(?!.*[&<>"\'\n\r]).{6,32}$',
         'email'     => 'email|unique:admin',
-        'mobile'    => 'mobile|unique:admin',
+        // 'mobile'    => 'mobile|unique:admin',
         'group_arr' => 'require|array',
     ];
 
@@ -33,7 +33,7 @@ class Admin extends Validate
      * 验证场景
      */
     protected $scene = [
-        'add' => ['username', 'nickname', 'password', 'email', 'mobile', 'group_arr'],
+        'add' => ['username', 'nickname', 'password', 'email', 'group_arr'], // 'mobile',
     ];
 
     /**
@@ -41,7 +41,7 @@ class Admin extends Validate
      */
     public function sceneInfo(): Admin
     {
-        return $this->only(['nickname', 'password', 'email', 'mobile'])
+        return $this->only(['nickname', 'password', 'email'])//, 'mobile'
             ->remove('password', 'require');
     }
 
@@ -50,7 +50,7 @@ class Admin extends Validate
      */
     public function sceneEdit(): Admin
     {
-        return $this->only(['username', 'nickname', 'password', 'email', 'mobile', 'group_arr'])
+        return $this->only(['username', 'nickname', 'password', 'email','group_arr'])// 'mobile', 
             ->remove('password', 'require');
     }
 
@@ -61,7 +61,7 @@ class Admin extends Validate
             'nickname'  => __('Nickname'),
             'password'  => __('Password'),
             'email'     => __('Email'),
-            'mobile'    => __('Mobile'),
+            // 'mobile'    => __('Mobile'),
             'group_arr' => __('Group Name Arr'),
         ];
         $this->message = array_merge($this->message, [

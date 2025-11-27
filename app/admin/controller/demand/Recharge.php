@@ -61,7 +61,17 @@ class Recharge extends Backend
                     //$v[2] = $number;
                 }
             }
+            if($v[0] == 'recharge.username'){
+                if(!empty($v[2]))
+                {
+                  $v[0]    =  'recharge.admin_id';
+                  $v[1]    =  '=';
+                  $v[2]    =  DB::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->value('id')??'';
+                }
+            }
+
         }
+        // dd($where);
 
         array_push($where,['recharge.audit_status','=',2]);
 
@@ -632,7 +642,6 @@ class Recharge extends Backend
                 $result = true;
                 DB::commit();
             } catch (Throwable $e) {
-                dd($e->getMessage());
                 DB::rollback();
                 Cache::store('redis')->delete($key);
                 $this->error($e->getMessage());
@@ -870,7 +879,7 @@ class Recharge extends Backend
 
             $groupid = $this->uidGetGroupId();
             $whereC = [];
-            if(in_array($groupid,[3,4])) $whereC['admin_id'] =  $this->auth->id;
+            // if(in_array($groupid,[3,4])) $whereC['admin_id'] =  $this->auth->id;
 
 
             $errorList = [];
@@ -887,7 +896,7 @@ class Recharge extends Backend
                 if(!$acquired) $this->error($accountId.":该需求被锁定，处理中！");
                 
                 try {
-                    $account = Db::table('ba_account')->where('account_id',$accountId)->where($whereC)->where('status',4)->find();
+                    $account = Db::table('ba_account')->where('account_id',$accountId)->where('status',4)->find();
                     if(empty($account)) throw new \Exception("未找到该账户或账户不可用！");                
     
                     $nOTConsumptionStatus = config('basics.NOT_consumption_status');
@@ -898,18 +907,17 @@ class Recharge extends Backend
                     if(!empty($recharge)) throw new \Exception("已收到清零需求，请勿重复提交，如需加急，请联系客服!");
 
                     if($type != 1 && $account['money'] <= 0) throw new \Exception("该账号余额是零，不需要处理！");
-
-                    
+         
                     if($acquired){
                         if($type == 1)
                         {
                             if($amount <= 0) throw new \Exception("充值金额不能小于零");
-
-                            $admin = Db::table('ba_admin')->where('id',$account['admin_id'])->find();
+                            $admin = Db::table('ba_company')->where('id',$account['company_id'])->find();
                             if($admin['prepayment_type'] == 2){
                                 $usableMoney = bcadd((string)$amount,(string)$admin['used_money'],2);
                                 if($usableMoney > $admin['money']) throw new \Exception("余额不足,请联系管理员！");
-                                DB::table('ba_admin')->where('id',$account['admin_id'])->update(['used_money'=>$usableMoney]);
+                                if($admin['used_money'] < 0) throw new \Exception("钱包金额不对,请联系管理员！");
+                                DB::table('ba_company')->where('id',$account['company_id'])->update(['used_money'=>$usableMoney]);
                             }
                         }else if($type == 2)
                         {
@@ -951,6 +959,7 @@ class Recharge extends Backend
                     $data['type'] = $type;
                     $data['account_id'] = $accountId;
                     $data['account_name'] = $account['name'];
+                    $data['team_id'] = $account['team_id']??'';
                     $data['admin_id'] = $adminArr?$adminArr[$accountId]:$this->auth->id;                    
                     $data['add_operate_user'] = $this->auth->id;
                     if(in_array($type,[3,4]))$data['number'] = 0;

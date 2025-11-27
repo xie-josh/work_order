@@ -886,20 +886,20 @@ class Bm extends Backend
             try {
                 $errorList = [];
                 $dataList  = [];
-
+              
                 $adminId = $this->auth->id;
                 $groupid = $this->uidGetGroupId();
-                $whereC = [];
-                if(in_array($groupid,[3,4])) $whereC['account.admin_id'] =  $adminId;
+                // $whereC = [];
+                // if(in_array($groupid,[3,4])) $whereC['account.admin_id'] =  $adminId;
                 $accountListC = DB::table('ba_account')->alias('account')
-                ->field('accountrequest_proposal.account_id,accountrequest_proposal.status')
+                ->field('accountrequest_proposal.account_id,accountrequest_proposal.status,account.team_id')
                 ->whereIn('account.account_id',$accountList)
-                ->where($whereC)// ->where('account.admin_id',$adminId)
+                // ->where($whereC)// ->where('account.admin_id',$adminId)
                 ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
                 ->select()
                 ->toArray();
                 $nOTConsumptionStatus = config('basics.NOT_consumption_status');
-
+                $accountTeamList = array_column($accountListC,'team_id','account_id');
                 foreach($accountListC as $k => $v){
                     if(in_array($v['status'],$nOTConsumptionStatus))
                     {
@@ -977,6 +977,7 @@ class Bm extends Backend
                             'demand_type'=>1,
                             'account_id'=>$v,
                             'bm'=>$v2['bm'],
+                            'team_id'=>$accountTeamList[$v]??'',
                             'bm_type'=>$v2['bm_type'],
                             'choice_jurisdiction'=>$v2['choice_jurisdiction'],
                             'account_name'=>'',
