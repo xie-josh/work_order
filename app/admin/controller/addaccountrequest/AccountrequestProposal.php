@@ -79,6 +79,16 @@ class AccountrequestProposal extends Backend
         list($where, $alias, $limit, $order) = $this->queryBuilder(); 
         if($status === "0") array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
         if($limit == 999) $limit = 2500;
+
+        foreach($where as $k => &$v)
+        {
+            if($v[0] == 'channel.nickname'){
+
+                $adminIds = DB::table('ba_admin')->where('nickname','like',$v[2])->column('id');
+                array_push($where, ['accountrequest_proposal.admin_id','in',$adminIds]);
+                unset($where[$k]);
+            }
+        }
         
         $res = $this->model
             ->distinct(true)
@@ -694,6 +704,7 @@ class AccountrequestProposal extends Backend
             'currency',
             'country_code',
             'country_name',
+            'close_time',
             'card_no',
         ];
 
@@ -743,6 +754,7 @@ class AccountrequestProposal extends Backend
                     'currency'=>$v['currency'],
                     'country_code'=>$v['country_code'],
                     'country_name'=>$v['country_name'],
+                    'close_time'=>$v['close_time'],
                     'card_no'=>$v['card_no'],
                 ];
                 if(!empty($groupedCards[$v['account_id']])){

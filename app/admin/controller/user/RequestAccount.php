@@ -50,10 +50,20 @@ class RequestAccount extends Backend
         if ($this->request->param('select')) {
             $this->select();
         }
-
+        $sortField = $this->request->get('sort_field')??''; 
+        $sortType  = $this->request->get('sort_type')??'';  //SORT_DESC  SORT_ASC
+        
         $this->dataLimit = false;
         list($where, $alias, $limit, $order) = $this->queryBuilder();
-
+        if(in_array(array_keys($order)[0],['fb_spand','fb_balance','consumption_date'])){
+            if(array_keys($order)[0] == 'consumption_date'){
+                $order = ['idle_time'=>array_values($order)[0]];
+            }else{
+                $sortField = array_keys($order)[0];
+                $sortType  = array_values($order)[0] == 'asc'?SORT_ASC:SORT_DESC;
+                $order = ['id'=>'asc'];
+            }
+        }
         // $groupsId = ($this->auth->getGroups()[0]['group_id'])??0;
         // if($groupsId != 2 && !$this->auth->isSuperAdmin()) { 
             
@@ -192,6 +202,8 @@ class RequestAccount extends Backend
                 $v['business_id'] = $fbBmTokenList[$v['bm_token_id']]??'';
             }
         }
+
+        if($sortField && $sortType)array_multisort(array_column($dataList, $sortField), $sortType, $dataList);
 
         return [
             'list'   => $dataList,
@@ -398,6 +410,7 @@ class RequestAccount extends Backend
         $isStatus = 99;
         $whereOr = [];
         $noWhere = [];
+        $idle = 0;
         foreach($where as $k => $v){
             if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
             
@@ -410,25 +423,32 @@ class RequestAccount extends Backend
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 1){
                 array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
                 array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
-                $isStatus = 1;
                 unset($where[$k]);
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 2){
                 array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
-                $isStatus = 2;
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 0){
                 array_push($whereOr,['accountrequest_proposal.account_status','=',0]);
                 array_push($whereOr,['accountrequest_proposal.status','=',96]);
-                $isStatus = 0;
                 unset($where[$k]);
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 97){
                 array_push($where,['accountrequest_proposal.status','=',97]);
-                $isStatus = 97;
+                unset($where[$k]);
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 333){
+                array_push($where,['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400]);
+                unset($where[$k]);
+                $idle = 1;
+                continue;
+            }
+            if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 94){
+                array_push($where,['accountrequest_proposal.status','=',94]);
                 unset($where[$k]);
                 continue;
             }
@@ -437,7 +457,7 @@ class RequestAccount extends Backend
 
         $query = DB::table('ba_account')
         ->alias('account')
-        ->field('accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,account.account_id,account.open_money,account.open_time,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status accountrequest_proposal_status')
+        ->field('account.idle_time,accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,account.account_id,account.open_money,account.open_time,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status accountrequest_proposal_status')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         // ->leftJoin('ba_admin admin','admin.company_id=account.company_id')
         ->order('account.id','desc')
@@ -470,6 +490,7 @@ class RequestAccount extends Backend
             '历史花费',
             '下户时间'
         ];
+        if($idle) $header[] = '闲置时间';
         $config = [
             'path' => $folders['path']
         ];
@@ -485,6 +506,17 @@ class RequestAccount extends Backend
                 $List = [];
 
                 foreach($dataList as &$v){
+
+                    
+                    $seconds = $v['idle_time'];
+                    if($seconds > 86400){
+                        $days = floor($seconds / 86400);
+                        // $hours = floor(($seconds % 86400) / 3600);
+                    }else{
+                        $days = 0;
+                        // $hours = floor($seconds / 3600);
+                    }
+                    
 
                     $spendCap = $v['spend_cap'] == 0.01?0:$v['spend_cap'];
                     $amountSpent = $v['amount_spent'];
@@ -519,7 +551,8 @@ class RequestAccount extends Backend
                         $v['currency'],
                         $balance,
                         bcadd( (string)$accountSpent2,'0',2),
-                        date('Y-m-d H:i:s',$v['open_time'])
+                        date('Y-m-d H:i:s',$v['open_time']),
+                        $days
                     ];
 
                     $processedCount++;
