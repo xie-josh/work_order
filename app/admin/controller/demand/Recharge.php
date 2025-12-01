@@ -29,7 +29,7 @@ class Recharge extends Backend
     protected array $withJoinTable = ['accountrequestProposal'];
     protected array $noNeedPermission = ['batchAdd','edit','getRechargeAnnouncement','accountSpendDelete','accountSpendUp','accountSpendDeductions','export','getExportRecharge'];
 
-    protected bool|string|int $dataLimit = 'parent';
+    // protected bool|string|int $dataLimit = 'parent';
 
     protected $currencyRate = ["EUR"=>"0.8","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000","VND"=>"23500","GBP"=>"0.7"];
 

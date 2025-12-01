@@ -27,7 +27,7 @@ class Bm extends Backend
 
     protected array $noNeedPermission = ['batchAdd','disposeStatus','index','getBmList','getBmAnnouncement','progressList','progress','disposeAll','bmAllUnbinding','emailOperation','batchUnbindAdd'];
 
-    protected bool|string|int $dataLimit = 'parent';
+    // protected bool|string|int $dataLimit = 'parent';
 
     public function initialize(): void
     {
@@ -1149,7 +1149,7 @@ class Bm extends Backend
 
         $bmList = Db::table('ba_bm')
         ->alias('b')
-        ->field('id, admin_id, account_id, bm,bm_type')
+        ->field('id, admin_id, account_id, bm,bm_type,team_id')
         ->whereIn('b.account_id', $accountIds)
         ->whereIn('b.demand_type', [1, 4])
         ->where('b.new_status', 1)
