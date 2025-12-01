@@ -18,7 +18,7 @@ class Bm extends Backend
 
     protected string|array $quickSearchField = ['user.username', 'user.nickname'];
 
-    protected array $noNeedPermission = ['index','unbinding','getBmList','batchUnbindAdd','batchAdd','edit','progressList',"export","getExportBm","batchPass","batchRefuse"];
+    protected array $noNeedPermission = ['index','unbinding','getBmList','batchUnbindAdd','batchAdd','edit','progressList',"export","getExportBm","batchPass","batchRefuse","emailOperation"];
 
     public function initialize(): void
     {
@@ -652,6 +652,83 @@ class Bm extends Backend
             }
         }
         $this->error(__('Parameter error'));
+    }
+
+        /**
+     * 根据Email返回可解绑的账户
+     * 提交后直接解绑邮箱关联的账户
+     */
+    public function emailOperation()
+    {
+        $email = $this->request->param('email');
+        if(empty($email))$this->error('请输入email操作@！！',[]);
+        $bmArr = DB::table('ba_bm')->alias('bm')
+                ->field('DISTINCT bm.account_id,bm.account_id,bm.bm,bm.choice_jurisdiction,a.serial_name as account_name,bm.team_id')
+                ->leftJoin('ba_accountrequest_proposal a','a.account_id=bm.account_id')
+                ->leftJoin('ba_account b','a.account_id=b.account_id')
+                ->whereIn('demand_type',[1,4])
+                ->where('bm.bm',$email)
+                ->where('b.company_id',$this->auth->company_id)
+                ->where('bm.dispose_type',1)
+                ->where('bm.bm_type',2)
+                ->where('bm.new_status',1)
+                ->select()->toArray();
+        if ($this->request->isPost()) 
+        {
+            $accountListC = array_column($bmArr,'account_id');
+            //这个邮箱待处理的BM
+            $bmList = DB::table('ba_bm')->whereIn('account_id',$accountListC)->where('bm',$email)->where('status',0)->where('dispose_type',0)->column('DISTINCT account_id');
+            $dataList = [];
+            $error = [];
+            $adminArr = $this->getPermissionUser($accountListC); //权限判断
+            foreach($bmArr as $v)
+            {
+                if(in_array($v['account_id'],$bmList))
+                {
+                    array_push($error,['account_id'=>$v['account_id'],'msg'=>'该BM需求在处理中,不重复生成解绑，已为您跳过!!!']);
+                    continue;
+                } 
+                $dataList[] = [
+                    'demand_type'=>2, 
+                    'account_id'=>$v['account_id'],
+                    'bm'=>$v['bm'],
+                    'team_id'=>$v['team_id'],
+                    'bm_type'=>2,
+                    'is_all_bm'=>1,               //客户端提交邮箱解绑
+                    'choice_jurisdiction'=>$v['choice_jurisdiction'],
+                    'account_name'=>$v['account_name'],
+                    'admin_id'=>$adminArr?$adminArr[$v['account_id']]:$this->auth->id,
+                    'add_operate_user'=>$this->auth->id,
+                    'create_time'=>time()
+                ];
+            }
+            if($dataList){
+                $result = $this->model->insertAll($dataList);
+            }else{
+                $error[] = ['account_id'=>'','msg'=>'无解绑数据插入！！！'];
+            }
+            $this->success("操作成功!",['error_list'=>$error]);
+        }else{
+            $this->success('', ['row' => $bmArr]);
+        }
+    }
+
+    public function getPermissionUser($accountArr)
+    {
+        $adminArr =[];     
+        $accountAdminIdArr = $this->getAccountAdminId($accountArr);
+        if(!empty($accountAdminIdArr))switch($this->uidGetGroupId()){
+            case 1:
+            case 2: 
+                   $adminArr = $accountAdminIdArr; 
+                break;
+            case 3: 
+                   $adminArr = array_map(function($value) {
+                    return $this->auth->id;
+                }, $accountAdminIdArr); 
+                break;
+        }
+        return $adminArr;
     }
     
 }
