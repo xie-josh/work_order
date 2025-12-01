@@ -14,7 +14,7 @@ class Company extends Validate
     protected $rule = [
         'company_name'  => 'require|unique:company',
         'email'         => 'require',
-        'mobile'        => 'require|unique:company',
+        // 'mobile'        => 'require|unique:company',
     ];
 
     /**
@@ -27,7 +27,7 @@ class Company extends Validate
      * 验证场景
      */
     protected $scene = [
-        'add' => ['company_name', 'email', 'mobile'],
+        'add' => ['company_name', 'email'], //, 'mobile'
     ];
 
 }
