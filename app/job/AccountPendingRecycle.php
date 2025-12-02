@@ -55,9 +55,17 @@ class AccountPendingRecycle
                 'total_consumption'=>$totalConsumption
             ];
 
-            $companyIsopen = DB::table('ba_company')->where('id',$companyId)->value('isopen');
-            if($seconds > floor(30 * 86400) && $companyIsopen == 1) $accountrequestProposalData = ['status'=>94];
-            DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update($accountrequestProposalData);
+            $where = [
+                ['account_id','=',$accountId],
+            ];
+            $companyIsopen = 1;
+            if($seconds > floor(31 * 86400) && $companyIsopen == 1) {
+                $accountrequestProposalData = ['status'=>94];
+            }else{
+                $where[] = ['status','=',94];
+                $accountrequestProposalData = ['status'=>1];
+            }
+            DB::table('ba_accountrequest_proposal')->where($where)->update($accountrequestProposalData);
                        
             $job->delete();
         } catch (\Throwable $th) {
