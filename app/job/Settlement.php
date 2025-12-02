@@ -42,7 +42,7 @@ class Settlement
         $batchSize = 5000;
         $processedCount = 0;
 
-        $nickname = $params['company_name'];
+        $nickname = $params['admin_nickname'];
 
         $where = [
             ['consumption.company_id','=',$params['id']],

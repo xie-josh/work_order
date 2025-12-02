@@ -30,6 +30,9 @@ class SettlementTask extends Command
         ->where($where)
         ->select()->toArray();
 
+        $adminCompanyList = DB::table('ba_admin')->where('type',2)->field('company_id,nickname')->select()->toArray();
+        $adminCompanyList = array_column($adminCompanyList,'nickname','company_id');
+
         if($day <= 5) $startTime = date('Y-m-01',strtotime('-1 month'));
         else $startTime = date('Y-m-01',time());
         $endTime = date('Y-m-d',time());
@@ -38,6 +41,7 @@ class SettlementTask extends Command
         {
             $v['start_time'] = $startTime;
             $v['end_time'] = $endTime;
+            $v['admin_nickname'] = $adminCompanyList[$v['id']]??'未找到用户';
             $jobHandlerClassName = 'app\job\Settlement';
             $jobQueueName = 'Settlement';
             Queue::later(1800, $jobHandlerClassName, $v, $jobQueueName);

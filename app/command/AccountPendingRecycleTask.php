@@ -21,8 +21,6 @@ class AccountPendingRecycleTask extends Command
         // $cc = ["165","171","194","220","221","225","233","256","257","268","278"];
         // 4小时更新一次
 
-        
-
         $where = [
             ['account.status','=',4],
             ['accountrequest_proposal.admin_id','IN',["165","171","194","220","221","225","233","256","257","268","278"]],
@@ -31,9 +29,9 @@ class AccountPendingRecycleTask extends Command
 
         $accountList = DB::table('ba_account')
         ->alias('account')
-        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id,account.company_id')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->where($where)
-        ->field('account.id,account.account_id,account.open_time')
+        ->field('account.id,account.account_id,account.open_time,account.company_id')
         ->select()->toArray();
 
         foreach($accountList as $v){

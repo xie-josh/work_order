@@ -60,6 +60,9 @@ class SettlementSummary
 
         $prepaymentName ='预付实销';
         $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
+
+        $adminCompanyList = DB::table('ba_admin')->where('type',2)->field('company_id,nickname')->select()->toArray();
+        $adminCompanyList = array_column($adminCompanyList,'nickname','company_id');
         
         $resultPath = "excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName;
         // if(file_exists($resultPath)) unlink($resultPath);
@@ -100,7 +103,7 @@ class SettlementSummary
                     $v['account_id'],
                     $v['currency'],
                     (float)$v['spend'],
-                    $companyList[$v['company_id']]??'未找到用户',
+                    $adminCompanyList[$v['company_id']]??'未找到用户',
                     $v['date_start'],
                     $v['date_start'],
                 ];
