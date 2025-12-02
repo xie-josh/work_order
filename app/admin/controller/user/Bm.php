@@ -274,9 +274,9 @@ class Bm extends Backend
                 $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Added successfully'),['errorList'=>$error]);
+                $this->success(__('Added successfully'),['error_list'=>$error]);
             } else {
-                $this->error(__('No rows were added'),['errorList'=>$error]);
+                $this->error(__('No rows were added'),['error_list'=>$error]);
             }
         }
         $this->error(__('Parameter error'));
@@ -334,14 +334,13 @@ class Bm extends Backend
                 array_push($where,['account.company_id','=',$this->auth->company_id]);
                 if($this->auth->type == 4) array_push($where,['account.team_id','=',$this->auth->team_id]);
                 
+                $accountListC = $table->where($where)->select()->toArray();
 
-                $accountList = $table->where($where)->select()->toArray();
-
-                if(empty($accountList))  throw new \Exception('未找到账户');
+                if(empty($accountListC))  throw new \Exception('未找到账户');
 
                 $nOTConsumptionStatus = config('basics.NOT_consumption_status');
 
-                foreach($accountList as $k => $v){
+                foreach($accountListC as $k => $v){
                     if(in_array($v['status'],$nOTConsumptionStatus))
                     {
                         $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已经终止使用，不可操作，请联系管理员！'];
@@ -349,7 +348,7 @@ class Bm extends Backend
                     }
                 }
 
-                $accountListC = array_column($accountList,'account_id');
+                $accountListC = array_column($accountListC,'account_id');
 
                 $bmListC = [];
                 foreach($bmList as $v => $vv){
@@ -654,7 +653,7 @@ class Bm extends Backend
         $this->error(__('Parameter error'));
     }
 
-        /**
+          /**
      * 根据Email返回可解绑的账户
      * 提交后直接解绑邮箱关联的账户
      */
