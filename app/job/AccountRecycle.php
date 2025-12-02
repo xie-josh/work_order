@@ -52,7 +52,7 @@ class AccountRecycle
             DB::table('ba_recharge_recycle')->insertAll($rechargeDataList);
 
             DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(
-                ['status'=>$status,'affiliation_admin_id'=>'']
+                ['status'=>$status,'affiliation_admin_id'=>'','recycle_type'=>3]
             ); 
             DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>2,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
             DB::table('ba_bm')->where('account_id',$accountId)->delete();
