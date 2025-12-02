@@ -258,10 +258,10 @@ class Admin extends Backend
             }
 
 
-            $openAccountNumber = $this->openAccountNumber();
+            // $openAccountNumber = $this->openAccountNumber();
 
 
-            if(isset($data['account_number'])) if($data['account_number'] < $openAccountNumber) $this->error('调整后的数量不能小于已经使用的数量！');
+            // if(isset($data['account_number'])) if($data['account_number'] < $openAccountNumber) $this->error('调整后的数量不能小于已经使用的数量！');
 
             if ($this->auth->id == $data['id'] ) { //&& $data['status'] == '0'
                 $this->error(__('Please use another administrator account to disable the current account!'));
