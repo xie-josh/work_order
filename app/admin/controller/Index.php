@@ -13,6 +13,7 @@ use app\common\facade\Token;
 use app\admin\model\AdminLog;
 use app\common\controller\Backend;
 use app\common\service\GoogleService;
+use app\admin\model\user\Company as CompanyModel;
 use app\services\EmailService;
 use think\facade\Db;
 use Google\Client;
