@@ -63,6 +63,7 @@ class AccountPendingRecycle
                 $accountrequestProposalData = ['status'=>94];
             }else{
                 $where[] = ['status','=',94];
+                $where[] = ['recycle_type','=',3];
                 $accountrequestProposalData = ['status'=>1];
             }
             DB::table('ba_accountrequest_proposal')->where($where)->update($accountrequestProposalData);
