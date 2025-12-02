@@ -102,7 +102,6 @@ class Index extends Backend
                 'type' => $this->auth::LOGGED_IN
             ], $this->auth::LOGIN_RESPONSE_CODE);
         }
-
         $captchaSwitch = Config::get('buildadmin.admin_login_captcha');
 
         // 检查提交
@@ -113,7 +112,7 @@ class Index extends Backend
             $code     = $this->request->post('code');
 
             $rule = [
-                'username|' . __('Username') => 'require|length:3,50',
+                'username|' . __('Username') => 'require|length:2,50',
             ];
             $data = [
                 'username' => $username,
@@ -248,72 +247,155 @@ class Index extends Backend
         $this->success('', []);
     }
 
-    /**
-     * 注册
-     */
-    public function register()
-    {   
-        $info     = $this->request->post();
-        $company  =  $info['company']??''; 
-        $email    =  $info['email']??''; 
-        $password =  $info['password']??''; 
-        $confirmPassword =  $info['confirm_password']??''; 
-        $code =  $info['code']??''; 
-        $register = [];
-        if(empty($company)){
-                $this->error('请填写您的公司名称！');
-        }
-        if(!empty($email)){
-            if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
-                $this->error('输入的邮箱格式不正确！');
-            }
-        }else{
-                $this->error('请填写您的联系邮箱！');
-        }
-        if(empty($password) || empty($confirmPassword)){
-                $this->error('请两次输入注册密码,并且保持一致！');
-        }
-        if($password != $confirmPassword){
-                $this->error('您输入的两次密码不一致！');
-        }
-        $register['email']   =  $email;
-        $register['username']=  $email;
-        $register['nickname']=  $email;
-        $register['company'] =  $company;
-        $salt = Random::build('alnum', 16);
-        $register['salt']     = $salt;
-        $register['password'] = encrypt_password($password, $salt);
-        $isEmail = DB::table('ba_admin')->where('email',$email)->find();
-        if(!empty($isEmail)){
-            $this->error('邮箱验已存在！');
-        }
-        if(empty($code))
-        {
-            $this->error('您输入邮箱验证码！');
-        }else{
-            $redisLock = new \app\services\RedisLock();
-            $redisCode = $redisLock->get('sendEmailCode_'.$email);
-            if($redisCode != $code)
-            {
-                $this->error('邮箱验证码不正确！');
-            }
-            $redisLock->delete('sendEmailCode_'.$email);
-        }
+    // /**
+    //  * 原注册
+    //  */
+    // public function register()
+    // {   
+    //     $info     = $this->request->post();
+    //     $company  =  $info['company']??''; 
+    //     $email    =  $info['email']??''; 
+    //     $password =  $info['password']??''; 
+    //     $confirmPassword =  $info['confirm_password']??''; 
+    //     $code =  $info['code']??''; 
+    //     $register = [];
+    //     if(empty($company)){
+    //             $this->error('请填写您的公司名称！');
+    //     }
+    //     if(!empty($email)){
+    //         if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
+    //             $this->error('输入的邮箱格式不正确！');
+    //         }
+    //     }else{
+    //             $this->error('请填写您的联系邮箱！');
+    //     }
+    //     if(empty($password) || empty($confirmPassword)){
+    //             $this->error('请两次输入注册密码,并且保持一致！');
+    //     }
+    //     if($password != $confirmPassword){
+    //             $this->error('您输入的两次密码不一致！');
+    //     }
+    //     $register['email']   =  $email;
+    //     $register['username']=  $email;
+    //     $register['nickname']=  $email;
+    //     $register['company'] =  $company;
+    //     $salt = Random::build('alnum', 16);
+    //     $register['salt']     = $salt;
+    //     $register['password'] = encrypt_password($password, $salt);
+    //     $isEmail = DB::table('ba_admin')->where('email',$email)->find();
+    //     if(!empty($isEmail)){
+    //         $this->error('邮箱验已存在！');
+    //     }
+    //     if(empty($code))
+    //     {
+    //         $this->error('您输入邮箱验证码！');
+    //     }else{
+    //         $redisLock = new \app\services\RedisLock();
+    //         $redisCode = $redisLock->get('sendEmailCode_'.$email);
+    //         if($redisCode != $code)
+    //         {
+    //             $this->error('邮箱验证码不正确！');
+    //         }
+    //         $redisLock->delete('sendEmailCode_'.$email);
+    //     }
        
-        $register['status'] = 2;
-        $register['create_time'] = time();
-        $id = DB::table('ba_admin')->insertGetId($register);
+    //     $register['status'] = 2;
+    //     $register['create_time'] = time();
+    //     $id = DB::table('ba_admin')->insertGetId($register);
        
-        $groupAccess = [
-            'uid'      => $id,
-            'group_id' => 3,   //默认用户
-        ];
-        Db::name('admin_group_access')->insert($groupAccess); 
+    //     $groupAccess = [
+    //         'uid'      => $id,
+    //         'group_id' => 3,   //默认用户
+    //     ];
+    //     Db::name('admin_group_access')->insert($groupAccess); 
 
-        if($id){
-            $this->success('', []);
-        }else{
-            $this->error('注册失败！请联系管理员！');
+    //     if($id){
+    //         $this->success('', []);
+    //     }else{
+    //         $this->error('注册失败！请联系管理员！');
+    //     }
+    // }
+
+        /**
+     * 添加公司
+     * @throws Throwable
+     */
+    public function register(): void
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $company = $data['company']??'';
+            if($company){
+                $data['company_name'] = $company;
+            } unset($data['company']);
+            $user['password'] = $data['password']??'';
+            $user['username'] = $data['email']??'';//$data['username']??'';
+            $user['nickname'] = $data['nickname']??'';
+            $user['email']    = $data['email']??'';
+            $confirmPassword  =  $data['confirm_password']??''; 
+            $code =  $data['code']??''; 
+            unset($data['password'],$data['username'],$data['nickname'],$data['confirm_password'],$data['code']);
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+            $this->model = new CompanyModel();
+            if ($this->modelValidate) {
+                try {
+                    $validate = new \app\admin\validate\user\Company();
+                    $validate->scene('add')->check($data);
+                } catch (Throwable $e) {
+                    $this->error($e->getMessage());
+                }
+            }
+
+            if(empty($code))
+            {
+                $this->error('请输入邮箱验证码！');
+            }else{
+                $redisLock = new \app\services\RedisLock();
+                $redisCode = $redisLock->get('sendEmailCode_'.$data['email']);
+                if($redisCode != $code)
+                {
+                    $this->error('邮箱验证码不正确！');
+                }
+                $redisLock->delete('sendEmailCode_'.$data['email']);
+            }
+
+            $salt   = Random::build('alnum', 16);
+            if(empty($user['password'])) $this->error('请输入用户密码！');
+            if($user['password'] != $confirmPassword){
+                $this->error('您输入的两次密码不一致！');
+            }
+            $user['password'] = encrypt_password($user['password'], $salt);
+            $this->model->startTrans();
+            try {
+                $result             = $this->model->save($data);
+                $user['company_id'] = $this->model->id;
+                $validate = new \app\admin\validate\user\Admin;
+                $validate->scene('register')->check($user);
+                $user['salt']       = $salt;
+                $user['type']       = 2; //公司主账号类型
+
+                $uid = DB::table('ba_admin')->insertGetId($user);
+
+                $groupAccess = [
+                    'uid'      => $uid,
+                    'group_id' => 7,
+                ];
+                Db::name('admin_group_access')->insert($groupAccess);
+
+                $this->model->commit();
+            } catch (Throwable $e) {
+                $this->model->rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+
         }
+        $this->error(__('Parameter error'));
     }
 }
