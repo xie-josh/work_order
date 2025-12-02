@@ -187,6 +187,8 @@ class Admin extends Backend
             try {
                 $data['salt']     = $salt;
                 $data['password'] = $passwd;
+                $data['company_id'] = 1;
+                $data['type'] = 1;
                 $result           = $this->model->save($data);
                 if ($data['group_arr']) {
                     $groupAccess = [];
