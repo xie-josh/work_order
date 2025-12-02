@@ -49,7 +49,7 @@ class AccountRecyclePending extends Backend
             if($v[0] == 'account.idle_time'){                
                 $v[2] = floor((int)$v[2] * 86400);
             }
-            if($v[0] == 'account_recycle_pending.account_id'){                
+            if($v[0] == 'account_recycle_pending.account_id' && $v[1] == 'LIKE'){                
                 $v[0] = 'account.account_id';
             }
             if($v[0] == 'account_recycle_pending.account_status'){                
@@ -62,6 +62,10 @@ class AccountRecyclePending extends Backend
             if($v[0] == 'account_recycle_pending.admin_a_nickname'){      
                 $adminIds = Db::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('id');          
                 array_push($where,['accountrequest_proposal.admin_id','IN',$adminIds]);
+                unset($where[$k]);
+            }
+            if($v[0] == 'account_recycle_pending.account_id' && $v[1] == 'IN'){      
+                array_push($where,['account.account_id','IN',$v[2]]);
                 unset($where[$k]);
             }
         }
@@ -155,7 +159,26 @@ class AccountRecyclePending extends Backend
         $where[] = ['account.status','=',4];
         foreach($where as $k => &$v){
             if($v[0] == 'account.idle_time'){                
-                $v[2] = floor($v[2] * 86400);
+                $v[2] = floor((int)$v[2] * 86400);
+            }
+            if($v[0] == 'account_recycle_pending.account_id' && $v[1] == 'LIKE'){                
+                $v[0] = 'account.account_id';
+            }
+            if($v[0] == 'account_recycle_pending.account_status'){                
+                $v[0] = 'accountrequest_proposal.account_status';
+            }
+            if($v[0] == 'accountrequest_proposal.total_consumption'){                
+                // $v[2] = 1000;
+                $totalConsumption = floor($v[2]);
+            }
+            if($v[0] == 'account_recycle_pending.admin_a_nickname'){      
+                $adminIds = Db::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('id');          
+                array_push($where,['accountrequest_proposal.admin_id','IN',$adminIds]);
+                unset($where[$k]);
+            }
+            if($v[0] == 'account_recycle_pending.account_id' && $v[1] == 'IN'){      
+                array_push($where,['account.account_id','IN',$v[2]]);
+                unset($where[$k]);
             }
         }
 
@@ -170,6 +193,8 @@ class AccountRecyclePending extends Backend
         ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
         ->where($where);
+
+        if(!empty($totalConsumption)) $query = $query->whereRaw("COALESCE(accountrequest_proposal.total_consumption, 0) + 0 > $totalConsumption");
         
         $total = $query->count(); 
 
