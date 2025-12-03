@@ -84,10 +84,10 @@ class Company extends Backend
         }else{
             $consumptionArr = Cache::store('redis')->get($key);
         }
-        $AccountCountArr = DB::table('ba_account')->where(['is_'=>1,'status'=>4])->group('company_id')->column('count(*)','company_id');//账户数量
+        $AccountCountArr = DB::table('ba_account')->where(['status'=>4])->group('company_id')->column('count(*)','company_id');//账户数量
         $AccountcloseArr = DB::table('ba_accountrequest_proposal')->alias('p')->leftJoin('ba_account account','account.account_id=p.account_id')
-                               ->where(['p.account_status'=>2,'account.is_'=>1])->group('account.company_id')->column('count(*)','company_id');//封户数量
-        $idleCountArr = DB::table('ba_account')->where(['is_'=>1,'status'=>4])->where('idle_time','>',604800)->group('company_id')->column('count(*)','company_id');//闲置
+                               ->where(['p.account_status'=>2])->group('account.company_id')->column('count(*)','company_id');//封户数量
+        $idleCountArr = DB::table('ba_account')->where(['status'=>4])->where('idle_time','>',604800)->group('company_id')->column('count(*)','company_id');//闲置
 
         
         if($dataList)foreach($dataList as &$v)

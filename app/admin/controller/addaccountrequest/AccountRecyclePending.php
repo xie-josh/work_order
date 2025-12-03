@@ -71,7 +71,7 @@ class AccountRecyclePending extends Backend
         }
         $res = DB::table('ba_account')
         ->alias('account')
-        ->field('account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
+        ->field('account.comment,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
