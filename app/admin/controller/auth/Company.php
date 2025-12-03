@@ -93,7 +93,7 @@ class Company extends Backend
         if($dataList)foreach($dataList as &$v)
          {
                 $v['alias'] = $v['company_name'];
-                $v['rate']     =  $rateArr[$v['id']]??0;
+                $v['rate']     =  ($rateArr[$v['id']]??0)*100;
                 $v['username'] =  $adminArr[$v['id']]['username']??'';    
                 $v['nickname'] =  $adminArr[$v['id']]['nickname']??'';     
                 $v['totalMoney']   = ROUND($moneyArr[$v['id']]??0, 2);      //总金额
