@@ -741,6 +741,16 @@ class Account extends Backend
                     throw new \Exception("养户只针对于【电商/游戏】类型  请修改账户名称为".$v[2]."的投放类型,或改成非养户类型后重新导入");
                 } 
 
+                if(in_array($v[0],['游戏','短剧','工具']) && !in_array($v[1],[5.5,7,8,-3,-7]))
+                {
+                     throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7】");
+                }
+
+                if(in_array($v[0],['电商']) && !in_array($v[1],[-9]))
+                {
+                     throw new \Exception($v[2].":【'电商'】,只能选择对应时区【-9】");
+                }
+
                 $currency = $v[4];
                 // $isKeep = $v[5];
                 if($isKeep)$open_money =10;
@@ -939,11 +949,22 @@ class Account extends Backend
             $data = [
                 'totalMoney'=>0,
                 'usedMoney'=>0,
-                'usableMoney'=>0
+                'usableMoney'=>0,
+                'accBalance'=>0
             ];
-            
-            if($this->auth->type != 4){
-                $result = DB::table('ba_company')->where('id',$this->auth->company_id)->find();
+      
+            if($this->auth->type != 4)
+            {
+               $result = DB::table('ba_company')->where('id',$this->auth->company_id)->find();
+               $accBalanceArr =  DB::table('ba_accountrequest_proposal')->alias('p')
+                ->leftJoin('ba_account a','a.account_id=p.account_id')
+                ->field('sum(p.spend_cap) spend_cap,sum(p.amount_spent) amount_spent')
+                ->where('a.company_id',$this->auth->company_id)
+                ->group('a.company_id')
+                ->find();
+
+                $data['accBalance'] = bcsub((String)$accBalanceArr['spend_cap'], (String)$accBalanceArr['amount_spent'], 2);
+          
                 if($result['prepayment_type'] == 1){
                     $consumptionService = new \app\admin\services\fb\Consumption();
                     $totalDollar = $consumptionService->getTotalDollar($result['id']);                
@@ -956,11 +977,14 @@ class Account extends Backend
                     $data['usedMoney'] = $result['used_money'];
                     $data['usableMoney'] = bcsub((string)$result['money'],(string)$result['used_money'],2);
                 }
+
+                // $accountList = DB::table('ba_account')->where('company_id',$this->auth->company_id)->where('status',4)->count();
+                // dd($accountList);
             }else{
-                $result = DB::table('ba_team')->where('id',$this->auth->team_id)->field('team_money money,team_used_money used_money')->find();
-                $data['totalMoney'] = $result['money'];
-                $data['usedMoney'] = $result['used_money'];
-                $data['usableMoney'] = bcsub((string)$result['money'],(string)$result['used_money'],2);
+                // $result = DB::table('ba_team')->where('id',$this->auth->team_id)->field('team_money money,team_used_money used_money')->find();
+                // $data['totalMoney'] = $result['money'];
+                // $data['usedMoney'] = $result['used_money'];
+                // $data['usableMoney'] = bcsub((string)$result['money'],(string)$result['used_money'],2);
             }
 
             $this->success('',$data);
@@ -990,6 +1014,7 @@ class Account extends Backend
         ->alias('account')
         ->where($where)
         // ->where('status','<>',4)
+        ->where('status','in',[0,1,3])
         ->where(function ($quers){
             $quers->where(function ($quers2){
                 $quers2->whereOr([
@@ -1013,6 +1038,7 @@ class Account extends Backend
         ->where(function ($query){
             $query->where([
                 // ['bm.status','=',0],
+                ['bm.status','IN',[0,1]],
                 ['bm.dispose_type','=',0],
                 ['bm.audit_status','<>',3],
             ]);
