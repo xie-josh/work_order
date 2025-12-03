@@ -960,6 +960,7 @@ class Account extends Backend
                 ->leftJoin('ba_account a','a.account_id=p.account_id')
                 ->field('sum(p.spend_cap) spend_cap,sum(p.amount_spent) amount_spent')
                 ->where('a.company_id',$this->auth->company_id)
+                ->where('a.status',4)
                 ->group('a.company_id')
                 ->find();
 
