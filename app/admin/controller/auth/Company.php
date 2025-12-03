@@ -96,9 +96,14 @@ class Company extends Backend
                 $v['rate']     =  ($rateArr[$v['id']]??0)*100;
                 $v['username'] =  $adminArr[$v['id']]['username']??'';    
                 $v['nickname'] =  $adminArr[$v['id']]['nickname']??'';     
-                $v['totalMoney']   = ROUND($moneyArr[$v['id']]??0, 2);      //总金额
                 $v['totalconsume'] = ROUND($consumptionArr[$v['id']]??0, 2);//总消耗
-                $v['kyMoney'] = bcsub($v['totalMoney'], $v['totalconsume']);//可用余额
+                if($v['prepayment_type'] == 1){
+                    $v['totalMoney']   = ROUND($moneyArr[$v['id']]??0, 2);      //总金额
+                    $v['kyMoney'] = bcsub($v['totalMoney'], $v['totalconsume']);//可用余额
+                }else{
+                    $v['totalMoney']   = $v['money'];                           //总金额
+                    $v['kyMoney']      = bcsub((string)$v['money'],(string)$v['used_money'],2);
+                }
                 $v['accountCount'] = $AccountCountArr[$v['id']]??0;         //账户数量
                 $v['closeCount']   = $AccountcloseArr[$v['id']]??0;         //封户数量
                 $v['idleCount']    = $idleCountArr[$v['id']]??0;            //闲置数量

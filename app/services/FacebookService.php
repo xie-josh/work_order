@@ -417,10 +417,14 @@ class FacebookService
             $token = $params['token'];
             $accountId = $params['account_id'];
             $effectiveStatus = $params['effective_status']??[];
+            $after = $params['after']??'';
             
             $param = [
                 'effective_status'=>$effectiveStatus,
+                'limit'=>200
             ];
+            if(!empty($after)) $param['after'] = $after;
+
             $url = "https://graph.facebook.com/v21.0/act_{$accountId}/campaigns";
             $method = 'GET';
             $header = [
@@ -436,6 +440,34 @@ class FacebookService
             }
         } catch (\Throwable $th) {
             $this->log('FB_getAdsCampaignsList',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+
+    public function deleteAdsCampaigns($params){
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id'];
+            $campaignsId = $params['campaigns_id'];
+            
+            $param = [
+                // 'delete_strategy'=>$effectiveStatus,
+            ];
+            $url = "https://graph.facebook.com/v21.0/$campaignsId";
+            $method = 'DELETE';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            if(isset($result['success']) && $result['success'] == true){         
+                return $this->returnSucceed($result);
+            }else{
+                $this->log('FB_deleteAdsCampaigns',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_deleteAdsCampaigns',$th->getMessage(),$params,$accountId);
             return $this->returnError($th->getMessage()); 
         }
     }
