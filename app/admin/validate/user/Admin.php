@@ -33,6 +33,7 @@ class Admin extends Validate
     protected $scene = [
         'add' => ['username', 'nickname', 'password','email'],
         'edit' => ['username', 'nickname','email'],
+        'register' => ['password','email']
     ];
 
 }

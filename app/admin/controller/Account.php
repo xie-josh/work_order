@@ -29,7 +29,7 @@ class Account extends Backend
     protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress','importTemplate','exportAccountDealWith','getExportProgressWeal','updateStatus'];
     protected string|array $quickSearchField = ['id'];
 
-    protected bool|string|int $dataLimit = 'parent';
+    // protected bool|string|int $dataLimit = 'parent';
 
     public function initialize(): void
     {
@@ -146,6 +146,17 @@ class Account extends Backend
             ->paginate($limit);
         $dataList = $res->toArray()['data'];
         if($dataList){
+            
+
+            $cardsIds = array_filter(array_map(function($dataList) {
+                return $dataList['accountrequestProposal']['cards_id'] ?? null;
+            }, $dataList));
+
+            $cardNo = DB::table('ba_cards_info')->whereIn('cards_id',$cardsIds)->column('card_no','cards_id');
+            $cardNo = array_map(function($cardNo) {
+                return substr($cardNo, -4);
+            }, $cardNo);
+
             $resultTypeList = DB::table('ba_account_type')->select()->toArray();
             $typeList = array_column($resultTypeList,'name','id');
 
@@ -188,6 +199,8 @@ class Account extends Backend
                 if(isset($v['accountrequestProposal']['admin_id']) && $adminChannel[$v['accountrequestProposal']['admin_id']]){
                     $v['channelName'] = $adminChannel[$v['accountrequestProposal']['admin_id']];
                 }
+                $v['card_no_c'] = '';
+                if(!empty($v['accountrequestProposal']['cards_id'])) $v['card_no_c'] = $cardNo[$v['accountrequestProposal']['cards_id']]??'';
             }
         }
         //$res->visible(['admin' => ['username']]);

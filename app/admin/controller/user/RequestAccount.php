@@ -116,6 +116,8 @@ class RequestAccount extends Backend
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 333){
+                array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);                
                 array_push($where,['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400]);
                 unset($where[$k]);
                 continue;
@@ -294,7 +296,9 @@ class RequestAccount extends Backend
             });
         })
         ->where([
-            ['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400]
+            ['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400],
+            ['accountrequest_proposal.account_status','IN',[1,3]],
+            ['accountrequest_proposal.status','NOT IN',[96,97]]
         ])
         ->count();
 
@@ -488,9 +492,10 @@ class RequestAccount extends Backend
             '币种',
             '余额',
             '历史花费',
-            '下户时间'
+            '下户时间',        
+            '闲置时间'
         ];
-        if($idle) $header[] = '闲置时间';
+        // if($idle) $header[] = '闲置时间';
         $config = [
             'path' => $folders['path']
         ];
@@ -729,25 +734,140 @@ class RequestAccount extends Backend
     //用户回收账户
     public function batchRecycle(): void
     {
+        // try {
+        //     //code...
+        
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) $this->error(__('Parameter %s can not be empty', ['']));
-    
+
             $accountIds  = $data['account_ids'];
             $recycleType = $data['recycle_type'];  //确认回收   //94    2317148228700024
             if(empty($accountIds)) $this->error('参数错误');
             if(empty($recycleType) || !in_array($recycleType,[1,2])) $this->error('确认信息有误');
             if(count($accountIds) > 30) $this->error('批量不能超过30条');
-            // foreach($accountIds as $id){ }
-            $result = DB::table('ba_accountrequest_proposal')->where('account_status',1)->whereIn('account_id',$accountIds)->update(['status'=>94,'recycle_type'=>$recycleType]);
-           
+
+            $errorList = [];
+            $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+            ->alias('accountrequest_proposal')
+            ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
+            ->where('accountrequest_proposal.account_status','in',[1,3])
+            ->where('accountrequest_proposal.status',1)
+            ->where('account.company_id',$this->auth->company_id)
+            ->whereIn('accountrequest_proposal.account_id',$accountIds)
+            ->column('accountrequest_proposal.account_id');
+
+
+            $list = [];
+            foreach($accountIds as $v)
+            {
+                if(!in_array($v,$accountrequestProposal)){
+                    $errorList[] = ['account_id'=>$v,'msg'=>'该账户不允许提交回收！，只支持账户状态活跃且未终止使用的！'];
+                    continue;
+                }
+                $list[] = $v;
+            }
+
+            $result = true;
+            // $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$list)->update(['status'=>94,'recycle_type'=>$recycleType]);
+
+            $deleteTime = DB::table('ba_company')->where('id',$this->auth->company_id)->value('delete_time');
+
+            $this->batchReset($list,$deleteTime);
+            $this->bmAllUnbinding($list);
+
             if ($result !== false) {
-                 $this->success(__('Update successful'));
+                 $this->success(__('Update successful'),['error_list'=>$errorList]);
             } else {
-                 $this->error(__('No rows updated'));
+                 $this->error(__('No rows updated'),['error_list'=>$errorList]);
             }
         }
-        $this->error(__('Parameter error'));
+        // } catch (Throwable $th) {
+        //     dd($th->getMessage(),'错误');
+        //     //throw $th;
+        // }
+        // $this->error(__('Parameter error'));
+    }
+
+
+    public function batchReset($accountIds,$deleteTime)
+    {
+        $accountListResult = DB::table('ba_account')
+        ->alias('account')
+        ->field('accountrequest_proposal.account_id,accountrequest_proposal.serial_name,account.admin_id,account.money,account.team_id')
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
+        ->where('account.status',4)
+        ->whereIn('accountrequest_proposal.account_id',$accountIds)->select()->toArray();
+
+        $accountrequestProposalIds = array_column($accountListResult,'account_id');
+
+        $rechargeList = DB::table('ba_recharge')->whereIn('id',function($query) use($accountrequestProposalIds){
+            $query->table('ba_recharge')->field('max(id)')->whereIn('account_id',$accountrequestProposalIds)->group('account_id');
+        })->whereIn('type',[3,4])->where('status','<>',"2")->column('account_id');
+
+        $data = [];
+        foreach($accountListResult as $v)
+        {
+            if(in_array($v['account_id'],$rechargeList) || $v['money'] < 1) continue;
+            
+            $data = [
+                "type" => "3",
+                "number" => 0,
+                "account_id" => $v['account_id'],
+                "admin_id" => $v['admin_id'],
+                "account_name" => $v['serial_name'],
+                'add_operate_user'=>$this->auth->id,
+                'team_id'=>$v['team_id'],
+                'create_time'=>time()
+            ];
+            $id = DB::table('ba_recharge')->insertGetId($data);
+            $jobHandlerClassName = 'app\job\AccountSpendDelete';
+            $jobQueueName = 'AccountSpendDelete';
+            Queue::later($deleteTime, $jobHandlerClassName, ['id'=>$id], $jobQueueName);
+        }
+        
+        return ['code'=>1,'msg'=>''];
+    }
+
+    public function bmAllUnbinding($accountIds)
+    {
+        $bmList = Db::table('ba_bm')
+        ->alias('b')
+        ->field('id, admin_id, account_id, bm,bm_type,team_id')
+        ->whereIn('b.account_id', $accountIds)
+        ->whereIn('b.demand_type', [1, 4])
+        ->where('b.new_status', 1)
+        ->where('b.dispose_type', 1)
+        ->whereNotExists(function ($subQuery) use ($accountIds) {
+            $subQuery->table('ba_bm')
+                ->alias('n')
+                ->whereColumn('n.account_id', 'b.account_id')
+                ->whereColumn('n.bm', 'b.bm')
+                ->whereIn('n.account_id', $accountIds)
+                ->where('n.demand_type', 2)
+                ->where('n.new_status', 1)
+                ->where('n.status', '<>', 2)
+                ->where('n.dispose_type', '<>', 2);
+        })->select()->toArray();
+        
+        $dataList = [];
+        foreach($bmList as $item){
+            $dataList[] = [
+                'demand_type'=>2,
+                'account_id'=>$item['account_id'],
+                'bm'=>$item['bm'],
+                'bm_type'=>$item['bm_type'],
+                'account_name'=>'',
+                'is_all_bm'=>2,
+                'admin_id'=>$item['admin_id'],
+                'add_operate_user'=>$this->auth->id,
+                'team_id'=>$item['team_id'],
+                'create_time'=>time()
+            ];
+        }
+        DB::table('ba_bm')->insertAll($dataList);
+
+        return ['code'=>1,'msg'=>''];
     }
 
 
