@@ -1733,6 +1733,53 @@ class Account extends Backend
         return $this->success('',['progress' => $progress]);
     }
 
+        //批量删除广告
+    public function  delAdvertising()
+    {
+            $data = $this->request->Post();
+            $ids  = $data['account_list'];
+            $result = false;
+            try {
+                    foreach($ids as $accountId)
+                    {
+                            $personalbmTokenIds = DB::table('ba_accountrequest_proposal')
+                                            ->alias('a')
+                                            ->where('a.account_id',$accountId)
+                                            ->leftJoin('ba_fb_bm_token b','b.id=a.bm_token_id')
+                                            ->value('b.personalbm_token_ids');
+                            $facebookService = new \app\services\FacebookService();
+                            
+                            $params = [
+                                'account_id'=>$accountId,
+                                'delete_strategy'=>'DELETE_ANY'
+                            ];
+                            $params['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($personalbmTokenIds);
+                        
+                            $campaignsList = $facebookService->getAdsCampaignsList($params);
+                            if($campaignsList['code'] != 1) throw new \Exception("拉取广告系列错误：".$campaignsList['msg']);
+                            $campaignsListData = $campaignsList['data']??[];
+                            $after = $campaignsListData['paging']['cursors']['after']??'';
+                            
+                            $list = $campaignsListData['data']??[];
+                            foreach($list as $v)
+                            {
+                                $campaignsId = $v['id'];
+                                $params['campaigns_id'] = $campaignsId;
+                                $deleteAdsCampaigns = $facebookService->deleteAdsCampaigns($params);
+                                if($deleteAdsCampaigns['code'] != 1) throw new \Exception("删除广告系列错误：".$deleteAdsCampaigns['msg']);
+                            }
+                    }
+                    $result = true;
+        } catch (\Throwable $th) {
+                DB::table('ba_account')->where('account_id',$accountId)->update(['comment'=>$th->getMessage()]);
+        }
+        if ($result !== false) {
+            $this->success(__('Update successful'));
+        } else {
+            $this->error(__('No rows updated'));
+        }
+    }
+
     /**
      * 若需重写查看、编辑、删除等方法，请复制 @see \app\admin\library\traits\Backend 中对应的方法至此进行重写
      */
