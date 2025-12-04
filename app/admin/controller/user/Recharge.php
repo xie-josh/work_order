@@ -162,6 +162,18 @@ class Recharge extends Backend
                         {
                             $recharge = $this->model->where('account_id',$accountId)->where('status',1)->whereIn('type',[3,4])->order('id','desc')->find();
 
+                            if(!empty($recharge['id'])){
+                                $where = [
+                                    ['account_id','=',$accountId],
+                                    ['type','=',1],
+                                    ['id','>',$recharge['id']],
+                                    ['status','=',1]
+                                ];
+            
+                                $recharge2 = $this->model->where($where)->find();
+                                if(!empty($recharge) && empty($recharge2)) throw new \Exception("账号已经完成了清零请求,不可以在提交清零与扣款!");
+                            }
+
                             $cards = DB::table('ba_accountrequest_proposal')
                             ->field('cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id,accountrequest_proposal.is_cards')
                             ->alias('accountrequest_proposal')
