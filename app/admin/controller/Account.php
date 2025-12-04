@@ -1736,7 +1736,7 @@ class Account extends Backend
         //批量删除广告
     public function  delAdvertising()
     {
-            $data = $this->request->Post();
+            $data = $this->request->post();
             $ids  = $data['account_list'];
             $result = false;
             try {
