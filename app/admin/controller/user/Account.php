@@ -964,7 +964,7 @@ class Account extends Backend
                 ->group('a.company_id')
                 ->find();
 
-                $data['accBalance'] = bcsub((String)$accBalanceArr['spend_cap'], (String)$accBalanceArr['amount_spent'], 2);
+                if(!empty($accBalanceArr['spend_cap']) && !empty($accBalanceArr['amount_spent']))$data['accBalance'] = bcsub((String)$accBalanceArr['spend_cap'], (String)$accBalanceArr['amount_spent'], 2);
           
                 if($result['prepayment_type'] == 1){
                     $consumptionService = new \app\admin\services\fb\Consumption();

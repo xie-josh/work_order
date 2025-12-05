@@ -918,11 +918,11 @@ class Consumption extends Backend
         $statusList = config('basics.ACCOUNT_STATUS');
 
         if($isCount == 1){
-            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,company.id company_id,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
             $query->group('account_consumption.company_id,account_id');
         }else{
             $accountRecycleWhere = [];
-            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,accountrequest_proposal.currency,accountrequest_proposal.status
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,company.id company_id,accountrequest_proposal.currency,accountrequest_proposal.status
             ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
             ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');
 
@@ -932,6 +932,10 @@ class Consumption extends Backend
         $adminChannelList = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
         $adminChannelList = array_column($adminChannelList,'nickname','id');
         $openAccountStatusValue = config('basics.OPEN_ACCOUNT_STATUS');
+
+        $adminCompanyList = DB::table('ba_admin')->where('type',2)->field('company_id,nickname')->select()->toArray();
+        $adminCompanyList = array_column($adminCompanyList,'nickname','company_id');
+        // dd($adminCompanyList);
         
         $total = $query->count();
 
@@ -979,7 +983,8 @@ class Consumption extends Backend
                 $adminChannel = $adminChannelList[$v['admin_channel']]??'';
                 $statusValue = $statusList[$v['status']]??'未找到状态';
                 
-                $nickname = $v['company_name'];                
+                //$nickname = $v['company_name'];
+                $nickname = $adminCompanyList[$v['company_id']]??'';
                 $serialName = $v['serial_name'];
                 $spend = $v['spend']??0;
                 $dateStart =  $v['date_start'];
