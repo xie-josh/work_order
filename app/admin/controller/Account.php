@@ -1336,7 +1336,7 @@ class Account extends Backend
         
         $query =  $this->model
         ->alias('account')
-        ->field('account.account_type,account.open_time,account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm accountrequest_proposal_bm')
+        ->field('account.type,account.account_type,account.open_time,account.id,account.admin_id,account.name,account.account_id,account.time_zone,account.bm,account.open_money,account.dispose_status,account.status,account.create_time,account.update_time,accountrequest_proposal.id accountrequest_proposal_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm accountrequest_proposal_bm')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         //->withJoin(['accountrequestProposal'], 'LEFT')
         ->order('account.id','desc')
@@ -1352,6 +1352,7 @@ class Account extends Backend
         $adminList = array_combine(array_column($resultAdmin,'id'),array_column($resultAdmin,'nickname'));
 
         $statusValue = config('basics.OPEN_ACCOUNT_STATUS');
+        $typeValue = config('basics.account_type');
         // $disposeStatusValue = [0=>'待处理',1=>'处理完成',2=>'已提交',3=>'提交异常',4=>'处理异常'];
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
@@ -1366,7 +1367,7 @@ class Account extends Backend
             '首充金额',
             // 'BM绑定',
             '开户状态',
-            '账户类型',
+            '投放类型',
             '创建时间',
             '修改时间',
             '开户时间'
@@ -1396,7 +1397,7 @@ class Account extends Backend
                     $v['open_money'],
                     // $disposeStatusValue[$v['dispose_status']],
                     $statusValue[$v['status']],
-                    $accountTypeListValue[$v['account_type']]??'',
+                    $typeValue[$v['type']]??'',
                     $v['create_time']?date('Y-m-d H:i',$v['create_time']):'',
                     $v['update_time']?date('Y-m-d H:i',$v['update_time']):'',
                     $v['open_time']?date('Y-m-d H:i',$v['open_time']):'',
