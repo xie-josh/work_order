@@ -1681,6 +1681,7 @@ class AccountrequestProposal extends Backend
         if(!empty($data['admin_id'])) $item['admin_id'] = $data['admin_id'];
         if(!empty($data['label_ids'])) $item['label_ids'] = implode(',',$data['label_ids']);
 
+        if(!empty($item['status']) && $item['status'] == 1) $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where('status',94)->update(['recycle_start'=>date('Y-m-d H:i:s',time())]);
         $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update($item);
 
         if(!empty($data['bm_id'])) foreach($accountIds as $v)

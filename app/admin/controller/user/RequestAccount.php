@@ -768,8 +768,7 @@ class RequestAccount extends Backend
                 $list[] = $v;
             }
 
-            $result = true;
-            // $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$list)->update(['status'=>94,'recycle_type'=>$recycleType]);
+            $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$list)->update(['status'=>94,'recycle_type'=>$recycleType,'recycle_date'=>date('Y-m-d H:i:s',time())]);
 
             $deleteTime = DB::table('ba_company')->where('id',$this->auth->company_id)->value('delete_time');
 

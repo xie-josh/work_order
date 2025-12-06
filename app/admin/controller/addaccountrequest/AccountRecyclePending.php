@@ -94,7 +94,7 @@ class AccountRecyclePending extends Backend
         }
         $res = DB::table('ba_account')
         ->alias('account')
-        ->field('accountrequest_proposal.status,account.comment,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
+        ->field('accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.comment,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
@@ -192,16 +192,23 @@ class AccountRecyclePending extends Backend
         $where = [];
         set_time_limit(300);
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $type =  $this->request->get('type');
+        if($type==1) 
+                $where[] = ['accountrequest_proposal.recycle_type','=',3];
+        else 
+                $where[] = ['accountrequest_proposal.recycle_type','<>',3];
         $where[] = ['account.status','=',4];
+        $totalConsumption = 0;
+        $whereOr = [];
         foreach($where as $k => &$v){
             if($v[0] == 'account.idle_time'){                
                 $v[2] = floor((int)$v[2] * 86400);
             }
-            if($v[0] == 'account_recycle_pending.status'){                
-                $v[0] = 'accountrequest_proposal.status';
-            }
             if($v[0] == 'account_recycle_pending.account_id' && $v[1] == 'LIKE'){                
                 $v[0] = 'account.account_id';
+            }
+            if($v[0] == 'account_recycle_pending.status'){                
+                $v[0] = 'accountrequest_proposal.status';
             }
             if($v[0] == 'account_recycle_pending.account_status'){                
                 $v[0] = 'accountrequest_proposal.account_status';
@@ -219,6 +226,25 @@ class AccountRecyclePending extends Backend
                 array_push($where,['account.account_id','IN',$v[2]]);
                 unset($where[$k]);
             }
+            if($v[0] == 'account_recycle_pending.requeire')
+            {      
+                $recycleTypeAccountIds = DB::table('ba_accountrequest_proposal')->where('recycle_type','in',[1,2])->column('account_id');
+                $rechargeNumIds = DB::table('ba_recharge')->whereIn('account_id',$recycleTypeAccountIds)->where('status',0)->group('account_id')->column('account_id');
+                $bmNumIds = DB::table('ba_bm')->whereIn('account_id',$recycleTypeAccountIds)->where('status','IN',[0,1])->where('dispose_type',0)->group('account_id')->column('account_id');
+                // dd($rechargeNum);
+
+                if($v[2] == 1)
+                {
+                    array_push($where,['account.account_id','NOT IN', $rechargeNumIds]);
+                    array_push($where,['account.account_id','NOT IN', $bmNumIds]);
+                }else{
+                    array_push($whereOr,['account.account_id','IN', $rechargeNumIds]);
+                    array_push($whereOr,['account.account_id','IN', $bmNumIds]);
+                }
+                // dd($where,$whereOr);
+                // array_push($where,['account.account_id','IN',$v[2]]);
+                unset($where[$k]);
+            }
         }
 
         $batchSize = 2000;
@@ -227,12 +253,13 @@ class AccountRecyclePending extends Backend
         
         $query = DB::table('ba_account')
         ->alias('account')
-        ->field('accountrequest_proposal.status,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname nickname_a,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname nickname_b,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
+        ->field('accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname nickname_a,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname nickname_b,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
         ->where($where);
 
+        if(!empty($whereOr)) $query = $query->where(function($query) use ($whereOr){ $query->whereOr($whereOr); });
         if(!empty($totalConsumption)) $query = $query->whereRaw("COALESCE(accountrequest_proposal.total_consumption, 0) + 0 > $totalConsumption");
 
         $statusValueList = config('basics.ACCOUNT_STATUS');

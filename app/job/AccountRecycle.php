@@ -61,7 +61,9 @@ class AccountRecycle
                     ['account_id','=',$accountId],
                     ['date_start','>=',$openTime]
                 ];
-                $serialName = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->value('serial_name');
+                $proposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->field('serial_name,recycle_type')->find();
+                $serialName  = $proposal['serial_name']??'';
+                $recycleType  = $proposal['recycle_type']??'';
                 $totalConsumption = DB::table('ba_account_consumption')->where($where)->sum('dollar');
                 $totalUp = DB::table('ba_recharge')->where('account_id',$accountId)->where('type',1)->where('status',1)->sum('number');
                 $totalDelete = DB::table('ba_recharge')->where('account_id',$accountId)->where('type','IN',[3,4])->where('status',1)->sum('number');
@@ -71,6 +73,7 @@ class AccountRecycle
                 $v['total_deductions'] = bcadd((string)$totalDeductions,"0",2);
                 $v['total_consumption'] = bcadd((string)$totalConsumption,"0",2);
                 $v['name'] = $serialName;
+                $v['recycle_type'] = $recycleType;
 
                 $v['account_recycle_time'] = date('Y-m-d H:i:s',time());
                 unset($v['id']);
@@ -82,9 +85,9 @@ class AccountRecycle
             DB::table('ba_recharge_recycle')->insertAll($rechargeDataList);
 
             DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(
-                ['status'=>$status,'affiliation_admin_id'=>'','recycle_type'=>3]
+                ['status'=>$status,'affiliation_admin_id'=>'','recycle_type'=>3,'recycle_date'=>'','recycle_start'=>'']
             ); 
-            DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>2,'dispose_status'=>0,'open_money'=>0,'money'=>0]);
+            DB::table('ba_account')->where('account_id',$accountId)->update(['account_id'=>'','status'=>7,'dispose_status'=>0,'open_money'=>0,'money'=>0,'idle_time'=>0]);
             DB::table('ba_bm')->where('account_id',$accountId)->delete();
             DB::table('ba_recharge')->where('account_id',$accountId)->delete();
 
