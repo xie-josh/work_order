@@ -86,7 +86,7 @@ class Consumer extends Backend
 
             $user['username'] = $data['username']??'';
             $user['password'] = $data['password']??'';
-            $user['nickname'] = $data['nickname']??'';
+            $user['nickname'] = $data['nickname']??$user['username'];
             $user['email']    = $data['email']??'';
             // $user['team_id']  = $data['team_id']??''; 
             //$data['type'];   3,子管理员账号，4,普通团员账号
