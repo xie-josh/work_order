@@ -86,15 +86,18 @@ class Recharge extends Backend
             $result = $res->toArray();
             $dataList = [];
             // $adminNameArr = DB::table('ba_admin')->column('username','id');
-            $adminNameArr = DB::table('ba_admin')->field('nickname,id,prepayment_type')->select()->toArray();
+            $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
+            $companyNameArr = DB::table('ba_company')->field('id,prepayment_type')->select()->toArray();
             if(!empty($result['data'])) {
                 $dataList = $result['data'];
                 $adminNameArr = array_column($adminNameArr,null,'id');
+                $companyNameArr = array_column($companyNameArr,null,'id');
                 
                 // dd($adminNameArr);
                 foreach($dataList as &$v){
                     $v['username'] = $adminNameArr[$v['admin_id']]['nickname']??"";
-                    $v['prepayment_type'] = $adminNameArr[$v['admin_id']]['prepayment_type']??"";
+                    $companyId = $v['account']['company_id']??'';
+                    $v['prepayment_type'] = $companyNameArr[$companyId]['prepayment_type']??"";
                     if(in_array($v['account_id'],$wk)){
                         $v['wk_type'] = 1;
                         $v['wk_comment'] = "注意，注意，注意：该账户需要您自己去卡平台调整限额！！！！！！！";
