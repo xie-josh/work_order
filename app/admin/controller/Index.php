@@ -318,7 +318,7 @@ class Index extends Backend
     // }
 
         /**
-     * 添加公司
+     * 注册
      * @throws Throwable
      */
     public function register(): void
@@ -331,7 +331,7 @@ class Index extends Backend
             } unset($data['company']);
             $user['password'] = $data['password']??'';
             $user['username'] = $data['email']??'';//$data['username']??'';
-            $user['nickname'] = $data['nickname']??'';
+            $user['nickname'] = $data['company_name']??'';
             $user['email']    = $data['email']??'';
             $confirmPassword  =  $data['confirm_password']??''; 
             $code =  $data['code']??''; 
@@ -370,11 +370,13 @@ class Index extends Backend
             $user['password'] = encrypt_password($user['password'], $salt);
             $this->model->startTrans();
             try {
+                $data['status']     = 0;   
                 $result             = $this->model->save($data);
                 $user['company_id'] = $this->model->id;
                 $validate = new \app\admin\validate\user\Admin;
                 $validate->scene('register')->check($user);
                 $user['salt']       = $salt;
+                $user['status']     = 0;
                 $user['type']       = 2; //公司主账号类型
 
                 $uid = DB::table('ba_admin')->insertGetId($user);

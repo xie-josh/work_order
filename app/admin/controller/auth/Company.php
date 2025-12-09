@@ -264,7 +264,13 @@ class Company extends Backend
 
             try {
                 $result = $row->save($data);
-                // if ($groupAccess) Db::name('admin_group_access')->insertAll($groupAccess);
+                if($result){
+                    if($data['status'] == 1){
+                        DB::table('ba_admin')->where('company_id',$id)->update(['status'=>1]);
+                    }else{
+                        DB::table('ba_admin')->where('company_id',$id)->update(['status'=>0]);
+                    }
+                }
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
