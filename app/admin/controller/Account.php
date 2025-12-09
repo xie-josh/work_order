@@ -483,7 +483,9 @@ class Account extends Backend
                     $ids = $this->model->whereIn('id',$ids)->whereIn('status',[0,1])->select()->toArray();
                     foreach($ids as $v){
                         if($v['money'] <= 0) continue;
-                        DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
+                        // DB::table('ba_admin')->where('id',$v['admin_id'])->dec('used_money',$v['money'])->update();
+                        $usedMoney =  $this->auditOpenUsedMoney($v['money'],$v['id']);
+                        if($usedMoney['code'] != 1)  throw new \Exception($usedMoney['msg']);
                     }
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                 }elseif($status == 3){

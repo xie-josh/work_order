@@ -486,4 +486,30 @@ class Backend extends Api
         return ['code'=>1,'msg'=>''];
     }
 
+
+    public function auditOpenUsedMoney($amount,$id='')
+    {
+        if($amount == 0)return ['code'=>1,'msg'=>''];
+        $account = DB::table('ba_account')->where('id',$id)->field('account_id,company_id,team_id,money')->find();
+        $companyId = $account['company_id'];
+        // $teamId = $account['team_id'];
+
+        $company = Db::table('ba_company')->where('id',$companyId)->find();
+
+        if($company['prepayment_type'] == 2){
+            $usableMoney2 = bcsub((string)$company['used_money'],(string)$amount,2);
+            $result = DB::table('ba_company')->where('id',$companyId)->where('used_money',$company['used_money'])->update(['used_money'=>$usableMoney2]);
+            if(empty($result)) throw new \Exception('出现了一点问题，请稍后或联系客服！');
+        }
+
+        // if(!empty($teamId))
+        // {
+        //     $team = Db::table('ba_team')->where('id',$teamId)->find();
+        //     $usableMoney1 = bcsub((string)$team['team_used_money'],(string)$amount,2);
+        //     $result = DB::table('ba_team')->where('id',$teamId)->where('team_used_money',$team['team_used_money'])->update(['team_used_money'=>$usableMoney1]);
+        //     if(empty($result)) throw new \Exception('出现了一点问题，请稍后或联系客服2！');
+        // }        
+
+        return ['code'=>1,'msg'=>''];
+    }
 }
