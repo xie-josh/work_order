@@ -30,7 +30,7 @@ return [
     'Unknown'                                                                             => '未知',
     // 权限类语言包-s
     'Account not exist'                                                                   => '帐户不存在',
-    'Account disabled'                                                                    => '帐户已禁用',
+    'Account disabled'                                                                    => '帐户审核中,请联系管理员！',//'帐户已禁用',
     'Account audit'                                                                       => '帐户审核中',
     'Token login failed'                                                                  => '令牌登录失败',
     'Username is incorrect'                                                               => '用户名不正确',
