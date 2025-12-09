@@ -87,17 +87,26 @@ class Recharge extends Backend
             $dataList = [];
             // $adminNameArr = DB::table('ba_admin')->column('username','id');
             $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
             $companyNameArr = DB::table('ba_company')->field('id,prepayment_type')->select()->toArray();
             if(!empty($result['data'])) {
                 $dataList = $result['data'];
-                $adminNameArr = array_column($adminNameArr,null,'id');
-                $companyNameArr = array_column($companyNameArr,null,'id');
+                $adminNameArr = array_column($adminNameArr,'nickname','id');
+                $companyNameArr = array_column($companyNameArr,'prepayment_type','id');
+                $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+
                 
                 // dd($adminNameArr);
                 foreach($dataList as &$v){
-                    $v['username'] = $adminNameArr[$v['admin_id']]['nickname']??"";
                     $companyId = $v['account']['company_id']??'';
-                    $v['prepayment_type'] = $companyNameArr[$companyId]['prepayment_type']??"";
+                    
+                    $username = '';
+                    if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $username = $companyAdminNameArr[$companyId]['nickname'];
+                    else $username = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['admin_id']].")";
+
+                    // $v['username'] = $adminNameArr[$v['admin_id']]['nickname']??"";
+                    $v['username'] = $username;
+                    $v['prepayment_type'] = $companyNameArr[$companyId]??"";
                     if(in_array($v['account_id'],$wk)){
                         $v['wk_type'] = 1;
                         $v['wk_comment'] = "注意，注意，注意：该账户需要您自己去卡平台调整限额！！！！！！！";

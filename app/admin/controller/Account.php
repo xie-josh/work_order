@@ -173,7 +173,18 @@ class Account extends Backend
                     $bmList[$v['account_id']][] = $v['bm'];
                 }
             }
+
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+            $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
+            $adminNameArr = array_column($adminNameArr,'nickname','id');
+
             foreach($dataList as &$v){
+                $companyId = $v['company_id'];
+                $nickname = '';
+                if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname = $companyAdminNameArr[$companyId]['nickname'];
+                else $nickname = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['admin_id']].")";
+
                 $v['account_type_name'] = '';
                 if($v['status'] != 4 && $status != 1) $v['account_id'] = '';
                 if(!empty($typeList[$v['account_type']])) $v['account_type_name'] = $typeList[$v['account_type']];
@@ -194,7 +205,8 @@ class Account extends Backend
                 }
                 $v['admin'] = [
                     'username'=>$v['admin']['username']??"",
-                    'nickname'=>$v['admin']['nickname']??""
+                    // 'nickname'=>$v['admin']['nickname']??""
+                    'nickname'=>$nickname
                 ];
                 if(isset($v['accountrequestProposal']['admin_id']) && $adminChannel[$v['accountrequestProposal']['admin_id']]){
                     $v['channelName'] = $adminChannel[$v['accountrequestProposal']['admin_id']];
@@ -909,7 +921,7 @@ class Account extends Backend
                 if(empty($accountIds)){
                     $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('status',config('basics.FH_status'))->select()->toArray();
                 }else{
-                    $accountIds = DB::table('ba_accountrequest_proposal')->where('admin_id',$accountrequestProposalId)->whereIn('account_id',$accountIds)->whereIn('status',config('basics.FH_status'))->select()->toArray();
+                    $accountIds = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->whereIn('status',config('basics.FH_status'))->select()->toArray();
                 }
                 $resultAccountList = DB::table('ba_account')->whereIn('id',$ids)->where('status',1)->select()->toArray();                
                 // $bmDataList = [];
