@@ -13,6 +13,7 @@ return [
         'FbAccountUpdateTask' => 'app\command\FbAccountUpdateTask',
         'FbAccountUnUpdateTask' => 'app\command\FbAccountUnUpdateTask',
         'FbAccountConsumptionTask' => 'app\command\FbAccountConsumptionTask',
+        'FbAccountConsumptionTest2Task' => 'app\command\FbAccountConsumptionTest2Task',
         'AccountListBackupTask' => 'app\command\AccountListBackupTask',
         'AuditExceptionTask' => 'app\command\AuditExceptionTask',
         'GetRateTask' => 'app\command\GetRateTask',
