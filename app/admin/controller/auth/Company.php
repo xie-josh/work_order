@@ -77,9 +77,15 @@ class Company extends Backend
         $key = 'consumption_1';
         $redisValue = Cache::store('redis')->get($key);
         $consumptionArr = [];
+
+
+
+
         if(empty($redisValue))
         {
-            $consumptionArr  = DB::table('ba_account_consumption')->whereRaw("company_id IS NOT NULL")->group('company_id')->column('sum(dollar)','company_id');//总消耗
+            // $consumptionArr  = DB::table('ba_account_consumption')->whereRaw("company_id IS NOT NULL")->group('company_id')->column('sum(dollar)','company_id');//总消耗
+            $consumptionArr = DB::query("SELECT company_id, SUM(dollar) AS dollar FROM ba_account_consumption WHERE company_id IS NOT NULL GROUP BY company_id");
+            $consumptionArr = array_column($consumptionArr,'dollar','company_id');
             Cache::store('redis')->set($key, $consumptionArr, 240);
         }else{
             $consumptionArr = Cache::store('redis')->get($key);
