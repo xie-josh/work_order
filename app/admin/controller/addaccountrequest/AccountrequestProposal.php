@@ -1137,15 +1137,18 @@ class AccountrequestProposal extends Backend
                 $param = [];
                 $param['card_id'] = $cards['card_id'];
                 $param['nickname'] = $this->getNickname($accountrequestProposal['account_id']);
+
+                $adminId = $accountrequestProposal['admin_id'];
+                $isQuota = DB::table('ba_admin')->where('id',$adminId)->value('is_quota');
                 switch($typr){
                     case 1:
-                    //    //SX-用户不改限额
-                       if(env('APP.IS_QUOTA'))
+                    //    if(env('APP.IS_QUOTA'))
+                        if($isQuota == 1)
                        {
-                            $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                            $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT2',901);
                             $param['transaction_limit_type'] = 'limited';
                             $param['transaction_limit_change_type'] = 'increase';
-                            $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT',2);
+                            $param['transaction_limit'] = env('CARD.LIMIT_AMOUNT2',2);
                             $param['transaction_is'] = 1;
                         }
                             $resultCards =  $cardModel->updateCard($cards,$param);
@@ -1156,10 +1159,10 @@ class AccountrequestProposal extends Backend
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         break;
                     case 3:
-                        //SX-用户不改限额
-                       if(env('APP.IS_QUOTA'))
+                    //    if(env('APP.IS_QUOTA'))
+                        if($isQuota == 1)
                        {
-                            $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT',901);
+                            $param['max_on_percent'] = env('CARD.MAX_ON_PERCENT2',901);
                             $param['transaction_limit_type'] = 'limited';
                             $param['transaction_limit_change_type'] = 'increase';
                             $param['transaction_limit'] = $limited;

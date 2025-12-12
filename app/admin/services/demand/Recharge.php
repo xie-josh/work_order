@@ -110,7 +110,12 @@ class Recharge
                         $isCardStatus = true;
                     }
                     //SX-用户不改限额
-                    if(env('APP.IS_QUOTA'))
+
+                    $adminId = $resultProposal['admin_id'];
+                    $isQuota = DB::table('ba_admin')->where('id',$adminId)->value('is_quota');
+
+                    // if(env('APP.IS_QUOTA'))
+                    if($isQuota == 1)
                     {
                         $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                         if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -192,7 +197,7 @@ class Recharge
             //====================
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
+            ->field('accountrequest_proposal.admin_id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotNull('fb_bm_token.token')
@@ -219,14 +224,19 @@ class Recharge
 
                     if($cards['card_status'] != 'cancelled')
                     {
-                        $param = [
-                            'transaction_limit_type'=>'limited',
-                            'transaction_limit'=>"5000",
-                            'transaction_is'=>'2'
-                        ];
+                        
                        //SX-用户不改限额
-                       if(env('APP.IS_QUOTA'))
+                        $adminId = $accountrequestProposal['admin_id'];
+                        $isQuota = DB::table('ba_admin')->where('id',$adminId)->value('is_quota');
+
+                        // if(env('APP.IS_QUOTA'))
+                        if($isQuota == 1)
                        {
+                            $param = [
+                                'transaction_limit_type'=>'limited',
+                                'transaction_limit'=>env('CARD.LIMIT_AMOUNT2',2),
+                                'transaction_is'=>'2'
+                            ];
                             $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                        }
@@ -337,7 +347,7 @@ class Recharge
             //====================
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
+            ->field('accountrequest_proposal.admin_id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
             ->where('fb_bm_token.status',1)
             ->whereNotNull('fb_bm_token.token')
@@ -390,14 +400,20 @@ class Recharge
                 }else{
                     if($cards['card_status'] != 'cancelled')
                     {
-                        $param = [
-                            'transaction_limit_type'=>'limited',
-                            'transaction_limit_change_type'=>'decrease',
-                            'transaction_limit'=>$result['number'],
-                        ];
+
+                        $adminId = $accountrequestProposal['admin_id'];
+                        $isQuota = DB::table('ba_admin')->where('id',$adminId)->value('is_quota');
+
                         //SX-用户不改限额
-                        if(env('APP.IS_QUOTA'))
+                        // if(env('APP.IS_QUOTA'))
+                        if($isQuota == 1)
                         {
+
+                            $param = [
+                                'transaction_limit_type'=>'limited',
+                                'transaction_limit_change_type'=>'decrease',
+                                'transaction_limit'=>$result['number'],
+                            ];
                             $resultCards = (new \app\admin\model\card\CardsModel())->updateCard($cards,$param);
                             if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
                         }

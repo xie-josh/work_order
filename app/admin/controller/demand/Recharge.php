@@ -363,7 +363,11 @@ class Recharge extends Backend
                                 throw new \Exception("未找到分配的卡");
                             }else{
                                  //SX-用户不改限额
-                                if(env('APP.IS_QUOTA'))
+                                
+                                $adminId = $resultProposal['admin_id'];
+                                $isQuota = DB::table('ba_admin')->where('id',$adminId)->value('is_quota');
+                                // if(env('APP.IS_QUOTA'))
+                                if($isQuota == 1)
                                 {   
                                     $resultCards = (new CardsModel())->updateCard($cards,$param);
                                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
@@ -388,7 +392,12 @@ class Recharge extends Backend
                                 throw new \Exception("未找到分配的卡");
                             }else{
                                 //SX-用户不改限额
-                                if(env('APP.IS_QUOTA'))
+
+                                $adminId = $resultProposal['admin_id'];
+                                $isQuota = DB::table('ba_admin')->where('id',$adminId)->value('is_quota');
+
+                                // if(env('APP.IS_QUOTA'))
+                                if($isQuota == 1)
                                 {
                                     $resultCards = (new CardsModel())->updateCard($cards,$param);
                                     if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);

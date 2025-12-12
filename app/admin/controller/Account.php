@@ -663,12 +663,15 @@ class Account extends Backend
                             ];
 
                             // Cache::store('redis')->set($key, '1', 180);
+                            $adminId = $resultProposal['admin_id'];
+                            $isQuota = DB::table('ba_admin')->where('id',$adminId)->value('is_quota');
                               //SX-用户不改限额
-                              if(env('APP.IS_QUOTA'))
-                              {
-                                  $resultCards = (new CardsModel())->updateCard($cards,$param);
-                                  if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
-                              }
+                            //   if(env('APP.IS_QUOTA'))
+                            if($isQuota == 1)
+                            {
+                                $resultCards = (new CardsModel())->updateCard($cards,$param);
+                                if($resultCards['code'] != 1) throw new \Exception($resultCards['msg']);
+                            }
                             // Cache::store('redis')->delete($key);
                         }
 
