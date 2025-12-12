@@ -70,34 +70,33 @@ class Company extends Backend
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
+        
+       $comapnyids = array_column($dataList,'id');
 
-        $rateArr  = DB::table('ba_rate')->order('create_time asc')->column('rate','company_id');//费率
-        $adminArr = DB::table('ba_admin')->where('type',2)->column('username,nickname','company_id');//主用户
-        $moneyArr = DB::table('ba_admin_money_log')->group('company_id')->column('sum(money)','company_id');//付款总金额
+        $rateArr  = DB::table('ba_rate')->whereIn('company_id',$comapnyids)->order('create_time asc')->column('rate','company_id');//费率
+        $adminArr = DB::table('ba_admin')->whereIn('company_id',$comapnyids)->where('type',2)->column('username,nickname','company_id');//主用户
+        $moneyArr = DB::table('ba_admin_money_log')->whereIn('company_id',$comapnyids)->group('company_id')->column('sum(money)','company_id');//付款总金额
         $key = 'consumption_1';
         $redisValue = Cache::store('redis')->get($key);
         $consumptionArr = [];
 
-
-
-
-        if(empty($redisValue))
-        {
-            // $consumptionArr  = DB::table('ba_account_consumption')->whereRaw("company_id IS NOT NULL")->group('company_id')->column('sum(dollar)','company_id');//总消耗
-            $consumptionArr = DB::query("SELECT company_id, SUM(dollar) AS dollar FROM ba_account_consumption WHERE company_id IS NOT NULL GROUP BY company_id");
-            $consumptionArr = array_column($consumptionArr,'dollar','company_id');
-            Cache::store('redis')->set($key, $consumptionArr, 240);
-        }else{
-            $consumptionArr = Cache::store('redis')->get($key);
-        }
-        $AccountCountArr = DB::table('ba_account')->where(['status'=>4])->group('company_id')->column('count(*)','company_id');//账户数量
+        // if(empty($redisValue))
+        // {
+            $consumptionArr  = DB::table('ba_account_consumption')->whereIn('company_id',$comapnyids)->whereRaw("company_id IS NOT NULL")->group('company_id')->column('sum(dollar)','company_id');//总消耗
+            // $consumptionArr = DB::query("SELECT company_id, SUM(dollar) AS dollar FROM ba_account_consumption WHERE company_id IS NOT NULL GROUP BY company_id");
+            // $consumptionArr = array_column($consumptionArr,'dollar','company_id');
+        //     Cache::store('redis')->set($key, $consumptionArr, 240);
+        // }else{
+        //     $consumptionArr = Cache::store('redis')->get($key);
+        // }
+        $AccountCountArr = DB::table('ba_account')->whereIn('company_id',$comapnyids)->where(['status'=>4])->group('company_id')->column('count(*)','company_id');//账户数量
         $AccountcloseArr = DB::table('ba_accountrequest_proposal')->alias('p')->leftJoin('ba_account account','account.account_id=p.account_id')
-                               ->where(['p.account_status'=>2])->group('account.company_id')->column('count(*)','company_id');//封户数量
-        $idleCountArr = DB::table('ba_account')->where(['status'=>4])->where('idle_time','>',604800)->group('company_id')->column('count(*)','company_id');//闲置
+                               ->where(['p.account_status'=>2])->where([['p.status','<>',99]])->group('account.company_id')->column('count(*)','company_id');//封户数量
+        $idleCountArr = DB::table('ba_account')->whereIn('company_id',$comapnyids)->where(['status'=>4])->where('idle_time','>',604800)->group('company_id')->column('count(*)','company_id');//闲置
 
         
         if($dataList)foreach($dataList as &$v)
-         {
+        {
                 $v['alias'] = $v['company_name'];
                 $v['rate']     =  ($rateArr[$v['id']]??0)*100;
                 $v['username'] =  $adminArr[$v['id']]['username']??'';    
