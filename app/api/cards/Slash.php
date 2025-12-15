@@ -183,6 +183,7 @@ class Slash extends Backend implements CardInterface
         if(!empty($params['nickname'])) $param['name'] = $params['nickname'];
         if(!empty($params['max_on_percent'])) $param['spendingConstraint']['spendingRule']['transactionSizeLimit'] = ['minimum'=>['amountCents'=>0],'maximum'=>['amountCents'=>$params['max_on_percent'] * 100]];
         if(!empty($params['transaction_limit'])) {            
+            // $param['spendingConstraint']['spendingConstraint']['utilizationLimit']['limitAmount'] = ['amountCents'=>$params['transaction_limit'] * 100];
             $param['spendingConstraint']['spendingRule']['utilizationLimit']['limitAmount'] = ['amountCents'=>$params['transaction_limit'] * 100];
             $param['spendingConstraint']['spendingRule']['utilizationLimit']['preset'] = 'collective';
         }

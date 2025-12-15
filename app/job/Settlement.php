@@ -50,9 +50,10 @@ class Settlement
             ['consumption.date_start','<=',$params['end_time']],
         ];
         $query = DB::table('ba_account_consumption')
-            ->field('consumption.account_id,consumption.date_start,consumption.spend,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.serial_name')
+            ->field('account.open_time account_open_time,consumption.account_id,consumption.date_start,consumption.spend,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.serial_name')
             ->alias('consumption')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id = consumption.account_id')
+            ->leftJoin('ba_account account','account.account_id=consumption.account_id')
             ->order('consumption.date_start','desc')
             ->where($where);
 
@@ -105,10 +106,17 @@ class Settlement
                 if(isset($accountNameList[$v['account_id']]))
                 {
                     $dd = $accountNameList[$v['account_id']];
-                    foreach($dd as $item2)
+
+                    $openTime = $v['account_open_time']??'';
+                    if(!empty($openTime) && $v['date_start'] >= date("Y-m-d",$openTime))
                     {
-                        if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']){
-                            $serialName = $item2['name'];
+                        $serialName = $v['serial_name'];
+                    }else{
+                        foreach($dd as $item2)
+                        {
+                            if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']){
+                                $serialName = $item2['name'];
+                            }
                         }
                     }
                 }                

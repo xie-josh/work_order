@@ -136,6 +136,69 @@ class FacebookService
         }
     }
 
+    public function insights3($params)
+    {
+        try {
+            $accountId = $params['account_id'];
+            $token = $params['token'];
+            $businessId = $params['business_id'];
+            $startTime = $params['stort_time']??date('Y-m-01');
+            $stopTime = $params['stop_time']??date('Y-m-t');
+
+            //if(empty($businessId)) throw new \Exception("未找到管理BM");
+
+            
+            
+            $param = [
+                // 'fields'=> 'account_name,account_id,spend',
+                'fields'=>"account_name,account_id,campaign_id,campaign_name,date_start,date_stop,reach,impressions,frequency,spend,clicks,cpc,actions,action_values,cost_per_action_type",
+                'level'=> 'campaign',
+                'time_range'=> ["since"=>$startTime,"until"=>$stopTime],
+                'time_increment'=> '1',
+                //'date_preset'=>'last_7d',
+                'limit'=>1000
+            ];
+            $url = "https://graph.facebook.com/v21.0/act_{$accountId}/insights";
+            $method = 'get';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            if(isset($result['data'])){
+                $data = [
+                    'data' => $result['data'],
+                    //'pageSize' => 2550,
+                    //'pageIndex' => 1,
+                    'total' => count($result['data']),
+                    // 'numbers' => $result['numbers'],
+    
+                ];
+                return $this->returnSucceed($data);
+            }else{
+                $error = json_decode($result['msg']??'',true);
+                $code = $error['error']['code']??0;
+
+                if($code == 4){
+                    $this->log('FB_abnormal',$result['msg']??'',$params,$accountId);
+                    return $this->returnAbnormal(4);
+                }
+
+                if($code == 200){
+                    $this->log('FB_insights',$result['msg']??'',$params,$accountId);
+                    return $this->returnAbnormal(5);
+                }
+                
+                $this->log('FB_abnormal',$result['msg']??'',$params,$accountId);
+                //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$result['msg']]);
+                return $this->returnError($result['msg']);
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_abnormal',$th->getMessage(),$params,$accountId);
+            //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$th->getMessage()]);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
 
     public function insights2($params)
     {

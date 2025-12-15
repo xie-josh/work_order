@@ -266,7 +266,7 @@ class AccountRecyclePending extends Backend
         
         $total = $query->count(); 
 
-        $acountStatusValue = [0=>'异常',1=>'活跃',2=>'封户',3=>'待处理'];
+        $acountStatusValue = [0=>'异常',1=>'活跃',2=>'封户',3=>'待支付'];
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [

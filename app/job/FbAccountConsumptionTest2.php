@@ -34,7 +34,7 @@ class FbAccountConsumptionTest2
             $accountId = $params['account_id'];
             $businessId = $params['business_id']??'';
             $currency  =  $params['currency']??'';
-            $params['stort_time'] = date('Y-m-d', strtotime('-15 days'));
+            $params['stort_time'] = date('Y-m-d', strtotime('-7 days'));
             // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = date('Y-m-d',time());
 
@@ -86,7 +86,7 @@ class FbAccountConsumptionTest2
             // DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['pull_consumption'=>date('Y-m-d H:i',time())]);
             $accountConsumption = $result['data']['data']??[];
             //if(empty($accountConsumption)) return true;
-            $accountConsumption = array_column($accountConsumption,null,'date_start');
+            // $accountConsumption = array_column($accountConsumption,null,'date_start');
 
             DB::table('ba_account_consumption_test')->where('account_id',$accountId)->whereIn('date_start',$sSTimeList)->delete();
 
@@ -117,94 +117,151 @@ class FbAccountConsumptionTest2
             }
 
             $data = [];
+         
 
-            foreach($sSTimeList as $v){
+            // foreach($sSTimeList as $v){
+            foreach($accountConsumption as $consumption)
+            {
 
+                $date_start = $consumption['date_start'];
                 $companyId = '';
                 $dollar = 0;
                 foreach($accountTimeList as $v1)
                 {
-                    if($v >= $v1['strat_open_time'] && $v <= $v1['end_open_time']){
+                    if($date_start >= $v1['strat_open_time'] && $date_start <= $v1['end_open_time']){
                         $companyId = $v1['company_id'];
                         break;
                     }
                 }
-            
-                $consumption = $accountConsumption[$v]??[];
-                
-                if(empty($consumption)){
-                    $data[] = [
-                        'account_id'=>$accountId,
-                        'spend'=>0,
-                        'dollar'=>$dollar,
-                        'date_start'=>$v,
-                        'date_stop'=>$v,
-                        'company_id'=>$companyId,
-                        'create_time'=>time(),
-                    ];
+
+                if($currency == 'USD')
+                {
+                    $dollar = $consumption['spend'];
                 }else{
-                    if($currency == 'USD')
+                    if(empty($currency) || $currency == '其他')
                     {
-                        $dollar = $consumption['spend'];
-                    }else{
-                        if(empty($currency) || $currency == '其他')
-                        {
-                            $dollar = 0;
-                        }elseif(isset($exchangeRate[$v]) && $consumption['spend'] != 0){
-                           $dollar =  bcdiv((string)$consumption['spend'],(string)$exchangeRate[$v],4);
-                        }
-                    }               
+                        $dollar = 0;
+                    }elseif(isset($exchangeRate[$date_start]) && $consumption['spend'] != 0){
+                        $dollar =  bcdiv((string)$consumption['spend'],(string)$exchangeRate[$date_start],4);
+                    }
+                }               
+                
+
+                $actions = $consumption["actions"] ?? [];
+                $costs = $consumption["cost_per_action_type"] ?? [];
+                $av = $consumption["action_values"] ?? [];
+
+                // 常用指标
+                $purchase = $this->extract_action($actions, "purchase");
+                $reg = $this->extract_action($actions, "complete_registration");
+                $clicks = $this->extract_action($actions, "link_click");
+
+                $cost_per_purchase = $this->extract_cost($costs, "purchase");
+                $cost_per_reg = $this->extract_cost($costs, "complete_registration");
+
+                $roas = $this->extract_action_value($av, "purchase");                                        
+
+                $data[] = [
+                    'account_id'=>$accountId,
+                    'spend'=>$consumption['spend'],
+                    'dollar'=>$dollar,
+                    'date_start'=>$consumption['date_start'],
+                    'date_stop'=>$consumption['date_stop'],
+                    'company_id'=>$companyId,
+                    'create_time'=>time(),
+                    'campaign_name'=>$consumption["campaign_name"] ?? null,
+                    'campaign_id'=>$consumption["campaign_id"] ?? null,
+                    'reach'=>intval($consumption["reach"] ?? 0),
+                    'impressions'=>intval($consumption["impressions"] ?? 0),
+                    'frequency'=>floatval($consumption["frequency"] ?? 0),
+                    'clicks'=>intval($clicks),
+                    'cpc'=>floatval($consumption["cpc"] ?? 0),
+                    'purchase'=>intval($purchase),
+                    'cost_per_purchase'=>$cost_per_purchase,
+                    'roas'=>$roas,
+                    'reg'=>intval($reg),
+                    'cost_per_reg'=>$cost_per_reg,
+                    'tt'=>json_encode($consumption)
+                ];
+
+            
+                // $consumption = $accountConsumption[$v]??[];
+                
+                // if(empty($consumption)){
+                //     $data[] = [
+                //         'account_id'=>$accountId,
+                //         'spend'=>0,
+                //         'dollar'=>$dollar,
+                //         'date_start'=>$v,
+                //         'date_stop'=>$v,
+                //         'company_id'=>$companyId,
+                //         'create_time'=>time(),
+                //         'campaign_name'=>'',
+                //         'campaign_id'=>'',
+                //         'reach'=>'',
+                //         'impressions'=>'',
+                //         'frequency'=>'',
+                //         'clicks'=>'',
+                //         'cpc'=>'',
+                //         'purchase'=>'',
+                //         'cost_per_purchase'=>'',
+                //         'roas'=>'',
+                //         'reg'=>'',
+                //         'cost_per_reg'=>'',
+                //     ];
+                // }else{
+                //     if($currency == 'USD')
+                //     {
+                //         $dollar = $consumption['spend'];
+                //     }else{
+                //         if(empty($currency) || $currency == '其他')
+                //         {
+                //             $dollar = 0;
+                //         }elseif(isset($exchangeRate[$v]) && $consumption['spend'] != 0){
+                //            $dollar =  bcdiv((string)$consumption['spend'],(string)$exchangeRate[$v],4);
+                //         }
+                //     }               
                     
 
-                    $actions = $consumption["actions"] ?? [];
-                    $costs = $consumption["cost_per_action_type"] ?? [];
-                    $av = $consumption["action_values"] ?? [];
+                //     $actions = $consumption["actions"] ?? [];
+                //     $costs = $consumption["cost_per_action_type"] ?? [];
+                //     $av = $consumption["action_values"] ?? [];
 
-                    // 常用指标
-                    $purchase = $this->extract_action($actions, "purchase");
-                    $reg = $this->extract_action($actions, "complete_registration");
-                    $clicks = $this->extract_action($actions, "link_click");
+                //     // 常用指标
+                //     $purchase = $this->extract_action($actions, "purchase");
+                //     $reg = $this->extract_action($actions, "complete_registration");
+                //     $clicks = $this->extract_action($actions, "link_click");
 
-                    $cost_per_purchase = $this->extract_cost($costs, "purchase");
-                    $cost_per_reg = $this->extract_cost($costs, "complete_registration");
+                //     $cost_per_purchase = $this->extract_cost($costs, "purchase");
+                //     $cost_per_reg = $this->extract_cost($costs, "complete_registration");
 
-                    $roas = $this->extract_action_value($av, "purchase");                                        
+                //     $roas = $this->extract_action_value($av, "purchase");                                        
 
-                    $data[] = [
-                        'account_id'=>$accountId,
-                        'spend'=>$consumption['spend'],
-                        'dollar'=>$dollar,
-                        'date_start'=>$consumption['date_start'],
-                        'date_stop'=>$consumption['date_stop'],
-                        'company_id'=>$companyId,
-                        'create_time'=>time(),
 
-                        'campaign_name'=>$r["campaign_name"] ?? null,
-                        'campaign_id'=>$r["campaign_id"] ?? null,
-                        'reach'=>intval($r["reach"] ?? 0),
-                        'impressions'=>intval($r["impressions"] ?? 0),
-                        'frequency'=>floatval($r["frequency"] ?? 0),
-                        'clicks'=>intval($clicks),
-                        'cpc'=>floatval($r["cpc"] ?? 0),
-                        'purchase'=>intval($purchase),
-                        'cost_per_purchase'=>$cost_per_purchase,
-                        'roas'=>$roas,
-                        'reg'=>intval($reg),
-                        'cost_per_reg'=>$cost_per_reg,
-
-                        // 'campaign_id'=>$consumption['campaign_id'],
-                        // 'campaign_name'=>$consumption['campaign_name'],
-                        // 'reach'=>intval($consumption['reach'] ?? 0),
-                        // 'impressions'=>intval($consumption['impressions'] ?? 0),
-                        // 'frequency'=>floatval($consumption['frequency'] ?? 0),
-                        // 'clicks'=>intval($clicks),
-                        // 'cpc'=>floatval($consumption['cpc'] ?? 0),
-                        // 'actions'=>$actions,
-                        // 'action_values'=>$av,
-                        // 'cost_per_action_type'=>$costs,
-                    ];
-                }
+                //     $data[] = [
+                //         'account_id'=>$accountId,
+                //         'spend'=>$consumption['spend'],
+                //         'dollar'=>$dollar,
+                //         'date_start'=>$consumption['date_start'],
+                //         'date_stop'=>$consumption['date_stop'],
+                //         'company_id'=>$companyId,
+                //         'create_time'=>time(),
+                //         'campaign_name'=>$r["campaign_name"] ?? null,
+                //         'campaign_id'=>$r["campaign_id"] ?? null,
+                //         'reach'=>intval($r["reach"] ?? 0),
+                //         'impressions'=>intval($r["impressions"] ?? 0),
+                //         'frequency'=>floatval($r["frequency"] ?? 0),
+                //         'clicks'=>intval($clicks),
+                //         'cpc'=>floatval($r["cpc"] ?? 0),
+                //         'purchase'=>intval($purchase),
+                //         'cost_per_purchase'=>$cost_per_purchase,
+                //         'roas'=>$roas,
+                //         'reg'=>intval($reg),
+                //         'cost_per_reg'=>$cost_per_reg,
+                //     ];
+                // }
             }
+            // dd($data);
             // $this->fbSpendCap($params);
             DB::table('ba_account_consumption_test')->insertAll($data);
             
@@ -213,10 +270,11 @@ class FbAccountConsumptionTest2
             // }
             
         } catch (\Throwable $th) {
+            // dd($th->getMessage(),$th->getLine());
             $logs = '错误info('.$businessId .'):('.$th->getLine().')'.json_encode($th->getMessage());
             $result = false;
             DB::table('ba_fb_logs')->insert(
-                ['log_id'=>$accountId??'','type'=>'job_FbAccountConsumption','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
+                ['log_id'=>$accountId??'','type'=>'job_FbAccountConsumption_test2','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
             );
             //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
         }
