@@ -21,6 +21,7 @@ class FbAccountConsumptionTask extends Command
         //$result = DB::table('ba_fb_bm_token')->where('status',1)->select()->toArray();
 
         $notConsumptionStatus = config('basics.NOT_consumption_status');
+        $notConsumptionStatus = array_values(array_diff($notConsumptionStatus, [94]));
         $result = DB::table('ba_accountrequest_proposal')
         ->alias('accountrequest_proposal')
         ->field('fb_bm_token.is_token,accountrequest_proposal.id,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids,accountrequest_proposal.currency')
