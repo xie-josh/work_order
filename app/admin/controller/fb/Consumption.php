@@ -997,11 +997,18 @@ class Consumption extends Backend
                     {
                         if($item['open_time'] <= $v['date_start'] &&  $item['keep_time'] >= $v['date_start']) $isKeep = '是';
                     }
-                    foreach($dd as $item2)
+                    $openTime = $v['account_open_time']??'';
+                    if(!empty($openTime) && $v['date_start'] >= date("Y-m-d",$openTime))
                     {
-                        if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']){
-                            $openTime = $item2['strat_open_time'];
-                            $serialName = $item2['name'];
+                        $openTime = date("Y-m-d",$openTime);
+                        $serialName = $v['serial_name'];
+                    }else{
+                        foreach($dd as $item2)
+                        {
+                            if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']){
+                                $openTime = $item2['strat_open_time'];
+                                $serialName = $item2['name'];
+                            }
                         }
                     }
                 }
