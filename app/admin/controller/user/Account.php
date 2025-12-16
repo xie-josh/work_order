@@ -751,9 +751,9 @@ class Account extends Backend
                      throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7】");
                 }
 
-                if(in_array($v[0],['电商']) && !in_array($v[1],[-6]))
+                if(in_array($v[0],['电商']) && !in_array($v[1],[8,5.5,-3,-6,-7,-8,-9]))
                 {
-                     throw new \Exception($v[2].":【'电商'】,只能选择对应时区【-9】");
+                     throw new \Exception($v[2].":【'电商'】,只能选择对应时区【8,5.5,-3,-6,7,-8,-9】");
                 }
 
                 $currency = $v[4];
