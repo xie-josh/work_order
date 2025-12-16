@@ -22,17 +22,22 @@ class CopyYesterdayConsumptionTask extends Command
         // $params['stort_time'] = '2024-11-01';
         $params['stop_time'] = date('Y-m-d',time());
         $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
-        DB::table('ba_account_consumption_yesterday')->whereIn('date_start',$sSTimeList)->delete();
-        $result =  DB::table('ba_account_consumption')->field('account_id,spend,dollar,date_start,date_stop,company_id,create_time')->whereIn('date_start',$sSTimeList)->select()->toArray();
-        $chunkResult = array_chunk($result, 2000);
-        if(!empty($chunkResult))foreach($chunkResult as $k => $v)
+        for($i =0;$i<=15;$i++)
         {
-            $count = count($v);
-            DB::table('ba_account_consumption_yesterday')->insertAll($v);
-            $output->writeln("本次插入".$count."条消耗！！");
+           $thisTime =  $sSTimeList[$i]??"";
+           if(empty($thisTime)) continue;
+           DB::table('ba_account_consumption_yesterday')->where('date_start',$thisTime)->delete();
+           $result =  DB::table('ba_account_consumption')->field('account_id,spend,dollar,date_start,date_stop,company_id,create_time')->where('date_start',$thisTime)->select()->toArray();
+           $chunkResult = array_chunk($result, 3000);
+           if(!empty($chunkResult))foreach($chunkResult as $k => $v)
+           {
+               $count = count($v);
+               DB::table('ba_account_consumption_yesterday')->insertAll($v);
+               $output->writeln("本次插入".$count."条消耗！！");
+           }
+                   // 在这里编写你的定时任务逻辑
+           $output->writeln("消耗插入完毕!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!！".$thisTime);
         }
-        // 在这里编写你的定时任务逻辑
-        $output->writeln("消耗插入完毕!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!！");
     }
 
     function generateTimeArray($startDate, $endDate) {
