@@ -995,7 +995,13 @@ class Consumption extends Backend
                     $dd = $accountIskeepList[$v['account_id']]['open']??[];
                     foreach($cc as $item)
                     {
-                        if($item['open_time'] <= $v['date_start'] &&  $item['keep_time'] >= $v['date_start']) $isKeep = '是';
+                        if(!empty($item['keep_time']))
+                        {
+                            if($item['open_time'] <= $v['date_start'] &&  $item['keep_time'] >= $v['date_start']) $isKeep = '是';
+                        }else{
+                            if($item['open_time'] <= $v['date_start']) $isKeep = '是';
+                        }
+                        // if($item['open_time'] <= $v['date_start'] &&  $item['keep_time'] >= $v['date_start']) $isKeep = '是';
                     }
                     $openTime = $v['account_open_time']??'';
                     if(!empty($openTime) && $v['date_start'] >= date("Y-m-d",$openTime))
