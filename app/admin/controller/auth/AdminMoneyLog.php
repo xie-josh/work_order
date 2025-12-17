@@ -51,6 +51,15 @@ class AdminMoneyLog extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+        foreach($where as $k => $v){
+            if($v[0] == 'admin_money_log.nickname'){
+                $adminIds = Db::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('company_id');          
+                array_push($where,['company.id','IN',$adminIds]);
+                unset($where[$k]);
+            }
+        }
+
+
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -80,7 +89,7 @@ class AdminMoneyLog extends Backend
             if (!$data) {
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
-
+            if(empty($data['company_id'])) throw new \Exception("数据有误！ 请联系管理员检查！");
             $result = false;
             $this->model->startTrans();
             try {
@@ -95,36 +104,77 @@ class AdminMoneyLog extends Backend
                 }
 
                 $comment = $data['comment']??'';
+                $pay_type = $data['pay_type']??'';
+                $sub_pay_type = $data['sub_pay_type']??'';
 
-                $rate = DB::table('ba_recharge_channel')->where('id',$data['recharge_channel_id'])->find();
-                if(!$rate) throw new \Exception("请选择汇率！");
+                $companyData = Db::table('ba_company')->where('id',$data['company_id'])->find();
 
-                $rateNumber = bcadd('1',(string)($rate['rate']),4);
+                $rate = DB::table('ba_rate')->where('company_id',$data['company_id'])->order('create_time desc')->find();
+                $billRate = DB::table('ba_bill_rate')->where('company_id',$data['company_id'])->order('create_time desc')->find();
+                if(empty($billRate)) $billRate['bill_rate'] = '0.0';
+                if(empty($rate)) $rate['rate'] = '0.0';
+                if(!is_numeric($data['money'])) throw new \Exception("输入金额异常！请检查");
+                $type = 0;
+                if (is_numeric($data['money']) && $data['money'] < 0) 
+                {   //金额负为充正类型
+                    $type = 4;
+                    $rechargeMoney =  $data['money'];
+                    $billRate['bill_rate'] = '0.0';
+                    $rate['rate'] = '0.0';
+                }else{
+                    $type = 1;
+                    if($companyData['prepayment_type'] == 2)
+                    {
+                        $totalRate = 0;
+                        if($pay_type == 1)
+                        {
+                            $billRate['bill_rate'] = '0.0';
+                            $totalRate =  (string)$rate['rate']; //usd
+                        }
+                        else
+                        {
+                            $totalRate =  bcadd((string)$rate['rate'],(string)$billRate['bill_rate'],4); //usdt
+                        }
+
+                        $rateNumber    =  bcadd('1',(string)($totalRate),4);
+                        $rechargeMoney =  round(bcdiv((string)($data['money']), (string)$rateNumber,3), 2); //入账金额
+                        // $creditMoney   =  bcsub((string)($data['money']) ,(string)$rechargeMoney,2);
+                    }else
+                    {
+                        $rate['rate'] = '0.0';
+                        if($pay_type == 1)
+                        {
+                            $billRate['bill_rate'] = '0.0';
+                            $rechargeMoney = $data['money'];
+                        }else{
+                            $rateNumber    = bcadd('1',(string)($billRate['bill_rate']),4);
+                            $rechargeMoney = round(bcdiv((string)($data['money']), (string)$rateNumber,3),2);
+                            // $creditMoney   = bcsub((string)($data['money']) ,(string)$rechargeMoney,2);
+                        }
+                    }
+                }
                 
-                $rechargeMoney = bcdiv((string)($data['money']), (string)$rateNumber,2);
-
-                $creditMoney =  bcsub((string)($data['money']) ,(string)$rechargeMoney,2);
-
-                $money = Db::table('ba_company')->where('id',$data['company_id'])->value('money');
-                
-                $money = bcadd((string)$money,(string)$rechargeMoney,2);
+                //$money = bcadd((string)$money,(string)$rechargeMoney,2);
                 //$money = floor(($money + $rechargeMoney) * 100) / 100;
-                $money = Db::table('ba_company')->where('id',$data['company_id'])->update(['money'=>$money]);
-                
+                //$money = Db::table('ba_company')->where('id',$data['company_id'])->update(['money'=>$money]);
                 $createTime = $data['create_time']??'';                
-
                 $data = [
                     'company_id'=>$data['company_id'],
-                    'money'=>$rechargeMoney,
-                    'raw_money'=>$data['money'],
+                    'money'=>$rechargeMoney,               //充值金额
+                    'raw_money'=>$data['money'],           //原金额
                     'comment'=>$comment,
-                    'rate'=>$rate['rate'],
-                    'credit_money'=>$creditMoney,
+                    'rate'=>$rate['rate']??0,              //税率
+                    'bill_rate'=>$billRate['bill_rate']??0,//入账手续费
+                    'credit_money'=>0,                     //入账金额
                     'images'=>implode(',', $data['images']??[]),
-                    'recharge_channel_name'=>$rate['name'],
+                    'status'=>2,
+                    'type'=>$type,
+                    'pay_type'=>$pay_type,
+                    'sub_pay_type'=>$sub_pay_type,
+                    // 'recharge_channel_name'=>'',
                 ];
                 if(!empty($createTime)) $data['create_time'] = strtotime($createTime);
-
+                 
                 $result = DB::table('ba_admin_money_log')->insert($data);
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -139,6 +189,136 @@ class AdminMoneyLog extends Backend
         }
 
         $this->error(__('Parameter error'));
+    }
+
+    public function audit()
+    {
+        $pk  = $this->model->getPk();
+        $id  = $this->request->param($pk);
+        $row = $this->model->find($id);
+        if (!$row) {
+            $this->error(__('Record not found'));
+        }
+    
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $result = false;
+            DB::startTrans();
+            try {
+
+                $companyId = $row->company_id;
+                $status = $row->status;
+                $adminMoney = $row->money;
+                $pay_type = $row->pay_type;
+                $sub_pay_type = $row->sub_pay_type;
+                $rate = $row->rate;
+                $type = $row->type;
+                $bill_rate = $row->bill_rate;
+                $rechargeMoney = $row->money;
+                $raw_money = $row->raw_money;
+                $create_time = $row->create_time;
+
+                $companyData = Db::table('ba_company')->where('id',$companyId)->find();
+                $result = false;
+                if($status == 2 && $data['status'] == 1)
+                {
+                    $money = bcadd((string)$adminMoney,(string)$companyData['money'],'2');
+                    if($money < 0) throw new \Exception("金额异常！请联系管理员！");
+                    $money = Db::table('ba_company')->where('id',$companyId)->where('money',$companyData['money'])->update(['money'=>$money]);
+                    if($money) DB::table('ba_admin_money_log')->where('id',$row->id)->update(['status'=>$data['status']]);
+                    $result = true;
+                    if($companyData['prepayment_type'] == 2)
+                    {
+                        if($pay_type == 1)
+                        {
+                            $addRate = round(bcmul((string)$rechargeMoney, (string)$rate, 3),2);
+                        }
+                        else
+                        {
+                            $addRate = round(bcmul((string)$rechargeMoney, (string)$rate, 3),2);
+                            $addBillRate = round(bcmul((string)$rechargeMoney, (string)$bill_rate, 3),2);
+                        }
+                    }else
+                    {
+                        $addBillRate = 0;
+                        if($pay_type == 2)
+                        {
+                            $addBillRate = round(bcmul((string)$rechargeMoney, (string)$bill_rate, 3),2);
+                        }    
+                    }
+                    //金额负为充正类型
+                    if ($type == 4) 
+                    {
+                        $addRate = '0';
+                        $addBillRate = '0';
+                    }
+
+                    if(!empty($addRate))
+                    {
+                        $data = [
+                            'company_id'=>$companyId,
+                            // 'money'=>$rechargeMoney,
+                            'money'=>0,
+                            'raw_money'=>$addRate,
+                            'pid'=>$id,
+                            'rate'=>$rate??0,
+                            'credit_money'=>$addRate,
+                            'status'=>1,
+                            'type'=>2,
+                            'pay_type'=>$pay_type,
+                            'sub_pay_type'=>$sub_pay_type,
+                            'create_time'=>$create_time-1
+                        ];
+                        $result = DB::table('ba_admin_money_log')->insertGetId($data);
+                    }
+
+                    if(!empty($addBillRate))
+                    {
+                        $data = [
+                            'company_id'=>$companyId,
+                            // 'money'=>$rechargeMoney,
+                            'money'=>0,
+                            'raw_money'=>$addBillRate,
+                            'pid'=>$id,
+                            'bill_rate'=>$bill_rate??0,
+                            'credit_money'=>$addBillRate,
+                            'status'=>1,
+                            'type'=>3,
+                            'pay_type'=>$pay_type,
+                            'sub_pay_type'=>$sub_pay_type,
+                            'create_time'=>$create_time-1
+                        ];
+                        $result = DB::table('ba_admin_money_log')->insertGetId($data);
+                    }
+                }
+
+                if($status == 1 && $data['status'] == 3)
+                {
+                    $money = bcsub((string)$companyData['money'],(string)$adminMoney,'2');
+                    $money = Db::table('ba_company')->where('id',$companyId)->where('money',$companyData['money'])->update(['money'=>$money]);
+                    if($money) DB::table('ba_admin_money_log')->where('id',$row->id)->update(['status'=>$data['status']]);
+                    if($money) DB::table('ba_admin_money_log')->where('pid',$row->id)->update(['status'=>$data['status']]);
+                    $result = true;
+                }
+                DB::commit();
+            } catch (Throwable $e) {
+                DB::rollback();
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+
+        $this->success('', [
+            'row' => $row
+        ]);
     }
 
     public function edit(): void

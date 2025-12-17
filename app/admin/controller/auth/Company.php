@@ -169,7 +169,9 @@ class Company extends Backend
             $user['username'] = $data['username']??'';
             $user['nickname'] = $data['nickname']??'';
             $user['email'] = $data['email']??'';
-            unset($data['password'],$data['username'],$data['nickname']);
+            $rate = $data['rate']??0;
+            $billRate = $data['bill_rate']??0;
+            unset($data['password'],$data['username'],$data['nickname'],$data['rate'],$data['bill_rate']);
             if (!$data) {
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
@@ -203,6 +205,20 @@ class Company extends Backend
                     'group_id' => 7,
                 ];
                 Db::name('admin_group_access')->insert($groupAccess);
+
+                //费率处理
+                if(isset($rate)&&!empty($rate))
+                {
+                    $inserData  = ['create_time'=>date('Y-m-d',time()),'company_id'=>$this->model->id,'rate'=>$rate];
+                    DB::table('ba_rate')->insert($inserData);
+                }
+
+                //入账手续费处理
+                if(isset($billRate)&&!empty($billRate))
+                {
+                    $inserData  = ['create_time'=>date('Y-m-d',time()),'company_id'=>$this->model->id,'bill_rate'=>$billRate];
+                    DB::table('ba_bill_rate')->insert($inserData);
+                }
 
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -268,7 +284,11 @@ class Company extends Backend
             $this->model->startTrans();
 
             try {
+                $rate = $data['rate']??0;
+                $billRate = $data['bill_rate']??0;
+                unset($data['rate'],$data['bill_rate']);
                 $result = $row->save($data);
+                 
                 if($result){
                     if($data['status'] == 1){
                         DB::table('ba_admin')->where('company_id',$id)->update(['status'=>1]);
@@ -276,6 +296,44 @@ class Company extends Backend
                         DB::table('ba_admin')->where('company_id',$id)->update(['status'=>0]);
                     }
                 }
+               
+
+                //费率处理
+                $rateResult = DB::table('ba_rate')->where('company_id',$id)->order('create_time desc')->find();
+                $inserData  = ['create_time'=>date('Y-m-d',time()),'company_id'=>$id,'rate'=>$rate];
+                $rateResult['rate']        = $rateResult['rate']??0;
+                $rateResult['create_time'] = $rateResult['create_time']??0;
+                if($rateResult['rate'] != $rate)
+                {
+                     if(!empty($rateResult))
+                     {
+                         if($rateResult['create_time'] == date('Y-m-d',time()))
+                             DB::table('ba_rate')->where(['company_id'=>$id,'create_time'=>date('Y-m-d',time())])->update(['rate'=>$rate]);
+                         else
+                             DB::table('ba_rate')->insert($inserData);
+                     }else{
+                             DB::table('ba_rate')->insert($inserData);
+                     }
+                }
+
+                //入账手续费处理
+                $billrateRes = DB::table('ba_bill_rate')->where('company_id',$id)->order('create_time desc')->find();
+                $inserData  = ['create_time'=>date('Y-m-d',time()),'company_id'=>$id,'bill_rate'=>$billRate];
+                $billrateRes['bill_rate']   = $billrateRes['bill_rate']??0;
+                $billrateRes['create_time'] = $billrateRes['create_time']??0;
+                if($billrateRes['bill_rate'] != $billRate)
+                {
+                     if(!empty($billrateRes))
+                     {
+                         if($billrateRes['create_time'] == date('Y-m-d',time()))
+                             DB::table('ba_bill_rate')->where(['company_id'=>$id,'create_time'=>date('Y-m-d',time())])->update(['bill_rate'=>$billRate]);
+                         else
+                             DB::table('ba_bill_rate')->insert($inserData);
+                     }else{
+                             DB::table('ba_bill_rate')->insert($inserData);
+                     }
+                }
+
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -289,6 +347,10 @@ class Company extends Backend
         }
 
         unset($row['salt']);
+        $rateArr  = DB::table('ba_rate')->where('company_id',$info['id'])->order('create_time asc')->column('rate','company_id');//费率
+        $billRateArr  = DB::table('ba_bill_rate')->where('company_id',$info['id'])->order('create_time asc')->column('bill_rate','company_id');//费率
+        $row['rate'] = $rateArr[$info['id']]??0;
+        $row['bill_rate'] = $billRateArr[$info['id']]??0;
         $row['password'] = '';
         $this->success('', [
             'row' => $row
