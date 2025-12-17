@@ -19,7 +19,7 @@ class Announcement extends Backend
     protected string|array $preExcludeFields = [];
 
     protected string|array $quickSearchField = [];
-    protected array $noNeedPermission = ['index'];
+    protected array $noNeedPermission = ['index','unprocessed'];
 
     public function initialize(): void
     {
