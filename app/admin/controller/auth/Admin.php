@@ -69,8 +69,12 @@ class Admin extends Backend
             }
            
         } 
+        $rateArr     = [];
+        $billAateArr = [];
         if($type == 2){
             array_push($where,['admin.type','=',2]); 
+            $rateArr      = DB::table('ba_rate')->order('create_time asc')->column('rate','company_id');//费率
+            $billAateArr  = DB::table('ba_bill_rate')->order('create_time asc')->column('bill_rate','company_id');//入账手续费率
         }
         // dd($where);
         $res = $this->model
@@ -83,14 +87,18 @@ class Admin extends Backend
             ->paginate($limit);
 
         $dataList = $res->toArray()['data'];
-        if($dataList){
-            
-            foreach($dataList as &$v){
-                
+        if($dataList)
+        {
+            $compnayArr = array_column($dataList,'company_id');
+            $compnayTypeArr = DB::table('ba_company')->whereIn('id',$compnayArr)->column('prepayment_type','id');//费率
+            foreach($dataList as &$v)
+            {
                 $v['userNick'] = $v['nickname'].'('.($v['username']??'').')';
+                $v['rate'] = $rateArr[$v['company_id']]??0;
+                $v['bill_rate'] = $billAateArr[$v['company_id']]??0;
+                $v['prepayment_type'] = $compnayTypeArr[$v['company_id']]??0;
             }
         }
-        
 
         $this->success('', [
             'list'   => $dataList,
