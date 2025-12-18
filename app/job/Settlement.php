@@ -48,7 +48,7 @@ class Settlement
             ['consumption.company_id','=',$params['id']],
             ['consumption.date_start','>=',$params['start_time']],
             ['consumption.date_start','<=',$params['end_time']],
-            ['account.status','=',4],
+            // ['account.status','=',4],
         ];
         $query = DB::table('ba_account_consumption')
             ->field('account.open_time account_open_time,consumption.account_id,consumption.date_start,consumption.spend,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.serial_name')
