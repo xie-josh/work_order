@@ -39,7 +39,7 @@ class Settlement
     function exportExcel($params)
     {
 
-        $batchSize = 5000;
+        $batchSize = 80000;
         $processedCount = 0;
 
         $nickname = $params['admin_nickname'];
