@@ -55,7 +55,7 @@ class Settlement
             ->alias('consumption')
             ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id = consumption.account_id')
             ->leftJoin('ba_account account','account.account_id=consumption.account_id')
-            ->order('consumption.date_start','desc')
+            ->order('consumption.id','desc')
             ->where($where);
 
         $query2 = clone $query;
