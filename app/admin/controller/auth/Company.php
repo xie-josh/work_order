@@ -273,6 +273,11 @@ class Company extends Backend
                 }
             }
 
+            $user['username'] = $data['username']??'';
+            $user['nickname'] = $data['nickname']??'';
+            DB::table('ba_admin')->where('company_id',$info['id'])->where('type',2)->update($user);
+            unset($data['nickname'],$data['username']);
+            
 
             $openAccountNumber = $this->openAccountNumber($row['id']);
 
@@ -349,8 +354,11 @@ class Company extends Backend
         unset($row['salt']);
         $rateArr  = DB::table('ba_rate')->where('company_id',$info['id'])->order('create_time asc')->column('rate','company_id');//费率
         $billRateArr  = DB::table('ba_bill_rate')->where('company_id',$info['id'])->order('create_time asc')->column('bill_rate','company_id');//费率
+        $adminUser  = DB::table('ba_admin')->where('company_id',$info['id'])->where('type',2)->find();//admin
         $row['rate'] = $rateArr[$info['id']]??0;
         $row['bill_rate'] = $billRateArr[$info['id']]??0;
+        $row['username']  = $adminUser['username']??'';
+        $row['nickname'] = $adminUser['nickname']??'';
         $row['password'] = '';
         $this->success('', [
             'row' => $row
