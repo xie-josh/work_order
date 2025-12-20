@@ -52,6 +52,8 @@ class AdminMoneyLog extends Backend
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         array_push($where,['company_id','=',$this->auth->company_id]);
+        array_push($where,['status','=',1]);
+        array_push($where,['type','in',[1,4]]);
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
