@@ -75,7 +75,7 @@ class Company extends Backend
 
         $rateArr  = DB::table('ba_rate')->whereIn('company_id',$comapnyids)->order('create_time asc')->column('rate','company_id');//费率
         $adminArr = DB::table('ba_admin')->whereIn('company_id',$comapnyids)->where('type',2)->column('username,nickname','company_id');//主用户
-        $moneyArr = DB::table('ba_admin_money_log')->whereIn('company_id',$comapnyids)->group('company_id')->column('sum(money)','company_id');//付款总金额
+        $moneyArr = DB::table('ba_admin_money_log')->where('status',1)->whereIn('company_id',$comapnyids)->whereIn('type',[1,4])->group('company_id')->column('sum(money)','company_id');//付款总金额
         $key = 'consumption_1';
         $redisValue = Cache::store('redis')->get($key);
         $consumptionArr = [];
