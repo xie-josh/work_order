@@ -771,7 +771,7 @@ class Consumption extends Backend
         $AllList = array_column($list['all'],'total_dollar','date_start');
         foreach($list['all'] AS $k => &$v)
         {
-             $v['money'] = $dataList[$k]['money']??'';
+             $v['money'] = round($dataList[$k]['money']??0, 2);
             //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
             //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
              $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
@@ -792,7 +792,7 @@ class Consumption extends Backend
                     $v['suggestzui_money'] = 5000;
                 } 
              }
-             $v['money1'] = $res[$k]['money']??'';
+             $v['money1'] = round($res[$k]['money']??0, 2);
              $v['raw_money'] = $res[$k]['raw_money']??'';
              $v['total_dollar'] = round($v['total_dollar'], 2);
              $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
