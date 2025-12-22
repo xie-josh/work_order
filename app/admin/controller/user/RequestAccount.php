@@ -762,7 +762,7 @@ class RequestAccount extends Backend
             foreach($accountIds as $v)
             {
                 if(!in_array($v,$accountrequestProposal)){
-                    $errorList[] = ['account_id'=>$v,'msg'=>'该账户不允许提交回收！，只支持账户状态活跃且未终止使用的！'];
+                    $errorList[] = ['account_id'=>$v,'msg'=>'抱歉，该户不支持回收，仅支持回收活跃、可正常使用账户'];
                     continue;
                 }
                 $list[] = $v;

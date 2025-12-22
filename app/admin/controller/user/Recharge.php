@@ -127,9 +127,14 @@ class Recharge extends Backend
                     } 
 
                     $accountStatus = $accountList[0]['status'];
-                    // $teamId = $accountList[0]['team_id'];                                  
-
+                    // $teamId = $accountList[0]['team_id'];     
+                    
                     $nOTConsumptionStatus = config('basics.NOT_consumption_status');
+
+                    if($accountStatus == 94) {
+                        array_push($errorList,['account_id'=>$accountId,'msg'=>'该账户已进入系统回收池，当前不可操作，如需继续使用，请联系管理员。']);
+                        continue;
+                    }                          
 
                     if(in_array($accountStatus,$nOTConsumptionStatus) && !in_array($type,[3,4])){
                         array_push($errorList,['account_id'=>$accountId,'msg'=>'该账号暂停使用，请联系管理员！']);

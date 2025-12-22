@@ -111,6 +111,7 @@ class Bm extends Backend
                 if(empty($account)) throw new \Exception('未找到账户');
 
                 $notConsumptionStatus   = config('basics.NOT_consumption_status');
+                if($account['status'] == 94) throw new \Exception("该账户已进入系统回收池，当前不可操作，如需继续使用，请联系管理员。");
                 if(in_array($account['status'],$notConsumptionStatus)) throw new \Exception("该账户已经终止使用，不可操作，请联系管理员！");
                 
 
@@ -186,6 +187,7 @@ class Bm extends Backend
             
             if(empty($account)) throw new \Exception('未找到账户');
             $notConsumptionStatus   = config('basics.NOT_consumption_status');
+            if($account['status'] == 94) throw new \Exception("该账户已进入系统回收池，当前不可操作，如需继续使用，请联系管理员。");
             if(in_array($account['status'],$notConsumptionStatus)) throw new \Exception("该账户已经终止使用，不可操作，请联系管理员！");
 
 
@@ -343,7 +345,9 @@ class Bm extends Backend
                 foreach($accountListC as $k => $v){
                     if(in_array($v['status'],$nOTConsumptionStatus))
                     {
-                        $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已经终止使用，不可操作，请联系管理员！'];
+                        if($v['status'] == 94) $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已进入系统回收池，当前不可操作，如需继续使用，请联系管理员。'];
+                        else $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已经终止使用，不可操作，请联系管理员！'];
+                        
                         unset($accountListC[$k]);
                     }
                 }

@@ -70,7 +70,7 @@ class Announcement extends Backend
         $data['bm_to_submit']    = DB::table('ba_bm')->where('status',0)->where('demand_type','<>',4)->count();
         $data['bm_submit']    = DB::table('ba_bm')->where('status',1)->where('dispose_type',0)->count();
         $data['account_status_modify']    = DB::table('ba_account_return')->where('status',0)->count();
-        $data['recharge']    = DB::table('ba_recharge')->where('status',0)->count();
+        $data['recharge']    = DB::table('ba_recharge')->where('status',0)->whereIn('type',[1,2])->count();
         $data['bm_up']    = DB::table('ba_bm')->whereIn('status',[0,1])->where('dispose_type',0)->count();
 
 

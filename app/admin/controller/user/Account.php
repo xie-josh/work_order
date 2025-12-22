@@ -252,6 +252,14 @@ class Account extends Backend
                         continue;
                     }
 
+                    if(empty($v['currency']))
+                    {
+                        $v['currency'] = 'USD';
+                        // $errorList[] = ['name'=>$v['name'],'msg'=>'账户名称不能包含中文!'];
+                        // continue;
+
+                    }
+
                     $bmList = $v['bes']??[];
                     if($v['bm_type'] == 1 && count($bmList) != 1){
                         $errorList[] = ['name'=>$v['name'],'msg'=>'BM只能填一个！'];   
@@ -294,6 +302,7 @@ class Account extends Backend
                     }
                     $listData[] = $v;
                 }
+                // dd($listData);
                 if(empty($listData)) $result = false;
                 else $result = DB::table('ba_account')->insertAll($listData);
 
@@ -756,7 +765,7 @@ class Account extends Backend
                      throw new \Exception($v[2].":【'电商'】,只能选择对应时区【8,5.5,-3,-6,7,-8,-9】");
                 }
 
-                $currency = $v[4];
+                $currency = empty($v[4])?"USD":$v[4];
                 // $isKeep = $v[5];
                 if($isKeep)$open_money =10;
                 else$open_money = 0;
