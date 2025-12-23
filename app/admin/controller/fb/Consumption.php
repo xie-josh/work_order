@@ -683,7 +683,7 @@ class Consumption extends Backend
                 $result = DB::query("
                 SELECT CAST(SUM(money) AS CHAR) AS total
                 FROM ba_admin_money_log
-                WHERE company_id = 178 and status =1 and type in ('1','4')"
+                WHERE company_id = ".$v['id']." and status =1 and type in ('1','4')"
                 );
 
                 $money = bcdiv((String)$result[0]['total']??'0', '1', 2);
