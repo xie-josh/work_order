@@ -807,8 +807,8 @@ class Consumption extends Backend
             $last2 = array_splice($res, -$cha);
             foreach($last2 AS $kk => $vxx)
             {
-                $d['money1'] = $vxx['money']??'';
-                $d['raw_money'] = $vxx['raw_money']??'';
+                $d['money1'] = round($vxx['money']??0, 2);
+                $d['raw_money'] = round($vxx['raw_money']??0, 2);
                 if(isset($last2[$kk]['create_time'])) $d['create_time'] = date('Y-m-d',$last2[$kk]['create_time']);
                 else $d['create_time'] = '';
                 array_push($list['all'],$d);
