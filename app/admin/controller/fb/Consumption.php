@@ -679,7 +679,7 @@ class Consumption extends Backend
                 $consumptionService = new \app\admin\services\fb\Consumption();
                 $totalDollar = $consumptionService->getTotalDollar($v['id']);
                 $thePreviousDayDollar = $consumptionService->thePreviousDay($v['id']); //前一天消耗总金额
-                $money = DB::table('ba_admin_money_log')->where('company_id',$v['id'])->sum('money'); //总消耗
+                $money = DB::table('ba_admin_money_log')->where('status',1)->whereIn('type',[1,4])->where('company_id',$v['id'])->sum('money'); //总消耗
                 $remainingAmount = bcsub((string)$money,(string)$totalDollar,'2');
                 $dataList[] = [
                     'id' => $v['id'],
