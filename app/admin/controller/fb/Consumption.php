@@ -679,9 +679,9 @@ class Consumption extends Backend
                 $consumptionService = new \app\admin\services\fb\Consumption();
                 $totalDollar = $consumptionService->getTotalDollar($v['id']);
                 $thePreviousDayDollar = $consumptionService->thePreviousDay($v['id']); //前一天消耗总金额
-
+                
                 $result = DB::query("
-                SELECT CAST(SUM(money) AS CHAR) AS total
+                SELECT CAST(ROUND(SUM(money), 2) AS CHAR) AS total
                 FROM ba_admin_money_log
                 WHERE company_id = ".$v['id']." and status =1 and type in ('1','4')"
                 );
