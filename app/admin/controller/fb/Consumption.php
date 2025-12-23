@@ -679,7 +679,14 @@ class Consumption extends Backend
                 $consumptionService = new \app\admin\services\fb\Consumption();
                 $totalDollar = $consumptionService->getTotalDollar($v['id']);
                 $thePreviousDayDollar = $consumptionService->thePreviousDay($v['id']); //前一天消耗总金额
-                $money = DB::table('ba_admin_money_log')->where('status',1)->whereIn('type',[1,4])->where('company_id',$v['id'])->sum('money'); //总消耗
+
+                $result = DB::query("
+                SELECT CAST(SUM(money) AS CHAR) AS total
+                FROM ba_admin_money_log
+                WHERE company_id = 178 and status =1 and type in ('1','4')"
+                );
+
+                $money = bcdiv((String)$result[0]['total']??'0', '1', 2);
                 $remainingAmount = bcsub((string)$money,(string)$totalDollar,'2');
                 $dataList[] = [
                     'id' => $v['id'],
@@ -793,7 +800,7 @@ class Consumption extends Backend
                 } 
              }
              $v['money1'] = round($res[$k]['money']??0, 2);
-             $v['raw_money'] = $res[$k]['raw_money']??'';
+             $v['raw_money'] = round($res[$k]['raw_money']??0, 2);
              $v['total_dollar'] = round($v['total_dollar'], 2);
              $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
@@ -807,8 +814,8 @@ class Consumption extends Backend
             $last2 = array_splice($res, -$cha);
             foreach($last2 AS $kk => $vxx)
             {
-                $d['money1'] = $vxx['money']??'';
-                $d['raw_money'] = $vxx['raw_money']??'';
+                $d['money1'] = round($vxx['money']??0, 2);
+                $d['raw_money'] = round($vxx['raw_money']??0, 2);
                 if(isset($last2[$kk]['create_time'])) $d['create_time'] = date('Y-m-d',$last2[$kk]['create_time']);
                 else $d['create_time'] = '';
                 array_push($list['all'],$d);
