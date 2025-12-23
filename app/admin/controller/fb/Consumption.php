@@ -793,7 +793,7 @@ class Consumption extends Backend
                 } 
              }
              $v['money1'] = round($res[$k]['money']??0, 2);
-             $v['raw_money'] = $res[$k]['raw_money']??'';
+             $v['raw_money'] = round($res[$k]['raw_money']??0, 2);
              $v['total_dollar'] = round($v['total_dollar'], 2);
              $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
