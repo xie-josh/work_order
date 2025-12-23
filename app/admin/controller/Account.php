@@ -574,25 +574,28 @@ class Account extends Backend
                         //根据bes生成对等个数的开户绑定条数
                         $besArr =  json_decode($v['bes']??'', true)??[];
                         $bmDataList = [];
-                        if(!empty($besArr))foreach($besArr as $be){
-                            if(filter_var($be, FILTER_VALIDATE_EMAIL)){
-                                $strBes = $be;
-                                $bmType = 2;
-                            }else if (preg_match('/^\d+$/', $be)){
-                                $strBes = $be;
-                                $bmType = 1;
+                        if(!empty($besArr))
+                        {
+                            foreach($besArr as $be){
+                                if(filter_var($be, FILTER_VALIDATE_EMAIL)){
+                                    $strBes = $be;
+                                    $bmType = 2;
+                                }else if (preg_match('/^\d+$/', $be)){
+                                    $strBes = $be;
+                                    $bmType = 1;
+                                }
+                                $bmDataList[] = [
+                                    'account_name'=>$v['name'],
+                                    'account_id'=>$v['account_id'],
+                                    'bm'=>$strBes,
+                                    'demand_type'=>4,
+                                    'bm_type'=>$bmType,
+                                    'status'=>0,
+                                    'dispose_type'=>0,
+                                    'admin_id'=>$v['admin_id'],
+                                    'create_time'=>time(),
+                                ];
                             }
-                            $bmDataList[] = [
-                                'account_name'=>$v['name'],
-                                'account_id'=>$v['account_id'],
-                                'bm'=>$strBes,
-                                'demand_type'=>4,
-                                'bm_type'=>$bmType,
-                                'status'=>0,
-                                'dispose_type'=>0,
-                                'admin_id'=>$v['admin_id'],
-                                'create_time'=>time(),
-                            ];
                         }else{
                             //旧数据
                             if(!empty($v['bm']) || !empty($v['email'])){
