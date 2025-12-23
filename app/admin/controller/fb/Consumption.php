@@ -792,9 +792,9 @@ class Consumption extends Backend
                     $v['suggestzui_money'] = 5000;
                 } 
              }
-             $v['money1'] = bcdiv((String)$res[$k]['money']??0, '1', 2);
-             $v['raw_money'] = bcdiv((String)$res[$k]['raw_money']??0, '1', 2);
-             $v['total_dollar'] = bcdiv((String)$v['total_dollar']??0, '1', 2);
+             $v['money1'] = round($res[$k]['money']??0, 2);
+             $v['raw_money'] = round($res[$k]['raw_money']??0, 2);
+             $v['total_dollar'] = round($v['total_dollar'], 2);
              $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
              if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
              else $v['create_time'] = '';
@@ -807,8 +807,8 @@ class Consumption extends Backend
             $last2 = array_splice($res, -$cha);
             foreach($last2 AS $kk => $vxx)
             {
-                $d['money1'] = bcdiv((String)$vxx['money']??0, '1', 2);
-                $d['raw_money'] = bcdiv((String)$vxx['raw_money']??0, '1', 2);
+                $d['money1'] = round($vxx['money']??0, 2);
+                $d['raw_money'] = round($vxx['raw_money']??0, 2);
                 if(isset($last2[$kk]['create_time'])) $d['create_time'] = date('Y-m-d',$last2[$kk]['create_time']);
                 else $d['create_time'] = '';
                 array_push($list['all'],$d);
