@@ -446,9 +446,10 @@ class RequestAccount extends Backend
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 333){
+                array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,94]]);                
                 array_push($where,['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400]);
                 unset($where[$k]);
-                $idle = 1;
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 94){
