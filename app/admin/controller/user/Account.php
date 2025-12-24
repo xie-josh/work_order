@@ -222,8 +222,9 @@ class Account extends Backend
                 if(empty($company)) throw new \Exception("您没有归属公司，请联系管理员！");
 
                 $time = date('Y-m-d',time());
+                $account_count = count($data['list'])??0;
                 $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->whereDay('create_time',$time)->count();
-                if($openAccountNumber >= $accountNumber) throw new \Exception("今.开户数量已经不足，不能再提交开户需求,请联系管理员！");
+                if(($openAccountNumber + $account_count) > $accountNumber) throw new \Exception("今.开户数量已经不足，不能再提交开户需求,请联系管理员！");
 
                 $list = $data['list'];
                 $listData = [];
