@@ -58,7 +58,7 @@ class MonthConsumptionTotalTask extends Command
                     if (strtotime($v['date_start']) > $start_tmie && strtotime($v['date_start']) <= $end_tmie) {
                     //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
                     $total_dollar_rate +=  $v['dollar']*$vv['rate'];
-                    $output->writeln($vv['start_tmie'].">--"."命中区间".$v['datestart']."费率为".$vv['rate']."<=--".$vv['end_tmie']);
+                    $output->writeln($vv['start_tmie'].">--"."命中区间".$v['date_start']."费率为".$vv['rate']."<=--".$vv['end_tmie']);
                     }
                     if (strtotime($v['date_start']) > $start_tmie && empty($end_tmie)) {
                     //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
