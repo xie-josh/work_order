@@ -446,9 +446,10 @@ class RequestAccount extends Backend
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 333){
+                array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,94]]);                
                 array_push($where,['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400]);
                 unset($where[$k]);
-                $idle = 1;
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 94){
@@ -762,7 +763,7 @@ class RequestAccount extends Backend
             foreach($accountIds as $v)
             {
                 if(!in_array($v,$accountrequestProposal)){
-                    $errorList[] = ['account_id'=>$v,'msg'=>'该账户不允许提交回收！，只支持账户状态活跃且未终止使用的！'];
+                    $errorList[] = ['account_id'=>$v,'msg'=>'抱歉，该户不支持回收，仅支持回收活跃、可正常使用账户'];
                     continue;
                 }
                 $list[] = $v;

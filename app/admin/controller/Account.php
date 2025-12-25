@@ -574,25 +574,28 @@ class Account extends Backend
                         //根据bes生成对等个数的开户绑定条数
                         $besArr =  json_decode($v['bes']??'', true)??[];
                         $bmDataList = [];
-                        if(!empty($besArr))foreach($besArr as $be){
-                            if(filter_var($be, FILTER_VALIDATE_EMAIL)){
-                                $strBes = $be;
-                                $bmType = 2;
-                            }else if (preg_match('/^\d+$/', $be)){
-                                $strBes = $be;
-                                $bmType = 1;
+                        if(!empty($besArr))
+                        {
+                            foreach($besArr as $be){
+                                if(filter_var($be, FILTER_VALIDATE_EMAIL)){
+                                    $strBes = $be;
+                                    $bmType = 2;
+                                }else if (preg_match('/^\d+$/', $be)){
+                                    $strBes = $be;
+                                    $bmType = 1;
+                                }
+                                $bmDataList[] = [
+                                    'account_name'=>$v['name'],
+                                    'account_id'=>$v['account_id'],
+                                    'bm'=>$strBes,
+                                    'demand_type'=>4,
+                                    'bm_type'=>$bmType,
+                                    'status'=>0,
+                                    'dispose_type'=>0,
+                                    'admin_id'=>$v['admin_id'],
+                                    'create_time'=>time(),
+                                ];
                             }
-                            $bmDataList[] = [
-                                'account_name'=>$v['name'],
-                                'account_id'=>$v['account_id'],
-                                'bm'=>$strBes,
-                                'demand_type'=>4,
-                                'bm_type'=>$bmType,
-                                'status'=>0,
-                                'dispose_type'=>0,
-                                'admin_id'=>$v['admin_id'],
-                                'create_time'=>time(),
-                            ];
                         }else{
                             //旧数据
                             if(!empty($v['bm']) || !empty($v['email'])){
@@ -1640,17 +1643,23 @@ class Account extends Backend
         $where = [
             // ['is_keep','=',1],
             ['status','IN',[4,6]],
-            ['account_id','IN',$ids],
-            ['open_time','>',strtotime('-3 days')]
+            ['account_id','IN',$ids],            
         ];
 
+        if(!$this->auth->isSuperAdmin()) $where[] = ['open_time','>',strtotime('-1 days')];
+
+        // dd($where,$this->auth->isSuperAdmin());
+
         $accountIds = DB::table('ba_account')->where($where)->column('account_id');
-        if(empty($accountIds)) $this->error('未找到可以修改的数据，请先确实在条件内[(待绑定/完成) + 开户三天内]');
+        if(empty($accountIds)) $this->error('未找到可以修改的数据，请先确实在条件内[(待绑定/完成) + 开户一天内]');
 
         $accountRechargeCIds = DB::table('ba_recharge')->whereIn('account_id',$accountIds)->column('account_id');
-        if(!empty($accountRechargeCIds)) $this->error('你选择的数据有充值需求，不可变更!'.implode(',',$accountRechargeCIds));
+        if(!empty($accountRechargeCIds)) $this->error('你选择的数据有充值需求，不可变更!');
         
+        (new \app\admin\services\demand\Bm($this->auth))->bmAllUnbinding($accountIds);
         $result = DB::table('ba_account')->whereIn('account_id',$accountIds)->update(['status'=>3,'operate_admin_id'=>$this->auth->id]);
+        
+
         if ($result !== false) {
             $this->success(__('Update successful'));
         } else {

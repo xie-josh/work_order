@@ -23,7 +23,8 @@ class AccountPendingRecycleTask extends Command
 
         $where = [
             ['account.status','=',4],
-            ['accountrequest_proposal.admin_id','IN',["165","171","194","220","221","225","233","256","257","268","278","292","368","374"]],
+            ['accountrequest_proposal.status','=',1],
+            ['accountrequest_proposal.admin_id','IN',["165","171","194","220","221","225","233","256","257","268","278","292","368","374","364"]],
             ['accountrequest_proposal.account_status','IN',[1,3]],
         ];
 

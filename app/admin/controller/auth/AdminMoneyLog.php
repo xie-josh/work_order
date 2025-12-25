@@ -227,7 +227,7 @@ class AdminMoneyLog extends Backend
                 if($status == 2 && $data['status'] == 1)
                 {
                     $money = bcadd((string)$adminMoney,(string)$companyData['money'],'2');
-                    if($money < 0) throw new \Exception("金额异常！请联系管理员！");
+                    if($companyData['prepayment_type'] == 2) if($money < 0) throw new \Exception("金额异常！请联系管理员！");
                     $money = Db::table('ba_company')->where('id',$companyId)->where('money',$companyData['money'])->update(['money'=>$money]);
                     if($money) DB::table('ba_admin_money_log')->where('id',$row->id)->update(['status'=>$data['status']]);
                     $result = true;

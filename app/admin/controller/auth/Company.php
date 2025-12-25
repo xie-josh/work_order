@@ -272,12 +272,13 @@ class Company extends Backend
                     $this->error($e->getMessage());
                 }
             }
-
+    
             $user['username'] = $data['username']??'';
             $user['nickname'] = $data['nickname']??'';
-            DB::table('ba_admin')->where('company_id',$info['id'])->where('type',2)->update($user);
-            unset($data['nickname'],$data['username']);
-            
+            if($user){
+                DB::table('ba_admin')->where('company_id',$info['id'])->where('type',2)->update($user);
+                unset($data['nickname'],$data['username']);
+            }
 
             $openAccountNumber = $this->openAccountNumber($row['id']);
 

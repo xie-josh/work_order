@@ -222,8 +222,9 @@ class Account extends Backend
                 if(empty($company)) throw new \Exception("您没有归属公司，请联系管理员！");
 
                 $time = date('Y-m-d',time());
+                $account_count = count($data['list'])??0;
                 $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->whereDay('create_time',$time)->count();
-                if($openAccountNumber >= $accountNumber) throw new \Exception("今.开户数量已经不足，不能再提交开户需求,请联系管理员！");
+                if(($openAccountNumber + $account_count) > $accountNumber) throw new \Exception("今.开户数量已经不足，不能再提交开户需求,请联系管理员！");
 
                 $list = $data['list'];
                 $listData = [];
@@ -250,6 +251,14 @@ class Account extends Backend
                     if (preg_match('/[\x{4e00}-\x{9fa5}]/u', $v['name'])){
                         $errorList[] = ['name'=>$v['name'],'msg'=>'账户名称不能包含中文!'];
                         continue;
+                    }
+
+                    if(empty($v['currency']))
+                    {
+                        $v['currency'] = 'USD';
+                        // $errorList[] = ['name'=>$v['name'],'msg'=>'账户名称不能包含中文!'];
+                        // continue;
+
                     }
 
                     $bmList = $v['bes']??[];
@@ -294,6 +303,7 @@ class Account extends Backend
                     }
                     $listData[] = $v;
                 }
+                // dd($listData);
                 if(empty($listData)) $result = false;
                 else $result = DB::table('ba_account')->insertAll($listData);
 
@@ -756,7 +766,7 @@ class Account extends Backend
                      throw new \Exception($v[2].":【'电商'】,只能选择对应时区【8,5.5,-3,-6,7,-8,-9】");
                 }
 
-                $currency = $v[4];
+                $currency = empty($v[4])?"USD":$v[4];
                 // $isKeep = $v[5];
                 if($isKeep)$open_money =10;
                 else$open_money = 0;

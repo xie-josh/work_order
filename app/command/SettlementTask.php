@@ -44,7 +44,7 @@ class SettlementTask extends Command
             $v['admin_nickname'] = $adminCompanyList[$v['id']]??'未找到用户';
             $jobHandlerClassName = 'app\job\Settlement';
             $jobQueueName = 'Settlement';
-            Queue::later(1800, $jobHandlerClassName, $v, $jobQueueName);
+            Queue::later(3000, $jobHandlerClassName, $v, $jobQueueName);
         }
         
         $SETTLEMENT_DAYS = config('basics.SETTLEMENT_DAYS');
@@ -55,7 +55,7 @@ class SettlementTask extends Command
             $data['settlement_time'] = $time;
             $jobHandlerClassName = 'app\job\SettlementSummary';
             $jobQueueName = 'SettlementSummary';
-            Queue::later(1800, $jobHandlerClassName, $data, $jobQueueName);
+            Queue::later(3000, $jobHandlerClassName, $data, $jobQueueName);
         }
 
         // 在这里编写你的定时任务逻辑

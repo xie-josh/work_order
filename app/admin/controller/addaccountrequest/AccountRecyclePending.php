@@ -94,7 +94,7 @@ class AccountRecyclePending extends Backend
         }
         $res = DB::table('ba_account')
         ->alias('account')
-        ->field('accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.comment,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
+        ->field('account.admin_id account_admin_id,account.company_id,accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.comment,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
@@ -118,7 +118,20 @@ class AccountRecyclePending extends Backend
             $rechargeList = array_column($rechargeNum,'num','account_id');
             $bmList = array_column($bmNum,'num','account_id');
 
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+            $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
+            $adminNameArr = array_column($adminNameArr,'nickname','id');
+
+            
+
             foreach($dataList as &$v){
+                $companyId = $v['company_id'];
+                if($v['account_admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname_b = $companyAdminNameArr[$companyId]['nickname'];
+                else $nickname_b = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['account_admin_id']].")";
+                
+
+                $v['admin_b_nickname'] = $nickname_b;
                 $v['account'] = [
                     'account_id'=>$v['account_id'],
                     'idle_time'=>floor($v['idle_time'] / 86400),
@@ -253,20 +266,24 @@ class AccountRecyclePending extends Backend
         
         $query = DB::table('ba_account')
         ->alias('account')
-        ->field('accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname nickname_a,account.idle_time,accountrequest_proposal.total_consumption,admin_b.nickname nickname_b,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
+        ->field('account.admin_id account_admin_id,account.company_id,accountrequest_proposal.admin_id accountrequest_proposal_admin_id,accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,account.idle_time,accountrequest_proposal.total_consumption,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
-        ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
-        ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
+        // ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
+        // ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
+        // ->where('account.id','desc')
         ->where($where);
 
         if(!empty($whereOr)) $query = $query->where(function($query) use ($whereOr){ $query->whereOr($whereOr); });
         if(!empty($totalConsumption)) $query = $query->whereRaw("COALESCE(accountrequest_proposal.total_consumption, 0) + 0 > $totalConsumption");
-
         $statusValueList = config('basics.ACCOUNT_STATUS');
-        
         $total = $query->count(); 
 
         $acountStatusValue = [0=>'异常',1=>'活跃',2=>'封户',3=>'待支付'];
+
+        $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+        $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+        $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
+        $adminNameArr = array_column($adminNameArr,'nickname','id');
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
@@ -293,17 +310,24 @@ class AccountRecyclePending extends Backend
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
 
             $data = $query->limit($offset, $batchSize)->select()->toArray();
-            
             $dataList=[];
             foreach($data as $v){
+                $companyId = $v['company_id'];
+                $nickname_b = '';
+                
+                if($v['account_admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname_b = $companyAdminNameArr[$companyId]['nickname'];
+                else $nickname_b = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['account_admin_id']].")";
+
+                $nickname_a = $adminNameArr[$v['accountrequest_proposal_admin_id']]??'';
+
                 $dataList[] = [
                     $v['account_id'],
                     $v['serial_name'],
                     $v['bm'],
-                    $v['nickname_a'],
+                    $nickname_a,
                     floor($v['idle_time'] / 86400),
                     $v['total_consumption'],
-                    $v['nickname_b'],
+                    $nickname_b,
                     $acountStatusValue[$v['account_status']]??'未知状态',
                     $v['time_zone'],
                     $statusValueList[$v['status']]??'',
