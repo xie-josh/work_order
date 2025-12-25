@@ -778,7 +778,7 @@ class Consumption extends Backend
         $AllList = array_column($list['all'],'total_dollar','date_start');
         foreach($list['all'] AS $k => &$v)
         {
-             $money = round($dataList[$k]['money']??0, 2);
+             $v['money'] = round($dataList[$k]['money']??0, 2);
             //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
             //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
              $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
