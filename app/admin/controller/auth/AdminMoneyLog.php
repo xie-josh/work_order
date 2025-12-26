@@ -78,7 +78,7 @@ class AdminMoneyLog extends Backend
         $naickArr = Db::table('ba_admin')->where('type',2)->column('nickname','company_id');
         foreach($dataList as &$v){
             $v['nickname'] = $naickArr[$v['company_id']]??'';
-            $v['create_time'] = date($v['create_time'],time());
+            $v['create_time'] = date('Y-m-d',$v['create_time']);
         }
 
         $this->success('', [
