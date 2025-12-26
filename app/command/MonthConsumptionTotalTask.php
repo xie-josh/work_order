@@ -33,9 +33,12 @@ class MonthConsumptionTotalTask extends Command
                 $consumptionResult = DB::table('ba_account_consumption')
                 ->field('dollar,date_start')
                 ->where('company_id',$company_id)
+                ->whereNotNull('company_id')
                 ->where('date_start', '>=', $start)
                 ->where('date_start', '<', $end)
                 ->select()->toArray();
+
+                if(empty($consumptionResult)) continue;
         
                 // $result = DB::table('ba_rate')->where('company_id',$adminId)->order('create_time asc')->select()->toArray();
                 $result = DB::table('ba_rate')->where('company_id',$company_id)->order('create_time asc')->select()->toArray();
