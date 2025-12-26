@@ -40,7 +40,15 @@ class AccountReturn extends Backend
             $this->select();
         }
 
+        $tt = $this->request->param('tt');
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+        if($tt == 2)
+        {
+            $where[] = ['account_return_model.type','=',7];
+        }else{
+            $where[] = ['account_return_model.type','<>',7];
+        }
+
         $res = $this->model
             ->field($this->indexField)
             ->withJoin($this->withJoinTable, $this->withJoinType)
@@ -97,6 +105,61 @@ class AccountReturn extends Backend
         $this->error('操作失败！');
     }
 
+    public function pendingPaymentAudit(): void
+    {
+        $errorList = [];
+        if($this->request->isPost()){
+            $data = $this->request->post();
+            if(empty($data['ids']) || empty($data['status'])) $this->error('参数错误！');
+
+            $FacebookService = new \app\services\FacebookService();
+            
+
+            $list = $this->model->whereIn('id',$data['ids'])->select()->toArray();
+            if(empty($list)) $this->error('未找到相关数据！');
+
+            $resutn = false;
+            foreach($list as $v)
+            {   
+                if($data['status'] == 1)
+                {
+                    $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+                    ->alias('accountrequest_proposal')
+                    ->field('fb_bm_token.personalbm_token_ids,accountrequest_proposal.admin_id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
+                    ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+                    ->where('fb_bm_token.status',1)
+                    ->whereNotNull('fb_bm_token.token')
+                    ->whereIn('accountrequest_proposal.account_id',$v['account_id'])
+                    ->find();
+                    
+                    $accountrequestProposal['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['personalbm_token_ids']);
+                    // $accountrequestProposal['token'] = 'EAAhZBh8pf9x0BP63pLFGLDMdGSjq3uglLYNoa2ZCTDdyxne5OfdklWncjHR4Jq5HTPAXoL12b8t2oSVhba1FmUpRivKIJLakZArZByCNECljHKd8D4IKgd9GCvKpZCvUaCMG9lBOj36ZCXPmrhb1Hw7I149V5W2GemoNTy66BA3gGKdPWYb9WuwvJRU7dW';
+                    $result1 = $FacebookService->adAccounts($accountrequestProposal);
+
+                    if(!isset($result1['data']['account_status'])){
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'未获取到账户状态，请检查授权问题！'];
+                        continue;
+                    }
+
+                    if($result1['data']['account_status'] !=1){
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'账户状态{不是活跃}请检查！'];
+                        continue;
+                    }
+                }            
+
+                $resutn = $this->model->where('id',$v)->update(['status'=>$data['status'],'update_time'=>time()]);
+            }
+            
+
+            if($resutn){
+                $this->success('操作成功！',['error_List'=>$errorList]);
+            }else{
+                $this->error('操作失败！',['error_List'=>$errorList]);
+            }
+        }
+        $this->error('操作失败！');
+    }
+
 
     public function edit(): void
     {
@@ -114,7 +177,18 @@ class AccountReturn extends Backend
     {
         $where = [];
         set_time_limit(300);
+
+        $tt = $this->request->param('tt');
+
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        if($tt == 2)
+        {
+            $where[] = ['account_return_model.type','=',7];
+        }else{
+            $where[] = ['account_return_model.type','<>',7];
+        }
+
 
         $batchSize = 2000;
         $processedCount = 0;

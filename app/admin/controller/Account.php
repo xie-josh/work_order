@@ -135,6 +135,9 @@ class Account extends Backend
             //array_push($where,['account.status','in',[3,4]]);
             array_push($where,['account.status','in',[4]]);
         }
+        if(empty($order)){ $order = ['id'=>'desc'];}
+
+
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -142,7 +145,7 @@ class Account extends Backend
             ->where(function($query) use($whereOr){
                 $query->whereOr($whereOr);
             })
-            ->order('id','desc')//->find(); dd($this->model->getLastSql());
+            ->order($order)//->find(); dd($order$this->withJoinTable, $this->withJoinType,$this->model->getLastSql());
             ->paginate($limit);
         $dataList = $res->toArray()['data'];
         if($dataList){

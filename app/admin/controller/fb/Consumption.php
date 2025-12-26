@@ -672,6 +672,9 @@ class Consumption extends Backend
     {
         $data = $this->request->post();
         $companyId  = $data['id'];
+        $page   = $data['page']??0;
+        $limit  = $data['limit']??15;
+        $month  = $data['month']??1;
         $v = DB::table('ba_company')->field('*')->where(['id'=>$companyId])->find();
         $dataList = [];
         $thePreviousDayDollar = 0;
@@ -724,7 +727,7 @@ class Consumption extends Backend
         $where = [];
         // $alias = ['ba_admin_money_log'=>'admin_money_log'];
         // $order = ['id'=>"desc"];
-        $limit = 999;
+        // $limit = 999;
         array_push($where,['company_id','=',$companyId]);
         $res = DB::table('ba_admin_money_log')->where('status',1)->whereIn('type',[1,4])->where($where)->order('create_time desc')->select()->toArray();
 
@@ -744,6 +747,7 @@ class Consumption extends Backend
         $section = array_reverse($section);
         if(!empty($archived))foreach($archived as $kk =>&$vv)
         {
+            if($month == 1)if($kk == 5) break;
             $vv['date_start'] = str_replace("-", "年", $vv['date_start'])."月";
             $vv['yesterday_total_dollar'] = $vv['total_dollar'];
             array_unshift($list['all'], $vv);
@@ -800,31 +804,35 @@ class Consumption extends Backend
                     $v['suggestzui_money'] = 5000;
                 } 
              }
-             $v['money1'] = round($res[$k]['money']??0, 2);
-             $v['raw_money'] = round($res[$k]['raw_money']??0, 2);
+            //  $v['money1'] = round($res[$k]['money']??0, 2);
+            //  $v['raw_money'] = round($res[$k]['raw_money']??0, 2);
              $v['total_dollar'] = round($v['total_dollar'], 2);
              $v['yesterday_total_dollar'] = round($v['yesterday_total_dollar'], 2);
-             if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
-             else $v['create_time'] = '';
+            //  if(isset($res[$k]['create_time'])) $v['create_time'] = date('Y-m-d',$res[$k]['create_time']);
+            //  else $v['create_time'] = '';
         }
 
-        //追加付款记录
-        if(count($list['all']) < count($res))
-        {
-            $cha = count($res)-count($list['all']);
-            $last2 = array_splice($res, -$cha);
-            foreach($last2 AS $kk => $vxx)
-            {
-                $d['money1'] = round($vxx['money']??0, 2);
-                $d['raw_money'] = round($vxx['raw_money']??0, 2);
-                if(isset($last2[$kk]['create_time'])) $d['create_time'] = date('Y-m-d',$last2[$kk]['create_time']);
-                else $d['create_time'] = '';
-                array_push($list['all'],$d);
-            }
-        }
-
+        // //追加付款记录
+        // if(count($list['all']) < count($res))
+        // {
+        //     $cha = count($res)-count($list['all']);
+        //     $last2 = array_splice($res, -$cha);
+        //     foreach($last2 AS $kk => $vxx)
+        //     {
+        //         $d['money1'] = round($vxx['money']??0, 2);
+        //         $d['raw_money'] = round($vxx['raw_money']??0, 2);
+        //         if(isset($last2[$kk]['create_time'])) $d['create_time'] = date('Y-m-d',$last2[$kk]['create_time']);
+        //         else $d['create_time'] = '';
+        //         array_push($list['all'],$d);
+        //     }
+        // }
+        
         unset($list['day']);
         unset($list['month']);
+        $list['total'] = count($list['all']??0);
+        $offset = ($page - 1) * $limit;
+        $total = count($list);
+        $list['all']  = array_slice($list['all'], $offset, $limit);
         return $this->success('',$list);
     }
 

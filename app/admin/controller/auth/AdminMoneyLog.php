@@ -45,6 +45,7 @@ class AdminMoneyLog extends Backend
             $this->select();
         }
 
+        $compnay_id = $this->request->request('company_id');
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
          * 2. 以下的别名设置了主表别名，同时便于拼接查询参数等
@@ -59,6 +60,11 @@ class AdminMoneyLog extends Backend
             }
         }
 
+        if(!empty($compnay_id)){
+            array_push($where,['admin_money_log.company_id','=',$compnay_id]);
+            array_push($where,['admin_money_log.status','=',1]);
+            array_push($where,['admin_money_log.type','IN',[1,4]]);
+        }
 
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
