@@ -79,6 +79,8 @@ class AdminMoneyLog extends Backend
         foreach($dataList as &$v){
             $v['nickname'] = $naickArr[$v['company_id']]??'';
             $v['create_time'] = date('Y-m-d',$v['create_time']);
+            $v['raw_money'] = round($v['raw_money'], 2);
+            $v['money'] = round($v['money'], 2);
         }
 
         $this->success('', [
