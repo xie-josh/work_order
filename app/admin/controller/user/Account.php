@@ -751,6 +751,11 @@ class Account extends Backend
                     throw new \Exception("养户只针对于【电商/游戏】类型  请修改账户名称为".$v[2]."的投放类型,或改成非养户类型后重新导入");
                 } 
 
+                if(!in_array($v[0],['游戏','短剧','工具','电商']))
+                {
+                    throw new \Exception($v[2].":投放标签只支持【'游戏','短剧','工具','电商'】");
+                }
+
                 if(in_array($v[0],['游戏']) && !in_array($v[1],[5.5,7,8,-3,-7,-6]))
                 {
                      throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7,-6】");
@@ -984,7 +989,8 @@ class Account extends Backend
                 if($result['prepayment_type'] == 1){
                     $consumptionService = new \app\admin\services\fb\Consumption();
                     $totalDollar = $consumptionService->getTotalDollar($result['id']);                
-                    $companyMoney = DB::table('ba_admin_money_log')->where('company_id',$result['id'])->sum('money');
+                    // $companyMoney = DB::table('ba_admin_money_log')->whereIn('type',[1,4])->where('status',1)->where('company_id',$result['id'])->sum('money');
+                    $companyMoney = DB::table('ba_admin_money_log')->whereIn('type',[1,4])->where('status',1)->where('company_id',$result['id'])->sum('money');
 
                     $data['usedMoney'] = bcadd((string)$totalDollar,"0",2);
                     $data['usableMoney'] = bcsub((string)$companyMoney,(string)$data['usedMoney'],2);
