@@ -23,7 +23,7 @@ class AccountReturn extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['index','audit','export'];
+    protected array $noNeedPermission = ['index','audit','export','pendingPaymentAudit'];
 
     //protected bool|string|int $dataLimit = 'parent';
 
