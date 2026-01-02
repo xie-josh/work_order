@@ -718,7 +718,7 @@ class Consumption extends Backend
                 "date_start"=>$value2['date_start'],
             ];
         }
-        $list['day'] = array_reverse($list['day']);
+        $list['day'] = $list['day'];
         $list['all'] = $list['day']; //  array_slice($list['day'], 0, 3);
         // array_merge($list['month'],$list['day']);
         //---------------------------------------------------------------------------------------------
