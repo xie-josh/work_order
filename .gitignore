@@ -48,3 +48,6 @@ pnpm-debug.log*
 public
 .env
 config/queue.php
+/nginx
+docker-compose.yml
+Dockerfile
