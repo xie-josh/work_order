@@ -19,7 +19,7 @@ class Account extends Backend
     protected string|array $preExcludeFields = ['update_time', 'create_time'];
 
     protected string|array $quickSearchField = 'name';
-    protected array $noNeedPermission = ['index','add','edit','addAccountTeam','delAccountTeam','accountCountMoney','getAccountNumber','getExportProgress','export','importTemplate','import','needTotal','batchAdd'];
+    protected array $noNeedPermission = ['index','add','edit','addAccountTeam','delAccountTeam','accountCountMoney','getAccountNumber','getExportProgress','export','importTemplate','import','needTotal','batchAdd','getComapnyCard'];
 
 
     public function initialize(): void
@@ -292,6 +292,7 @@ class Account extends Backend
                     // else $data['is_keep'] = 0;
                     $v['admin_id'] = $this->auth->id;
                     $v['company_id']  = $company['id'];
+                    $v['aoam_id']     = $v['aoam_id']??0;
                     $v['create_time']  = time();
 
                     if($company['prepayment_type'] == 2){
@@ -1122,5 +1123,19 @@ class Account extends Backend
     //         DB::rollback();
     //     }        
     // }
+     //获取客户端公司申请卡列表
+     public function getComapnyCard()
+     {
+            $companyId = $this->auth->company_id;
+            if(empty($companyId)) $this->error('公司身份错误');
+            $result = DB::table('ba_company_join_account_card')
+                        ->alias('b')
+                        ->leftJoin('ba_account_opening_application_manage o','o.id=b.card_id')
+                        ->where('b.company_id',$companyId)
+                        ->where('b.is_show_card',1)
+                        ->select()
+                        ->toArray();
+            $this->success('',$result);
+      }
     
 }

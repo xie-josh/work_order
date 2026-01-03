@@ -150,6 +150,16 @@ class Account extends Backend
         $dataList = $res->toArray()['data'];
         if($dataList){
             
+            $channeResult = DB::table('ba_aoam_channel_relat')
+            ->alias('relat')
+            ->field('relat.aoam_id,admin.id,admin.nickname')
+            ->leftJoin('ba_admin admin','admin.id=relat.channel_id')
+            ->where('relat.status',1)
+            ->select()->toArray();
+            foreach($channeResult as $v)
+            {
+                $channeList[$v['aoam_id']][] = $v['nickname'];
+            }
 
             $cardsIds = array_filter(array_map(function($dataList) {
                 return $dataList['accountrequestProposal']['cards_id'] ?? null;
@@ -216,6 +226,7 @@ class Account extends Backend
                 }
                 $v['card_no_c'] = '';
                 if(!empty($v['accountrequestProposal']['cards_id'])) $v['card_no_c'] = $cardNo[$v['accountrequestProposal']['cards_id']]??'';
+                $v['channe_list'] = $channeList[$v['aoam_id']]??[];
             }
         }
         //$res->visible(['admin' => ['username']]);

@@ -7,6 +7,7 @@ use ba\Random;
 use think\facade\Db;
 use app\admin\model\user\Company as CompanyModel;
 use app\admin\model\Admin as AdminModel;
+use app\admin\model\CompanyJoinAccountCard;
 use think\facade\Cache;
 use app\common\controller\Backend;
 
@@ -174,6 +175,7 @@ class Company extends Backend
             $user['username'] = $data['username']??'';
             $user['nickname'] = $data['nickname']??'';
             $user['email'] = $data['email']??'';
+            $list = $data['list']??[];
             $rate = $data['rate']??0;
             $billRate = $data['bill_rate']??0;
             unset($data['password'],$data['username'],$data['nickname'],$data['rate'],$data['bill_rate']);
@@ -197,7 +199,7 @@ class Company extends Backend
             $this->model->startTrans();
             try {
                 $result             = $this->model->save($data);
-                $user['company_id'] = $this->model->id;
+                $company_id = $user['company_id'] = $this->model->id;
                 $validate = new \app\admin\validate\user\Admin;
                 $validate->scene('add')->check($user);
                 $user['salt']       = $salt;
@@ -210,6 +212,20 @@ class Company extends Backend
                     'group_id' => 7,
                 ];
                 Db::name('admin_group_access')->insert($groupAccess);
+                $CardModel = new CompanyJoinAccountCard();
+
+                //处理卡片关联
+                $dataList = [];
+                if(!empty($list))foreach($list as $k => $v)
+                {
+                    $dataList[] = [
+                        'company_id'=>$company_id,
+                        'card_id'=>$v['card_id'],
+                        'is_show_card'=>$v['is_show_card'],
+                        'is_open_card'=>$v['is_open_card']
+                    ];
+                }
+                $CardModel->saveAll($dataList);
 
                 //费率处理
                 if(isset($rate)&&!empty($rate))
@@ -257,7 +273,7 @@ class Company extends Backend
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
             $this->error(__('You have no permission'));
         }
-
+        
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
@@ -297,7 +313,8 @@ class Company extends Backend
             try {
                 $rate = $data['rate']??0;
                 $billRate = $data['bill_rate']??0;
-                unset($data['rate'],$data['bill_rate']);
+                $list = $data['list']??[];
+                unset($data['rate'],$data['bill_rate'],$data['list']);
                 $result = $row->save($data);
                  
                 if($result){
@@ -307,6 +324,21 @@ class Company extends Backend
                         DB::table('ba_admin')->where('company_id',$id)->update(['status'=>0]);
                     }
                 }
+                $CardModel = new CompanyJoinAccountCard();
+                  //处理卡片关联
+                  $dataList = [];
+                  if(!empty($list))foreach($list as $k => $v)
+                  {
+                       $arr = [
+                          'company_id'=>$info['id'],
+                          'card_id'=>$v['card_id'],
+                          'is_show_card'=>$v['is_show_card'],
+                          'is_open_card'=>$v['is_open_card'],
+                      ];
+                      if(!empty($v['id'])) $arr['id'] = $v['id'];
+                      $dataList[] =$arr;
+                  }
+                  $CardModel->saveAll($dataList);
                
 
                 //费率处理
@@ -361,6 +393,11 @@ class Company extends Backend
         $rateArr  = DB::table('ba_rate')->where('company_id',$info['id'])->order('create_time asc')->column('rate','company_id');//费率
         $billRateArr  = DB::table('ba_bill_rate')->where('company_id',$info['id'])->order('create_time asc')->column('bill_rate','company_id');//费率
         $adminUser  = DB::table('ba_admin')->where('company_id',$info['id'])->where('type',2)->find();//admin
+        $listArr  = DB::table('ba_company_join_account_card')->where('company_id',$info['id'])->order('create_time asc')->select()->toArray();//公司关联的卡片
+        $listArrcount  = DB::table('ba_company_join_account_card')->where('company_id',$info['id'])->count();//公司关联的卡片
+
+        $row['list'] = $listArr??[];
+        $row['list_count'] = $listArrcount??0;
         $row['rate'] = $rateArr[$info['id']]??0;
         $row['bill_rate'] = $billRateArr[$info['id']]??0;
         $row['username']  = $adminUser['username']??'';
@@ -424,6 +461,7 @@ class Company extends Backend
     {
         $this->error('功能暂停使用，请联系管理员！');
     }
+
 
 }
 
