@@ -98,7 +98,12 @@ class Company extends Backend
         if($dataList)foreach($dataList as &$v)
         {
                 $v['alias'] = $v['company_name'];
-                $v['rate']     =  ($rateArr[$v['id']]??0)*100;
+                $id = $v['id'] ?? null;
+                $rate = 0;
+                if ($id !== null && isset($rateArr[$id]) && is_numeric($rateArr[$id])) {
+                    $rate = $rateArr[$id];
+                }
+                $v['rate'] = $rate * 100;
                 $v['username'] =  $adminArr[$v['id']]['username']??'';    
                 $v['nickname'] =  $adminArr[$v['id']]['nickname']??'';     
                 $v['totalconsume'] = ROUND($consumptionArr[$v['id']]??0, 2);//总消耗
