@@ -26,7 +26,7 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['index','accountRefresh','bmList','editStatusAll','Export','getAccountrequestProposal','getExportProgress',"accountCardBind","accountCardBindDel","accountCardList","accountCardHandoff","allEditLabelRelevance","manageExport","getManageExportProgress","getCountBalance","allEditAccountName"];
+    protected array $noNeedPermission = ['index','accountRefresh','bmList','editStatusAll','Export','getAccountrequestProposal','getExportProgress',"accountCardBind","accountCardBindDel","accountCardList","accountCardHandoff","allEditLabelRelevance","manageExport","getManageExportProgress","getCountBalance","getCardplatform","allEditAccountName"];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -517,6 +517,19 @@ class AccountrequestProposal extends Backend
             'remark' => get_route_remark(),
         ];
     }
+    //获取卡平台
+    public function getCardplatform(): array
+    {
+       $res =  DB::table('ba_card_account')
+                ->field('a.id,b.platform')
+                ->alias('a')
+                ->leftJoin('ba_card_platform b','a.card_platform_id = b.id')
+                ->where('a.status',1)
+                ->select()
+                ->toArray();
+        $this->success('',['list'=>$res]);
+    }
+
 
     public function audit(): void
     {
