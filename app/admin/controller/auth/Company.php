@@ -394,10 +394,10 @@ class Company extends Backend
         $billRateArr  = DB::table('ba_bill_rate')->where('company_id',$info['id'])->order('create_time asc')->column('bill_rate','company_id');//费率
         $adminUser  = DB::table('ba_admin')->where('company_id',$info['id'])->where('type',2)->find();//admin
         $listArr  = DB::table('ba_company_join_account_card')->where('company_id',$info['id'])->order('create_time asc')->select()->toArray();//公司关联的卡片
-        $listArrcount  = DB::table('ba_company_join_account_card')->where('company_id',$info['id'])->count();//公司关联的卡片
-
+        $listArrcount  = DB::table('ba_company_join_account_card')->where('is_show_card',1)->where('company_id',$info['id'])->count();//公司关联的卡片
+        
         $row['list'] = $listArr??[];
-        $row['list_count'] = $listArrcount??0;
+        $row['count'] = $listArrcount??0;
         $row['rate'] = $rateArr[$info['id']]??0;
         $row['bill_rate'] = $billRateArr[$info['id']]??0;
         $row['username']  = $adminUser['username']??'';
