@@ -99,7 +99,7 @@ class Recharge extends Backend
                 // dd($adminNameArr);
                 foreach($dataList as &$v){
                     $companyId = $v['account']['company_id']??'';
-                    
+                    $v['account']['currency_number'] = ROUND($v['account']['currency_number']??0, 2);
                     $username = '';
                     if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $username = $companyAdminNameArr[$companyId]['nickname'];
                     else $username = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['admin_id']].")";
@@ -114,6 +114,7 @@ class Recharge extends Backend
                         $v['wk_type'] = 0;
                         $v['wk_comment'] = "";
                     }
+                    $v['fb_money'] = ROUND($v['fb_money']??0, 2);
                     //if(isset($v['accountrequestProposal']) && !in_array($v['accountrequestProposal']['bm_token_id'],[1,6,29,30,31,32])) $v['accountrequestProposal']['bm_token_id'] = null;
                 }
             }
