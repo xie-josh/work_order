@@ -744,8 +744,9 @@ class Account extends Backend
 
                 if(in_array($accountTypeId,[1,3]) && $v[5] == 1)
                 {
-                    $isKeep = 1;//---养户充值
-                    $isKeepCount++;
+                    throw new \Exception("暂不支持养户！");
+                    // $isKeep = 1;//---养户充值
+                    // $isKeepCount++;
                 } 
                 if(!in_array($accountTypeId,[1,3]) && $v[5] == 1)
                 {
