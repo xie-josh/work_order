@@ -60,6 +60,7 @@ class Index extends Backend
     public function index(): void
     {
         $adminInfo          = $this->auth->getInfo();
+        $adminInfo['company'] = DB::table('ba_company')->where('id',$adminInfo['company_id'])->value('company_name');
         $adminInfo['super'] = $this->auth->isSuperAdmin();
         unset($adminInfo['token'], $adminInfo['refresh_token']);
 
