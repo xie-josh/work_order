@@ -129,7 +129,7 @@ class FbAccountUpdate
                     ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
                 }
                 
-                $accountIds2 = DB::table('ba_accountrequest_proposal')->where('account_status',1)->where('affiliation_admin_id',99)->whereIn('account_id',$accountIds)->column('account_id');
+                $accountIds2 = DB::table('ba_accountrequest_proposal')->where('account_status',1)->whereIn('account_id',$accountIds)->column('account_id');
                 if(!empty($accountIds2)) $this->accountClear($accountIds2);
 
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
@@ -180,26 +180,14 @@ class FbAccountUpdate
 
         $recharge = (new \app\admin\model\demand\Recharge());
         foreach($accountIds as $accountId){
-            DB::startTrans();
-            $amount = "0";
-            $usedMoney = 0;
-            $accountMoney = 0;
             $id = 0;
-            $rechargeList = [];
             $accountClear = $recharge->order('id','desc')->field('type,admin_id,status,account_name')->where('account_id',$accountId)->find();
             if(empty($accountClear)) continue;
-            $usedMoney = DB::table('ba_admin')->where('id',$accountClear['admin_id'])->value('used_money');
-            $accountMoney = DB::table('ba_account')->where('account_id',$accountId)->value('money');
             if(in_array($accountClear['type'],[1,2]))
             {
-                $rechargeResult = $recharge->where('status',0)->field('id,account_id,type,number')->where('account_id',$accountId)->select()->toArray();
-                $rechargeList = array_column($rechargeResult,'id');
-                foreach($rechargeResult as $v)
-                {
-                    if($v['type'] == 1) $amount = bcadd((string)$v['number'],$amount,2);
-                }
+                $account = DB::table('ba_account')->where('account_id',$accountId)->field('money,team_id')->find();                
 
-                if(!empty($accountMoney))
+                if(!empty($account) && $account['money'] > 1)
                 {
                     $data = [
                         "type" => "3",
@@ -207,29 +195,15 @@ class FbAccountUpdate
                         "account_id" => $accountId,
                         "admin_id" => $accountClear['admin_id'],
                         "account_name" => $accountClear['account_name'],
-                        // 'create_time'=>time()
+                        "add_operate_user"=>1,
+                        "team_id"=> $account['team_id'],
+                        'create_time'=>time()
                     ];
                     $id = $recharge->insertGetId($data);
+                    if(!empty($id)) $this->rechargeJob($id);
                 }
-            }else{
-                continue;
             }
-            if(!empty($rechargeList)) $recharge->whereIn('id',$rechargeList)->update(['status'=>2,'update_time'=>time()]);
-
-            if($amount > 0){
-                $result = DB::table('ba_admin')->where('id',$accountClear['admin_id'])->where('used_money',$usedMoney)->dec('used_money',$amount)->update();
-                if($result){
-                    //if(!empty($id)) $this->rechargeJob($id);
-                    DB::commit();
-                }else{
-                    DB::rollback();
-                }
-            }else{
-                //if(!empty($id)) $this->rechargeJob($id);
-                DB::commit();
-            }   
         }        
-        
         return true;
     }
 
@@ -237,7 +211,7 @@ class FbAccountUpdate
     {        
         $jobHandlerClassName = 'app\job\AccountSpendDelete';
         $jobQueueName = 'AccountSpendDelete';
-        Queue::later(60, $jobHandlerClassName, ['id'=>$id], $jobQueueName);        
+        Queue::later(3600, $jobHandlerClassName, ['id'=>$id], $jobQueueName);        
         return true;
     }
 
