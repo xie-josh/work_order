@@ -747,10 +747,9 @@ class Consumption extends Backend
         $section = array_reverse($section);
         if(!empty($archived))foreach($archived as $kk =>&$vv)
         {
-            
+            if($month == 1)if($kk == 5) break;
             $vv['date_start'] = str_replace("-", "年", $vv['date_start'])."月";
             $vv['yesterday_total_dollar'] = $vv['total_dollar'];
-            if($month == 1)if($kk > 5) $vv['sign'] = 1;
             array_unshift($list['all'], $vv);
         }
         //跑出汇率
@@ -771,8 +770,6 @@ class Consumption extends Backend
                     $v['rate'] =  round($v['total_dollar']*$vv['rate'], 2);
                  }
              }
-             //删除标记
-             if(isset($v['sign'])) unset($list['all'][$k]);
         }
         //合计处理
         $sunAllData =[];
