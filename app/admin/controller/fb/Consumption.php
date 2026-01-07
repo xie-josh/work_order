@@ -777,7 +777,7 @@ class Consumption extends Backend
         $sunAllData['total_dollar'] = round(array_sum(array_column($list['all'], 'total_dollar')), 2)??0;
         $sunAllData['yesterday_total_dollar'] = $sunAllData['total_dollar']??0;
         $sunAllData['date_start'] = "合计";
-        $shiji =  bcsub((string)$sunAllData['total_dollar'],(string)$sunAllData['rate'],'2');
+        $shiji =  bcadd((string)$sunAllData['total_dollar'],(string)$sunAllData['rate'],'2');
         array_unshift($list['all'], $sunAllData); 
         $AllList = array_column($list['all'],'total_dollar','date_start');
         foreach($list['all'] AS $k => &$v)
