@@ -773,22 +773,24 @@ class Consumption extends Backend
         }
         //合计处理
         $sunAllData =[];
-        $sunAllData['rate'] = round(array_sum(array_column($list['all'], 'rate')), 2);
-        $sunAllData['total_dollar'] = round(array_sum(array_column($list['all'], 'total_dollar')), 2);
-        $sunAllData['yesterday_total_dollar'] = $sunAllData['total_dollar'];
+        $sunAllData['rate'] = round(array_sum(array_column($list['all'], 'rate')), 2)??0;
+        $sunAllData['total_dollar'] = round(array_sum(array_column($list['all'], 'total_dollar')), 2)??0;
+        $sunAllData['yesterday_total_dollar'] = $sunAllData['total_dollar']??0;
         $sunAllData['date_start'] = "合计";
-
+        $shiji =  bcsub((string)$sunAllData['total_dollar'],(string)$sunAllData['rate'],'2');
         array_unshift($list['all'], $sunAllData); 
         $AllList = array_column($list['all'],'total_dollar','date_start');
         foreach($list['all'] AS $k => &$v)
         {
+             if(!isset($dataList[$k]['money'])) $dataList[$k]['money'] = 0;
              $v['money'] = round($dataList[$k]['money']??0, 2);
              if($v['money'] == 0) $v['money'] = '';
             //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
             //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
-             $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
+            //  $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
              if($k == 0)
              {
+                $v['remaining_amount'] = round($dataList[$k]['money']-$shiji, 2);       //可用金额
                 $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
                 $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
 
