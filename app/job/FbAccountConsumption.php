@@ -34,7 +34,7 @@ class FbAccountConsumption
             $accountId = $params['account_id'];
             $businessId = $params['business_id']??'';
             $currency  =  $params['currency']??'';
-            $params['stort_time'] = date('Y-m-d', strtotime('-15 days'));
+            $params['stort_time'] = date('Y-m-d', strtotime('-7 days'));
             // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = date('Y-m-d',time());
 
