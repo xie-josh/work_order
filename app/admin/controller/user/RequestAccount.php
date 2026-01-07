@@ -137,7 +137,7 @@ class RequestAccount extends Backend
        
         $res = DB::table('ba_account')
         ->alias('account')
-        ->field('account.*,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status accountrequest_proposal_status,accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,accountrequest_proposal.bm,accountrequest_proposal.bm_token_id')
+        ->field('account.*,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status accountrequest_proposal_status,accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,accountrequest_proposal.bm,accountrequest_proposal.bm_token_id,accountrequest_proposal.time_zone aP_time_zone')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         // // ->leftJoin('ba_admin admin','admin.id=account.admin_id')
         // ->leftJoin('ba_admin admin','admin.company_id=account.company_id')
@@ -202,6 +202,7 @@ class RequestAccount extends Backend
                 ];
                 $v['bm_count'] = $this->getBmCount($v['account_id']);
                 $v['business_id'] = $fbBmTokenList[$v['bm_token_id']]??'';
+                $v['time_zone'] = $v['aP_time_zone'];
             }
         }
 
