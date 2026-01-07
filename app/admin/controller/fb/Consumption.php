@@ -796,10 +796,12 @@ class Consumption extends Backend
 
                 $thisDay = $AllList[date('Y-m-d', time())]??0;   
                 $yesterDay = $AllList[date('Y-m-d', strtotime('-1 day'))]??0;
-                $temp = $v['remaining_amount'] - $thisDay - $yesterDay;
-                if($temp<$yesterDay)
+                $temp = $v['remaining_amount'];
+                $towConsume = $yesterDay * 2; //计算今明两天的消耗
+                if($temp<$towConsume)
                 {
-                    $v['atLeast_money']    = floor($yesterDay / 1000) * 1000;
+                    $lowmoney = $towConsume - $temp;
+                    $v['atLeast_money']    = floor($lowmoney / 1000) * 1000 + 1000;
                     $v['suggestzui_money'] = $v['atLeast_money']+5000;
                 }else{
                     $v['atLeast_money']    = 0;
