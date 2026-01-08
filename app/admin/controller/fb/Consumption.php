@@ -747,9 +747,9 @@ class Consumption extends Backend
         $section = array_reverse($section);
         if(!empty($archived))foreach($archived as $kk =>&$vv)
         {
-            if($month == 1)if($kk == 5) break;
             $vv['date_start'] = str_replace("-", "年", $vv['date_start'])."月";
             $vv['yesterday_total_dollar'] = $vv['total_dollar'];
+            if($month == 1)if($kk >= 5)  $vv['sign'] = 1;
             array_unshift($list['all'], $vv);
         }
         //跑出汇率
@@ -777,6 +777,12 @@ class Consumption extends Backend
         $sunAllData['total_dollar'] = round(array_sum(array_column($list['all'], 'total_dollar')), 2)??0;
         $sunAllData['yesterday_total_dollar'] = $sunAllData['total_dollar']??0;
         $sunAllData['date_start'] = "合计";
+
+        foreach($list['all'] AS $k => &$v)
+        {
+            if(isset($v['sign'])) unset($list['all'][$k]);  //删除标记sign
+        }
+
         $shiji =  bcadd((string)$sunAllData['total_dollar'],(string)$sunAllData['rate'],'2');
         array_unshift($list['all'], $sunAllData); 
         $AllList = array_column($list['all'],'total_dollar','date_start');
