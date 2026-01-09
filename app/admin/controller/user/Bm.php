@@ -246,15 +246,15 @@ class Bm extends Backend
 
                 foreach($bmArr as $v)
                 {
-
                     $bm = DB::table('ba_bm')->where('account_id',$v['account_id'])->where('bm',$v['bm'])
                     ->where(function ($quant){
                         $quant->whereOr([['status','=',0],['status','=',1]]);
                     })
+                    ->lock(true) // 使用行锁
                     ->where([['dispose_type','=',0]])->value('bm');
 
                     if(!empty($bm)) {
-                        $error[] = ['bm'=>'(账户)'.$v['account_id'].' - (BM)'.$v['bm'],'msg'=>'该BM已经提交过需求，不需要重复提交!'];
+                        $error[] = ['bm'=>'(账户)'.$v['account_id'].' - (BM)'.$v['bm'],'msg'=>'该BM解绑需求已经提交过需求，不需要重复提交!'];
                         continue;
                     }
 
