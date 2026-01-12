@@ -44,6 +44,8 @@ class AccountReturn extends Backend
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         if($tt == 2)
         {
+            $where[] = ['account.money','>',0];
+            $where[] = ['accountrequestProposal.spend_cap','<>',DB::Raw('accountrequestProposal.amount_spent')];
             $where[] = ['account_return_model.type','=',7];
         }else{
             $where[] = ['account_return_model.type','<>',7];

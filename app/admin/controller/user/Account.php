@@ -640,6 +640,7 @@ class Account extends Backend
         $result = false;
         try {
             $file = $this->request->file('file');
+            $aoamId = $this->request->post('aoamId');
             
             //$path = '/www/wwwroot/workOrder.test/public/storage/excel';
             $path = $_SERVER['DOCUMENT_ROOT'].'/storage/excel';
@@ -653,39 +654,11 @@ class Account extends Backend
             $excel = new \Vtiful\Kernel\Excel($config);
 
             $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
-            $accountType = config('basics.account_type');
-            $accountTypeList = array_flip($accountType);
+            // $accountType = config('basics.account_type');
+            // $accountTypeList = array_flip($accountType);
 
 
-            $timeList = [
-                "-12"=>'GMT -12:00',
-                "-11"=>'GMT -11:00',
-                "-10"=>'GMT -10:00',
-                "-9"=>'GMT -9:00',
-                "-8"=>'GMT -8:00',
-                "-7"=>'GMT -7:00',
-                "-6"=>'GMT -6:00',
-                "-5"=>'GMT -5:00',
-                "-4"=>'GMT -4:00',
-                "-3"=>'GMT -3:00',
-                "-2"=>'GMT -2:00',
-                "-1"=>'GMT -1:00',
-                "0"=>'GMT 0:00',
-                "1"=>'GMT +1:00',
-                "2"=>'GMT +2:00',
-                "3"=>'GMT +3:00',
-                "3.5"=>'GMT +3:30',
-                "4"=>'GMT +4:00',
-                "5"=>'GMT +5:00',
-                "5.5"=>'GMT +5:30',
-                "6"=>'GMT +6:00',
-                "7"=>'GMT +7:00',
-                "8"=>'GMT +8:00',
-                "9"=>'GMT +9:00',
-                "10"=>'GMT +10:00',
-                "11"=>'GMT +11:00',
-                "12"=>'GMT +12:00',
-            ];
+            $timeList = config('basics.TIME_ZONE');
 
             unset($fileObject[0],$fileObject[1],$fileObject[2]);
             $authAdminId = $this->auth->id;
@@ -729,6 +702,39 @@ class Account extends Backend
             $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->whereDay('create_time',$time)->count();
             if($accountNumber < ($countNumber + $openAccountNumber) && $this->auth->id != 1) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
  
+
+            $cardWhere = [
+                ['a.is_show_card','=',1],
+                ['a.is_open_card','=',1],
+                ['a.company_id','=',$this->auth->company_id],
+                ['a.card_id','=',$aoamId],
+
+            ];
+            $companyJoinAccountCard = DB::table('ba_company_join_account_card')->alias('a')->leftJoin('ba_account_opening_application_manage b','a.card_id=b.id')->where($cardWhere)->find();
+            if(empty($companyJoinAccountCard)) throw new \Exception("该卡片未开启！");
+
+            // $accountOpeningApplicationManage = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->field('id,industry_ids,currency_list')->find();
+            // if(!empty($accountOpeningApplicationManage['currency_list'])) $currencyList = explode(',',$accountOpeningApplicationManage['currency_list']);
+            
+            $industryList = [];
+            $timeZoneList = [];
+            $currencyList = [];
+            $industryResult = [];
+            if(!empty($companyJoinAccountCard['currency_list'])) $currencyList = explode(',',$companyJoinAccountCard['currency_list']);
+            if(!empty($companyJoinAccountCard['industry_ids'])) $industryResult = DB::table('ba_industry')->field('id,name,time_zone_list')->where('status',1)->whereIn('id',explode(',',$companyJoinAccountCard['industry_ids']))->select()->toArray();
+
+            $industryList = array_column($industryResult,'name');
+            $accountTypeList = array_column($industryResult,'id','name');
+
+            foreach($industryResult as &$v)
+            {
+                if(!empty($v['time_zone_list'])) $v['time_zone_list'] = explode(',',$v['time_zone_list']);
+                else $v['time_zone_list'] = [];
+
+                $timeZoneList[$v['name']] = $v['time_zone_list'];
+            }
+            
+
             $notMoneyAdminList = explode(',',env('CACHE.NOT_MONEY_admin',''));
             $data = [];
             $isKeepCount = 0;
@@ -736,44 +742,48 @@ class Account extends Backend
                 $accountTypeId = $accountTypeList[$v[0]]??'';
                 $time = $timeList[(String)$v[1]]??'';
                 $name = $v[2];
-                 $isKeep = 0;
+                $isKeep = 0;
+                $currency = empty($v[4])?"USD":$v[4];
                 // $adminId = empty($adminId)?($v[5]??0):$adminId;
 
                 if(in_array($adminId,$notMoneyAdminList) && !empty($v[3])) $money = $v[3];
                 else $money = 0;
 
-                if(in_array($accountTypeId,[1,3]) && $v[5] == 1)
+                // if(in_array($accountTypeId,[1,3]) && $v[5] == 1)
+                if($v[5] == 1)
                 {
                     throw new \Exception("暂不支持养户！");
                     // $isKeep = 1;//---养户充值
                     // $isKeepCount++;
                 } 
-                if(!in_array($accountTypeId,[1,3]) && $v[5] == 1)
-                {
-                    throw new \Exception("养户只针对于【电商/游戏】类型  请修改账户名称为".$v[2]."的投放类型,或改成非养户类型后重新导入");
-                } 
+                // if(!in_array($accountTypeId,[1,3]) && $v[5] == 1)
+                // {
+                //     throw new \Exception("养户只针对于【电商/游戏】类型  请修改账户名称为".$v[2]."的投放类型,或改成非养户类型后重新导入");
+                // } 
+                if(!in_array($v[0],$industryList)) throw new \Exception($v[2].":投放行业不支持！");
+                
+                // dd($time,$timeZoneList);
+                if(!in_array($time,$timeZoneList[$v[0]])) throw new \Exception($v[2].":该行业对应时区暂未开放！");
+                if(!in_array($currency,$currencyList)) throw new \Exception($v[2].":该币种暂未开放！");
 
-                if(!in_array($v[0],['游戏','短剧','工具','电商']))
-                {
-                    throw new \Exception($v[2].":投放标签只支持【'游戏','短剧','工具','电商'】");
-                }
+                // foreach()
 
-                if(in_array($v[0],['游戏']) && !in_array($v[1],[5.5,7,8,-3,-7,-6]))
-                {
-                     throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7,-6】");
-                }
+                // if(in_array($v[0],['游戏']) && !in_array($v[1],[5.5,7,8,-3,-7,-6]))
+                // {
+                //      throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7,-6】");
+                // }
 
-                if(in_array($v[0],['短剧','工具']) && !in_array($v[1],[5.5,7,8,-3,-7]))
-                {
-                     throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7】");
-                }
+                // if(in_array($v[0],['短剧','工具']) && !in_array($v[1],[5.5,7,8,-3,-7]))
+                // {
+                //      throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7】");
+                // }
 
                 // if(in_array($v[0],['电商']) && !in_array($v[1],[8,5.5,-3,-6,-7,-8,-9]))
                 // {
                 //      throw new \Exception($v[2].":【'电商'】,只能选择对应时区【8,5.5,-3,-6,7,-8,-9】");
                 // }
 
-                $currency = empty($v[4])?"USD":$v[4];
+                
                 // $isKeep = $v[5];
                 if($isKeep)$open_money =10;
                 else$open_money = 0;
@@ -788,8 +798,7 @@ class Account extends Backend
                         $i++;  
                     }else{ break; }
                 }
-           
-                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) ) continue;
+                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) ) throw new \Exception($v[$i]."缺少参数[行业-时区-账户名称-绑定邮箱]！");
 
                 $d = [
                     'name'=>$name,
@@ -806,6 +815,7 @@ class Account extends Backend
                     'currency'=>$currency,
                     'type'=>$accountTypeId,
                     'is_keep'=>$isKeep, 
+                    'aoam_id'=>$aoamId,
                     'create_time'=>time()
                 ];
                 $data[] = $d;
@@ -1131,11 +1141,28 @@ class Account extends Backend
             if(empty($companyId)) $this->error('公司身份错误');
             $result = DB::table('ba_company_join_account_card')
                         ->alias('b')
+                        ->field('b.*,o.*,o.industry_ids')
                         ->leftJoin('ba_account_opening_application_manage o','o.id=b.card_id')
                         ->where('b.company_id',$companyId)
                         ->where('b.is_show_card',1)
                         ->select()
                         ->toArray();
+            
+
+            foreach($result as &$v)
+            {
+                if(empty($v['industry_ids'])) $v['industry_ids'] = [];
+                else $v['industry_ids'] = array_values(array_unique(array_filter(array_map('intval', explode(',', $v['industry_ids'])), fn($v) => $v !== 0)));
+                
+                $industry = DB::table('ba_industry')->where('status',1)->whereIn('id',$v['industry_ids'])->field('id,name')->select()->toArray();
+                $v['industry_ids'] = array_column($industry,'id');
+                $v['industry_name'] = array_column($industry,'name');
+                
+                if(empty($v['currency_list'])) $v['currency_list'] = [];
+                else $v['currency_list'] = explode(',',$v['currency_list']);
+                
+            }
+                        
             $this->success('',$result);
       }
     

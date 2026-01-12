@@ -1,6 +1,6 @@
 <?php
 
-namespace app\admin\controller;
+namespace app\admin\controller\user;
 
 use Throwable;
 use app\common\controller\Backend;
@@ -24,7 +24,7 @@ class AccountOpeningApplicationManage extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = [];
+    protected array $noNeedPermission = ['edit'];
 
     //protected bool|string|int $dataLimit = 'parent';
 

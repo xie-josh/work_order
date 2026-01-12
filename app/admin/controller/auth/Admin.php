@@ -73,6 +73,7 @@ class Admin extends Backend
         $billAateArr = [];
         if($type == 2){
             array_push($where,['admin.type','=',2]); 
+            array_push($where,['admin.status','=',1]);
             $rateArr      = DB::table('ba_rate')->order('create_time asc')->column('rate','company_id');//费率
             $billAateArr  = DB::table('ba_bill_rate')->order('create_time asc')->column('bill_rate','company_id');//入账手续费率
         }
@@ -148,6 +149,7 @@ class Admin extends Backend
 
             foreach($dataList as &$v){
                 $v['username'] = $v['nickname'].'('.($proposalList[$v['id']]??0).')';
+                $v['channel_limit'] = $v['channel_limit']??1;
             }
         }
 
@@ -168,6 +170,8 @@ class Admin extends Backend
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
+            $list = $data['list']??[];
+            unset($data['list']);
             if (!$data) {
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
@@ -208,8 +212,18 @@ class Admin extends Backend
                     }
                     Db::name('admin_group_access')->insertAll($groupAccess);
                 }
+               //处理卡片关联
+               if(!empty($list))foreach($list as $k => $v)
+               {
+                   $sgin = [
+                       'aoam_id'=>$v['aoam_id'],
+                       'channel_id'=>$this->model->id,
+                       'status'=>$v['status']
+                   ];
+                   DB::table('ba_aoam_channel_relat')->insert($sgin);
+               }
                 // //费率处理
-                // if(isset($data['rate'])&&!empty($data['rate']))
+                // if(isset($data['rate'])&&!empty($data['rate']
                 // {
                 //     $inserData  = ['create_time'=>date('Y-m-d',time()),'admin_id'=>$this->model->id,'rate'=>$data['rate']];
                 //     DB::table('ba_rate')->insert($inserData);
@@ -234,7 +248,8 @@ class Admin extends Backend
      * @throws Throwable
      */
     public function edit($id = null): void
-    {
+    {   
+        $id = input('id');
         $row = $this->model->find($id);
         if (!$row) {
             $this->error(__('Record not found'));
@@ -247,6 +262,8 @@ class Admin extends Backend
 
         if ($this->request->isPost()) {
             $data = $this->request->post();
+            $list = $data['list']??[];
+            unset($data['list']);
             if (!$data) {
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
@@ -296,6 +313,21 @@ class Admin extends Backend
             Db::name('admin_group_access')
                 ->where('uid', $id)
                 ->delete();
+
+
+            if(!empty($list))foreach($list as $k => $v)
+            {
+                 $arr = [
+                    'aoam_id'=> $v['aoam_id'],
+                    'status'=> $v['status'],
+                ];
+                if(!empty($v['id'])){
+                    DB::table('ba_aoam_channel_relat')->where('id',$v['id'])->update($arr);
+                }else{
+                    $arr['channel_id'] = $id;
+                    DB::table('ba_aoam_channel_relat')->insert($arr);
+                }
+            }
 
             $data   = $this->excludeFields($data);
             $result = false;
