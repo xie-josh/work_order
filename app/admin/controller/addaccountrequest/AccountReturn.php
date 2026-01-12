@@ -149,7 +149,7 @@ class AccountReturn extends Backend
                     }
                 }            
 
-                $resutn = $this->model->where('id',$v)->update(['status'=>$data['status'],'update_time'=>time()]);
+                $resutn = $this->model->where('id',$v['id'])->update(['status'=>$data['status'],'update_time'=>time()]);
             }
             
 
