@@ -75,7 +75,17 @@ class Announcement extends Backend
         $data['account_status_modify']    = DB::table('ba_account_return')->where('status',0)->where('type','<>',7)->count();
         $data['recharge']    = DB::table('ba_recharge')->where('status',0)->whereIn('type',[1,2])->count();
         $data['bm_up']    = DB::table('ba_bm')->whereIn('status',[0,1])->where('dispose_type',0)->count();
-        $data['pending_payment_audit']    = DB::table('ba_account_return')->where('status',0)->where('type','=',7)->count();
+        $where = [
+            ['account.money','>',0],
+            ['accountrequestProposal.spend_cap','<>',DB::Raw('accountrequestProposal.amount_spent')],
+            ['accountReturn.status','=',0],
+            ['accountReturn.type','=',7],
+        ];
+        $data['pending_payment_audit']    = DB::table('ba_account_return')->alias('accountReturn')
+        ->leftJoin('ba_account account','account.account_id=accountReturn.account_id')
+        ->leftJoin('ba_accountrequest_proposal accountrequestProposal','accountrequestProposal.account_id=accountReturn.account_id')->where($where)->count();
+
+
         $data['fb_bm_expired']    = DB::table('ba_fb_personalbm_token')->where([
             ['expired_time','<',date("Y-m-d",strtotime("+6 day"))],
             ['status','=',1]

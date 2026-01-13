@@ -934,6 +934,9 @@ class Consumption extends Backend
         array_push($where,['date_start','>=',$startTime]);
         array_push($where,['date_stop','<=',$endTime]);
         if(!empty($companyId)) array_push($where,['account_consumption.company_id','=',$companyId]);
+
+        //测试
+        // array_push($where,['account_consumption.account_id','=','614862981209237']);
        
         $query =  $this->model
         ->alias('account_consumption')        
@@ -1002,6 +1005,10 @@ class Consumption extends Backend
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];
+
+            $accountIds = array_unique(array_column($data,'account_id'));
+            $accountNameList = $this->accountNameList($accountIds);
+
             foreach($data as $v){
                 
                 // if($isCount != 1 && !empty($v['account_open_time'])) $openTime = date('Y-m-d',$v['account_open_time']);
@@ -1046,9 +1053,29 @@ class Consumption extends Backend
                             }
                         }
                     }
+                }else{
+                    
+                    if(isset($accountNameList[$v['account_id']]))
+                    {
+                        $dd = $accountNameList[$v['account_id']];
+
+                        $openTime = $v['account_open_time']??'';
+                        if(!empty($openTime) && $v['date_start'] >= date("Y-m-d",$openTime))
+                        {
+                            $serialName = $v['serial_name'];
+                        }else{
+                            // dd($v,$accountNameList[$v['account_id']]);
+                            foreach($dd as $item2)
+                            {
+                                if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_stop']){
+                                    $serialName = $item2['name'];
+                                }
+                            }
+                        }
+                    }         
                 }
                 // dd($accountIskeepList['411380995335659']);
-                
+                // if($v['account_id'] == '614862981209237') dd($accountNameList[$v['account_id']],$serialName,$data);
                 $dataList[] = [
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,                    
