@@ -39,7 +39,7 @@ class FbAccountConsumptionTest2
             $params['stop_time'] = date('Y-m-d',time());
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
-            $this->fbSpendCap($params);
+            // $this->fbSpendCap($params);
 
             // if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             // else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
@@ -68,18 +68,18 @@ class FbAccountConsumptionTest2
             }
             
             if(empty($result) || $result['code'] == 5){
-                $accountrequestProposal = DB::table('ba_accountrequest_proposal')
-                ->field('accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.card_status')
-                ->alias('accountrequest_proposal')
-                ->where('accountrequest_proposal.account_id',$accountId)
-                ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
-                ->find();
-                DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['account_status'=>0,'processing_status'=>0,'pull_account_status'=>date('Y-m-d H:i',time())]);
-                if(!empty($accountrequestProposal) && $accountrequestProposal['is_cards'] == 0 && $accountrequestProposal['card_id'] && $accountrequestProposal['card_status'] != 'frozen'){
-                    $result = (new CardService($accountrequestProposal['cards_account_id']))->cardFreeze(['card_id'=>$accountrequestProposal['card_id']]);
-                    if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$accountrequestProposal['card_id'])->update(['card_status'=>$result['data']['cardStatus']]);
-                }
-                (new \app\admin\services\card\Cards())->allCardFreeze($accountId);
+                // $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+                // ->field('accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,cards_info.card_id,cards_info.account_id cards_account_id,cards_info.card_status')
+                // ->alias('accountrequest_proposal')
+                // ->where('accountrequest_proposal.account_id',$accountId)
+                // ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
+                // ->find();
+                // DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update(['account_status'=>0,'processing_status'=>0,'pull_account_status'=>date('Y-m-d H:i',time())]);
+                // if(!empty($accountrequestProposal) && $accountrequestProposal['is_cards'] == 0 && $accountrequestProposal['card_id'] && $accountrequestProposal['card_status'] != 'frozen'){
+                //     $result = (new CardService($accountrequestProposal['cards_account_id']))->cardFreeze(['card_id'=>$accountrequestProposal['card_id']]);
+                //     if(isset($result['data']['cardStatus'])) DB::table('ba_cards_info')->where('card_id',$accountrequestProposal['card_id'])->update(['card_status'=>$result['data']['cardStatus']]);
+                // }
+                // (new \app\admin\services\card\Cards())->allCardFreeze($accountId);
                 return true;
             }
             

@@ -772,9 +772,9 @@ class RequestAccount extends Backend
 
             $result = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$list)->update(['status'=>94,'recycle_type'=>$recycleType,'recycle_date'=>date('Y-m-d H:i:s',time())]);
 
-            $deleteTime = DB::table('ba_company')->where('id',$this->auth->company_id)->value('delete_time');
+            // $deleteTime = DB::table('ba_company')->where('id',$this->auth->company_id)->value('delete_time');
 
-            $this->batchReset($list,$deleteTime);
+            $this->batchReset($list,259200);
             $this->bmAllUnbinding($list);
 
             if ($result !== false) {
