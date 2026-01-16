@@ -96,12 +96,12 @@ class RequestAccount extends Backend
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 1){
                 array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
-                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,99,2,6,4,5]]);
                 unset($where[$k]);
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 2){
-                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,99,2,6,4,5]]);
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 0){
@@ -117,7 +117,7 @@ class RequestAccount extends Backend
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 333){
                 array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
-                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,94]]);                
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,94,99,2,6,4,5]]);                
                 array_push($where,['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400]);
                 unset($where[$k]);
                 continue;
@@ -262,7 +262,7 @@ class RequestAccount extends Backend
         })
         ->where([
             ['accountrequest_proposal.account_status','in',[1,3]],
-            ['accountrequest_proposal.status','NOT IN',[96,97]]
+            ['accountrequest_proposal.status','NOT IN',[96,97,99,2,6,4,5]]
         ])        
         ->count();
 
@@ -280,7 +280,7 @@ class RequestAccount extends Backend
         })
         ->where([
             ['accountrequest_proposal.account_status','=',2],
-            ['accountrequest_proposal.status','NOT IN',[96,97]]
+            ['accountrequest_proposal.status','NOT IN',[96,97,99,2,6,4,5]]
         ])
         ->count();
 
@@ -299,7 +299,7 @@ class RequestAccount extends Backend
         ->where([
             ['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400],
             ['accountrequest_proposal.account_status','IN',[1,3]],
-            ['accountrequest_proposal.status','NOT IN',[96,97,94]]
+            ['accountrequest_proposal.status','NOT IN',[96,97,94,99,2,6,4,5]]
         ])
         ->count();
 
@@ -427,12 +427,12 @@ class RequestAccount extends Backend
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 1){
                 array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
-                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,99,2,6,4,5]]);
                 unset($where[$k]);
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 2){
-                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97]]);
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,99,2,6,4,5]]);
                 continue;
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 0){
@@ -448,7 +448,7 @@ class RequestAccount extends Backend
             }
             if($v[0] == 'accountrequest_proposal.account_status' && $v[2] == 333){
                 array_push($where,['accountrequest_proposal.account_status','IN',[1,3]]);
-                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,94]]);                
+                array_push($where,['accountrequest_proposal.status','NOT IN',[96,97,94,99,2,6,4,5]]);                
                 array_push($where,['account.idle_time','>',config('basics.ACCOUNT_RECYCLE_DAYS')*86400]);
                 unset($where[$k]);
                 continue;
@@ -544,7 +544,7 @@ class RequestAccount extends Backend
                     $accountStatus = '';
                     if(in_array($v['account_status'],[1,3]) && !in_array($v['accountrequest_proposal_status'],[96,97])) $accountStatus = '活跃';
                     if(in_array($v['account_status'],[2]) && !in_array($v['accountrequest_proposal_status'],[96,97])) $accountStatus = '封户';
-                    if($v['account_status'] == 0 || $v['accountrequest_proposal_status']  == 96)
+                    if($v['account_status'] == 0 || in_array($v['accountrequest_proposal_status'],[96,99,2,6,4,5]))
                     {
                         $accountStatus = '不可用';
                         $balance = '***';
