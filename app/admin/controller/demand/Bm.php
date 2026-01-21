@@ -490,6 +490,8 @@ class Bm extends Backend
                     
                     if($status == 3){
                         $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>1,'dispose_type'=>1,'comment'=>$getTemplateValue,'update_time'=>time()];
+                    }else if($status == 2){
+                        $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'dispose_type'=>2,'comment'=>$getTemplateValue,'update_time'=>time()];
                     }else{
                         $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()];
                     }                

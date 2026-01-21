@@ -125,14 +125,14 @@ class AccountrequestProposal extends Backend
 
 
                 $v['label_name'] = '';
-                if(!empty($v['label_ids'])){ //标签处理
-                  $arr =  $v['label_ids']??[];
-                  $label_arr = [];
-                  foreach($arr as $vv){ 
-                     $label_arr[] =  $account_easy[$vv];
-                  }
-                  $v['label_name'] = implode(',',$label_arr);
-                }
+                // if(!empty($v['label_ids'])){ //标签处理
+                //   $arr =  $v['label_ids']??[];
+                //   $label_arr = [];
+                //   foreach($arr as $vv){ 
+                //      $label_arr[] =  $account_easy[$vv];
+                //   }
+                //   $v['label_name'] = implode(',',$label_arr);
+                // }
 
                 if($idleTime > 86400){
                     $days = floor($idleTime / 86400);

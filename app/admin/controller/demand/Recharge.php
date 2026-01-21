@@ -103,7 +103,7 @@ class Recharge extends Backend
                     $username = '';
                     if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $username = $companyAdminNameArr[$companyId]['nickname'];
                     else $username = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['admin_id']].")";
-
+                    $v['add_operate_user_name'] = $adminNameArr[$v['add_operate_user']]??"";
                     // $v['username'] = $adminNameArr[$v['admin_id']]['nickname']??"";
                     $v['username'] = $username;
                     $v['prepayment_type'] = $companyNameArr[$companyId]??"";

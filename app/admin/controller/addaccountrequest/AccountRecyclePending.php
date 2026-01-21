@@ -5,6 +5,7 @@ namespace app\admin\controller\addaccountrequest;
 use Throwable;
 use ba\Random;
 use app\common\controller\Backend;
+use Exception;
 use think\facade\Db;
 use think\facade\Cache;
 
@@ -298,7 +299,8 @@ class AccountRecyclePending extends Backend
             "账户状态",
             "时区",            
             "系统状态",
-            "开户时间"
+            "开户时间",
+            "回收时间"
         ];
 
         $config = [
@@ -333,6 +335,7 @@ class AccountRecyclePending extends Backend
                     $v['time_zone'],
                     $statusValueList[$v['status']]??'',
                     $v['open_time']?date('Y-m-d H:i',$v['open_time']):'',
+                    $v['recycle_date']
                 ];  
                 $processedCount++;
             }
@@ -353,6 +356,81 @@ class AccountRecyclePending extends Backend
     {
         $progress = Cache::store('redis')->get('export_progress'.'_'.$this->auth->id, 0);
         return $this->success('',['progress' => $progress]);
+    }
+
+    public function batchTurnDownRecycle()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            if (!$data) {
+                $this->error(__('Parameter %s can not be empty', ['']));
+            }
+
+            $data   = $this->excludeFields($data);
+            $result = false;
+            try {
+
+                $accountIds = $data['account_ids'];
+                if(empty($accountIds)) throw new Exception('请传正确的参数！');
+
+                $rechargeNum = DB::table('ba_recharge')->field('account_id,count(account_id) as num')->whereIn('account_id',$accountIds)->where('status',0)->group('account_id')->select()->toArray();
+                $bmNum = DB::table('ba_bm')->field('account_id,count(account_id) as num')->whereIn('account_id',$accountIds)->where('status','IN',[0,1])->where('dispose_type',0)->group('account_id')->select()->toArray();
+                $rechargeList = array_column($rechargeNum,'num','account_id');
+                $bmList = array_column($bmNum,'num','account_id');
+
+                $where = [
+                    ['accountrequest_proposal.recycle_type','<>',3],
+                    ['accountrequest_proposal.account_id','IN',$accountIds],
+                ];
+                $res = DB::table('ba_account')
+                ->alias('account')
+                ->field('accountrequest_proposal.account_id,account.company_id')
+                ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')            
+                ->where($where)
+                ->select()->toArray();
+
+                $dataAccountIds = [];
+
+                $errorList = [];
+                foreach($res as $v)
+                {
+                    $rechargeNum = 0;
+                    $bmNum = 0;
+
+                    if(empty($v['company_id']))
+                    {
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'未找到账户或未分配！'];
+                        continue;
+                    }
+                    
+                    $rechargeNum = $rechargeList[$v['account_id']]??0;
+                    $bmNum = $bmList[$v['account_id']]??0;
+                    if($rechargeNum == 0)
+                    {
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'清零已经处理完成不可变更！'];
+                        continue;
+                    }
+                    
+                    if($bmNum == 0)
+                    {
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'解绑已经处理完成不可变更！'];
+                        continue;
+                    }
+
+                    $dataAccountIds[] = $v['account_id'];
+                }
+                if(!empty($dataAccountIds)) DB::table('ba_accountrequest_proposal')->whereIn('account_id',$dataAccountIds)->update(['recycle_type'=>3,'recycle_date'=>'','status'=>1]);
+               
+                $result = true;
+            } catch (Throwable $e) {
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'),['error_list'=>$errorList]);
+            } else {
+                $this->error(__('No rows updated'),['error_list'=>$errorList]);
+            }
+        }
     }
 
 }
