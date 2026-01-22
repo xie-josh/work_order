@@ -211,7 +211,7 @@ class FbAccountUpdate
     {        
         $jobHandlerClassName = 'app\job\AccountSpendDelete';
         $jobQueueName = 'AccountSpendDelete';
-        Queue::later(3600, $jobHandlerClassName, ['id'=>$id], $jobQueueName);        
+        Queue::later(259200, $jobHandlerClassName, ['id'=>$id], $jobQueueName);        
         return true;
     }
 
