@@ -77,9 +77,9 @@ class FbAccountUnUpdate
                     $accountTimeZoneList[(string)$item['timezone_offset_hours_utc']][] = $item['id'];
                     if(isset($item['business_country_code'])) $accountCountryCodeList[(string)$item['business_country_code']][] = $item['id'];
                     $accountStatusList[$item['account_status']][] = $item['id'];
+                    $currencyAccountList[$item['currency']][] = $item['id'];                    
                     if(!in_array($item['account_status'],[1,3])) continue;
                     $accountList[] = $item;
-                    $currencyAccountList[$item['currency']][] = $item['id'];                    
                 }
                 
                 $accountIds = array_column($accountList,'id');
@@ -122,10 +122,10 @@ class FbAccountUnUpdate
                     ];
                     DB::table('ba_accountrequest_proposal')
                     ->alias('accountrequest_proposal')
-                    ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k,'accountrequest_proposal.close_time'=>'']);
+                    ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
                 }
                 foreach($accountStatusList as $k => $v){
-                    // if($k == 2) continue;
+                    if($k == 2) continue;
                     //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
                     DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 }

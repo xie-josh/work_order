@@ -66,11 +66,11 @@ class FbAccountUpdate
                 $accountList = [];
                 $currencyAccountList = [];
                 foreach($result['data']['data'] as $item)
-                {            
+                {   
                     if($item['account_status'] != 2) continue;
                     $item['id'] = str_replace('act_', '', $item['id']);
                     $accountList[] = $item;
-                    $currencyAccountList[$item['currency']][] = $item['id'];
+                    // $currencyAccountList[$item['currency']][] = $item['id'];
                 }
 
                 $accountIds = array_column($accountList,'id');
@@ -117,26 +117,26 @@ class FbAccountUpdate
                     (new \app\admin\services\card\Cards())->allCardFreeze($v['account_id']);
                 }
                 
-                foreach($currencyAccountList as $k => $v){
-                    //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->where('status',1)->update(['currency'=>$k]);
-                    $where = [
-                        ['accountrequest_proposal.account_id','IN',$v],
-                        ['accountrequest_proposal.status','=',1],
-                        ['account.status','=',4],
-                    ];
-                    DB::table('ba_accountrequest_proposal')
-                    ->alias('accountrequest_proposal')
-                    ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
-                }
+                // foreach($currencyAccountList as $k => $v){
+                //     //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->where('status',1)->update(['currency'=>$k]);
+                //     $where = [
+                //         ['accountrequest_proposal.account_id','IN',$v],
+                //         ['accountrequest_proposal.status','=',1],
+                //         ['account.status','=',4],
+                //     ];
+                //     DB::table('ba_accountrequest_proposal')
+                //     ->alias('accountrequest_proposal')
+                //     ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')->where($where)->update(['accountrequest_proposal.currency'=>$k]);
+                // }
                 
-                $accountIds2 = DB::table('ba_accountrequest_proposal')->where('account_status',1)->whereIn('account_id',$accountIds)->column('account_id');
+                $accountIds2 = DB::table('ba_accountrequest_proposal')->whereIn('account_status',[1,3])->whereIn('account_id',$accountIds)->column('account_id');
                 if(!empty($accountIds2)) $this->accountClear($accountIds2);
 
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalClose)->update(['close_time'=>date('Y-m-d',time())]);
-                DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
+                // DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountrequestProposalCloseIs)->update(['pull_status'=>2]);
                 //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>2,'bm_token_id'=>$id,'pull_account_status'=>date('Y-m-d H:i',time())]);
                 DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->update(['account_status'=>2,'pull_account_status'=>date('Y-m-d H:i',time())]);
-                DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where([['account_status','<>','2']])->update(['processing_status'=>0]);
+                // DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where([['account_status','<>','2']])->update(['processing_status'=>0]);              
                 
             }
             
