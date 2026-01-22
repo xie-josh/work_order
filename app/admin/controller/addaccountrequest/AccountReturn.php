@@ -72,6 +72,7 @@ class AccountReturn extends Backend
                     $status = $value['accountrequestProposal']['status'];
                     $spendCap = $value['accountrequestProposal']['spend_cap'] == 0.01?0:$value['accountrequestProposal']['spend_cap'];  
                     $amountSpent = $value['accountrequestProposal']['amount_spent'];
+                    $balance2 = $value['accountrequestProposal']['balance'];
                     $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');  
                     unset($dataList[$key]['account']);
                     unset($dataList[$key]['accountrequestProposal']);
@@ -80,6 +81,7 @@ class AccountReturn extends Backend
                     $value['accountrequestProposal']['bm'] = $bm;
                     $value['accountrequestProposal']['status'] = $status;
                     $value['accountrequestProposal']['balance'] = $balance??0;
+                    $value['accountrequestProposal']['balance2'] = $balance2;
                 }
             }
         }
