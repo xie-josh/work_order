@@ -290,7 +290,7 @@ class FacebookService
                     "spend_cap" => $result['spend_cap'] == 0 ? 0 : $result['spend_cap'] / 100,
                     "amount_spent" => $result['amount_spent'] == 0 ? 0 : $result['amount_spent'] / 100,
                     'balance_amount'=>$balanceAmount,
-                    "balance" => $result['balance'],
+                    "balance" => $result['balance'] == 0 ? 0 : $result['balance'] / 100,
                     "currency" => $result['currency'],
                     "account_status" => $result['account_status'],
                     "id" => $accountId,

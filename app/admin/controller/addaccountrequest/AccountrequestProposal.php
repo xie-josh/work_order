@@ -102,7 +102,7 @@ class AccountrequestProposal extends Backend
 
         $result = $res->toArray();
         $dataList = [];
-        $account_easy = config('basics.account_easy');
+        // $account_easy = config('basics.account_easy');
 
         if(!empty($result['data'])) {
             $dataList = $result['data'];
@@ -115,6 +115,25 @@ class AccountrequestProposal extends Backend
             $admin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
             $adminList = array_column($admin,'nickname','id');
 
+            
+
+
+            $accountRecycleList = [];
+            if($status === "0"){
+                $accountIds = array_column($dataList,'account_id');
+                $accountRecycleList = DB::table('ba_account_recycle')
+                ->field('account_id, account_recycle_time')
+                ->whereIn('id', function ($query) use ($accountIds) {
+                    $query->table('ba_account_recycle')
+                        ->whereIn('account_id', $accountIds)
+                        ->field('MAX(id)')
+                        ->group('account_id');
+                })
+                ->select()
+                ->toArray();
+                $accountRecycleList = array_column($accountRecycleList,'account_recycle_time','account_id');
+            }
+
             foreach($dataList as &$v){
                 $accountAdminId = $v['account']['admin_id']??'';
                 $channelAdminId = $v['admin_id']??'';
@@ -123,6 +142,8 @@ class AccountrequestProposal extends Backend
                 $v['channel']['nickname'] = $adminList[$channelAdminId]??'';
                 $idleTime = $v['account']['idle_time']??'';
 
+                $v['account_recycle_time'] = '';
+                if($status === "0" && $v['status'] == 98) $v['account_recycle_time'] = $accountRecycleList[$v['account_id']]??'';
 
                 $v['label_name'] = '';
                 // if(!empty($v['label_ids'])){ //标签处理

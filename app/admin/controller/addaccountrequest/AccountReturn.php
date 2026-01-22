@@ -65,6 +65,7 @@ class AccountReturn extends Backend
             $adminList = array_column($admin, 'nickname', 'id');
             foreach ($dataList as $key => &$value) {
                 $value['account']['nickname'] = '';
+                $accountStatus = $value['account']['status']??'';
                 if(isset($adminList[$value['account']['admin_id']??0])) {
                     $nickname = $adminList[$value['account']['admin_id']];
                     $bm = $value['accountrequestProposal']['bm'];
@@ -75,6 +76,7 @@ class AccountReturn extends Backend
                     unset($dataList[$key]['account']);
                     unset($dataList[$key]['accountrequestProposal']);
                     $value['account']['nickname'] = $nickname;
+                    $value['account']['status'] = $accountStatus;
                     $value['accountrequestProposal']['bm'] = $bm;
                     $value['accountrequestProposal']['status'] = $status;
                     $value['accountrequestProposal']['balance'] = $balance??0;

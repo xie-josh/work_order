@@ -209,6 +209,7 @@ class FbAccountConsumption
                 [
                     'spend_cap'=>$result['data']['spend_cap'],
                     'amount_spent'=>$result['data']['amount_spent'],
+                    'balance'=>$result['data']['balance'],
                     'pull_spend_time'=>date('Y-m-d H:i:s',time())
                 ]
             );
