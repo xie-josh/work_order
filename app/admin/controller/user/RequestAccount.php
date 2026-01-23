@@ -463,7 +463,7 @@ class RequestAccount extends Backend
 
         $query = DB::table('ba_account')
         ->alias('account')
-        ->field('account.idle_time,accountrequest_proposal.spend_cap,accountrequest_proposal.amount_spent,account.account_id,account.open_money,account.open_time,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status accountrequest_proposal_status')
+        ->field('account.idle_time,accountrequest_proposal.spend_cap,accountrequest_proposal.bm_token_id,accountrequest_proposal.amount_spent,account.account_id,account.open_money,account.open_time,accountrequest_proposal.type,accountrequest_proposal.serial_name,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status accountrequest_proposal_status')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         // ->leftJoin('ba_admin admin','admin.company_id=account.company_id')
         ->order('account.id','desc')
@@ -495,7 +495,9 @@ class RequestAccount extends Backend
             '余额',
             '历史花费',
             '下户时间',        
-            '闲置时间'
+            '闲置时间', 
+            'BM名称', 
+            'BM-ID'
         ];
         // if($idle) $header[] = '闲置时间';
         $config = [
@@ -507,6 +509,8 @@ class RequestAccount extends Backend
 
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $bmArr = array_column($data,'bm_token_id');
+            $bmTokenArr =  DB::table('ba_account')->whereIn('id',$bmArr)->column('business_id,name','id');
             // dd($where,$data);
             if(!empty($data)) {
                 $dataList = $data;
@@ -550,6 +554,8 @@ class RequestAccount extends Backend
                         $balance = '***';
                     }
                     if($v['accountrequest_proposal_status']  == 97) $accountStatus = '暂停使用';
+                    
+                    $bmInfoArr = $bmTokenArr[$v['bm_token_id']]??[];
 
                     $List[] = [
                         $v['account_id'],
@@ -559,7 +565,9 @@ class RequestAccount extends Backend
                         $balance,
                         bcadd( (string)$accountSpent2,'0',2),
                         date('Y-m-d H:i:s',$v['open_time']),
-                        $days
+                        $days,
+                        $bmInfoArr['name']??'',
+                        $bmInfoArr['business_id']??''
                     ];
 
                     $processedCount++;
