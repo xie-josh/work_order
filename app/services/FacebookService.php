@@ -535,6 +535,36 @@ class FacebookService
         }
     }
 
+    public function postAdsCampaigns($params){
+        try {
+            $token = $params['token'];
+            $accountId = $params['account_id'];
+            $campaignsId = $params['campaigns_id'];
+            $status = $params['status'];
+            
+            $param = [
+                'status'=>$status
+                // 'delete_strategy'=>$effectiveStatus,
+            ];
+            $url = "https://graph.facebook.com/v21.0/$campaignsId";
+            $method = 'POST';
+            $header = [
+                'Content-Type'=>'application/json',
+                'Authorization'=>"Bearer {$token}",
+            ];
+            $result = $this->curlHttp($url,$method,$header,$param);
+            if(isset($result['success']) && $result['success'] == true){         
+                return $this->returnSucceed($result);
+            }else{
+                $this->log('FB_postAdsCampaigns',$result['msg']??'',$params,$accountId);
+                return $this->returnError($result['msg']??'');
+            }
+        } catch (\Throwable $th) {
+            $this->log('FB_postAdsCampaigns',$th->getMessage(),$params,$accountId);
+            return $this->returnError($th->getMessage()); 
+        }
+    }
+
     public function businessesList($params){
         try {
             $token = $params['token'];

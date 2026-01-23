@@ -776,6 +776,7 @@ class RequestAccount extends Backend
 
             $this->batchReset($list,259200);
             $this->bmAllUnbinding($list);
+            $this->pausedAdsCampaigns($list);
 
             if ($result !== false) {
                  $this->success(__('Update successful'),['error_list'=>$errorList]);
@@ -868,6 +869,18 @@ class RequestAccount extends Backend
         }
         DB::table('ba_bm')->insertAll($dataList);
 
+        return ['code'=>1,'msg'=>''];
+    }
+
+    public function pausedAdsCampaigns($accountIds)
+    {
+
+        foreach($accountIds as $v)
+        {            
+            $jobHandlerClassName = 'app\job\FBAccountAdv';
+            $jobQueueName = 'FBAccountAdv';
+            Queue::later(60, $jobHandlerClassName, ['account_id'=>$v,'type'=>1], $jobQueueName);
+        }
         return ['code'=>1,'msg'=>''];
     }
 

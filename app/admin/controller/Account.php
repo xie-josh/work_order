@@ -108,6 +108,12 @@ class Account extends Backend
                 unset($where[$k]);
                 continue;
             }
+            if($v[0] == 'admin.nickname'){
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->value('company_id');
+                if(!empty($companyId)) array_push($where,['account.company_id','=',$companyId]);
+                unset($where[$k]);
+                continue;
+            }
             if($v[0] == 'account.is_conserve'){
                 switch ($v[2]) {
                     case '1':
@@ -189,14 +195,15 @@ class Account extends Backend
 
             $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
             $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
-            $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
-            $adminNameArr = array_column($adminNameArr,'nickname','id');
+            // $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
+            // $adminNameArr = array_column($adminNameArr,'nickname','id');
 
             foreach($dataList as &$v){
                 $companyId = $v['company_id'];
                 $nickname = '';
-                if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname = $companyAdminNameArr[$companyId]['nickname'];
-                else $nickname = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['admin_id']].")";
+                // if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname = $companyAdminNameArr[$companyId]['nickname'];
+                // else $nickname = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['admin_id']].")";
+                $nickname = $companyAdminNameArr[$companyId]['nickname'];
 
                 $v['account_type_name'] = '';
                 if($v['status'] != 4 && $status != 1) $v['account_id'] = '';

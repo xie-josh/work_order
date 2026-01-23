@@ -852,7 +852,7 @@ class AccountrequestProposal extends Backend
             $where = [
                 ['account_id','=',$accountId]
             ];
-            if(!$this->auth->isSuperAdmin()) array_push($where,['admin_id','=',$this->auth->id]);
+            // if(!$this->auth->isSuperAdmin()) array_push($where,['admin_id','=',$this->auth->id]);
             $accountResult = DB::table('ba_account')->where($where)->find();
 
             if(empty($accountResult)) throw new \Exception("未找到账户!");
