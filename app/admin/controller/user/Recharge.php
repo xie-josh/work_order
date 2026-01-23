@@ -102,6 +102,11 @@ class Recharge extends Backend
                 }
             }        
 
+            $accountIds = array_column($list,'account_id');
+            $accountList = DB::table('ba_account')->whereIn('account_id',$accountIds)->field('account_id,money')->select()->toArray();
+            $accountValue = array_column($accountList,'money','account_id');
+
+
             $errorList = [];
             foreach($list as $v)
             {
@@ -111,6 +116,7 @@ class Recharge extends Backend
                 $lockValue = uniqid();
                 $expire = 180;
                 $data = [];
+                $accountCountMoney = $accountValue[$accountId]??0;
 
                 $acquired = $lock->acquire($accountId, $lockValue, $expire);
                 if(!$acquired) $this->error($accountId.":该需求被锁定，处理中！");
@@ -149,6 +155,19 @@ class Recharge extends Backend
 
                     
                     if($acquired){
+
+                        if(in_array($type,[3,4]) && $accountCountMoney <= 0)
+                        {
+                            array_push($errorList,['account_id'=>$accountId,'msg'=>'账户剩余金额不支持清零!']);
+                            continue;
+                        }
+
+                        if(in_array($type,[2]) && $accountCountMoney < $amount)
+                        {
+                            array_push($errorList,['account_id'=>$accountId,'msg'=>'账户剩余金额不支持添加该需求!']);
+                            continue;
+                        }
+
                         if($type == 1)
                         {
                             if($amount <= 0){
