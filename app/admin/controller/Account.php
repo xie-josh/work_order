@@ -109,8 +109,8 @@ class Account extends Backend
                 continue;
             }
             if($v[0] == 'admin.nickname'){
-                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->value('company_id');
-                if(!empty($companyId)) array_push($where,['account.company_id','=',$companyId]);
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
+                if(!empty($companyId)) array_push($where,['account.company_id','IN',$companyId]);
                 unset($where[$k]);
                 continue;
             }
