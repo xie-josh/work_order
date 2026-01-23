@@ -510,7 +510,7 @@ class RequestAccount extends Backend
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
             $bmArr = array_column($data,'bm_token_id');
-            $bmTokenArr =  DB::table('ba_account')->whereIn('id',$bmArr)->column('business_id,name','id');
+            $bmTokenArr =  DB::table('ba_fb_bm_token')->whereIn('id',$bmArr)->column('business_id,name','id');
             // dd($where,$data);
             if(!empty($data)) {
                 $dataList = $data;
