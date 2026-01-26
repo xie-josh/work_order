@@ -476,11 +476,12 @@ class Bm extends Backend
 
                     if($v['demand_type'] == 2 && $disposeStatus == 1) $this->model->where('account_id',$v['account_id'])->where('bm',$v['bm'])->update(['new_status'=>2]);
                     
-                    if($v['demand_type'] == 4 && in_array($disposeStatus,[1,3])){
+                    if($v['demand_type'] == 4 && in_array($disposeStatus,[1,3]))
+                    {
                         $v['comment'] = $comment;
-                        $this->bmOperation($v);
+                        // $bmColumn = DB::table('ba_bm')->where('dispose_type',0)->where('account_id',$v['account_id'])->column('bm');
+                        // if(isset($bmColumn[0])) if(count($bmColumn) == 1 && $bmColumn[0] == $v['bm']) $this->bmOperation($v);
                     }
-
                     $progressData[] = [
                         'bm_id'=>$v['id'],
                         'comment'=>$commentValue,
@@ -496,7 +497,6 @@ class Bm extends Backend
                         $bmData[] = ['operate_admin_id'=>$adminId,'id'=>$v['id'],'status'=>$status,'comment'=>$getTemplateValue,'update_time'=>time()];
                     }                
                 }
-
                 $servicesBasics->dbBatchUpdate('ba_bm',$bmData, 'id');
 
                 // $bmData = [];
@@ -508,6 +508,28 @@ class Bm extends Backend
                 //$result = $this->model->whereIn('id',array_column($ids,'id'))->update($bmData);
                 
                 DB::table('ba_bm_progress')->insertAll($progressData);
+
+                foreach($ids as $v)
+                {
+                    switch ($status) {
+                        case '1':
+                            $disposeStatus  = 2;
+                            break;
+                        case '2':
+                            $disposeStatus = 3;
+                            break;
+                        case '3':
+                            $disposeStatus = 1;
+                            break;
+                        default:
+                            break;
+                    }
+                    if($v['demand_type'] == 4 && in_array($disposeStatus,[1,3]))
+                    {
+                        $bmCount = DB::table('ba_bm')->where('dispose_type',0)->where('account_id',$v['account_id'])->count();
+                        if( $bmCount == 0 ) $this->bmOperation($v);
+                    }
+                }
 
                 $result = true;
                 $this->model->commit();
@@ -1135,7 +1157,7 @@ class Bm extends Backend
     //bm状态修改和发送消息
     public function bmOperation($v=[])
     {
-        $noticeGroup = Db::table('ba_admin')->where('id',$v['admin_id'])->value('notice_group');
+        // $noticeGroup = Db::table('ba_admin')->where('id',$v['admin_id'])->value('notice_group');
         $value =  DB::table('ba_account')->where('account_id',$v['account_id'])->update(['status'=>4]);//开户绑定类型处理完成
         // if(!empty($noticeGroup)){
         //     $v['notice_group'] =  $noticeGroup;
