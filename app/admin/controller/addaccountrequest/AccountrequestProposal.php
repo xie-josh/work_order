@@ -606,7 +606,12 @@ class AccountrequestProposal extends Backend
                         'account_status'=>1,
                         'create_time'=>time()
                     ];
-                    $this->assignedUsersJob($v,$bmTokenId);
+                    $usersJobParam = [
+                        'account_id'=>$v,
+                        'bm_token_id'=>$bmTokenId,
+                        'type'=>1
+                    ];
+                    $this->assignedUsersJob($usersJobParam);
                 }
                 Db::table('ba_accountrequest_proposal')->insertAll($dataList);
 
@@ -833,11 +838,11 @@ class AccountrequestProposal extends Backend
     }
 
 
-    public function assignedUsersJob($accountId,$bmTokenId)
+    public function assignedUsersJob($usersJobParam)
     {
         $jobHandlerClassName = 'app\job\AccountAssignedUsers';
         $jobQueueName = 'AccountAssignedUsers';
-        Queue::later(1, $jobHandlerClassName, ['account_id'=>$accountId,'bm_token_id'=>$bmTokenId], $jobQueueName);
+        Queue::later(1, $jobHandlerClassName, $usersJobParam, $jobQueueName);
         return true;
     }
 
@@ -1723,7 +1728,11 @@ class AccountrequestProposal extends Backend
 
         if(!empty($data['bm_id'])) foreach($accountIds as $v)
         {
-            $this->assignedUsersJob($v,$data['bm_id']);
+            $usersJobParam = [
+                'account_id'=>$v,
+                'bm_token_id'=>$data['bm_id']
+            ];
+            $this->assignedUsersJob($usersJobParam);
         }
 
         if($result) $this->success('更新成功！');

@@ -17,6 +17,7 @@ class AccountAssignedUsers
         try {
             $accountId = $data['account_id'];
             $bmTokenId = $data['bm_token_id'];
+            $type = $data['type']??0;
             $params = DB::table('ba_fb_bm_token')->where('assigned_status',1)->where('id',$bmTokenId)->find();
 
             $FacebookService = new \app\services\FacebookService();
@@ -25,7 +26,7 @@ class AccountAssignedUsers
             if(!empty($params) && !empty($params['user_id'])){
                 $params['account_id'] = $accountId;
                 $result = $FacebookService->assignedUsers($params);
-                if($result['code'] == 1)
+                if($type == 1 && $result['code'] == 1)
                 {                                    
                     sleep(4);
                     $params['spend'] = 0.01;
