@@ -62,12 +62,10 @@ class Recharge extends Backend
                 }
             }
             if($v[0] == 'recharge.username'){
-                if(!empty($v[2]))
-                {
-                  $v[0]    =  'recharge.admin_id';
-                  $v[1]    =  '=';
-                  $v[2]    =  DB::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->value('id')??'';
-                }
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
+                if(!empty($companyId)) array_push($where,['account.company_id','IN',$companyId]);
+                unset($where[$k]);
+                continue;
             }
 
         }
@@ -86,12 +84,12 @@ class Recharge extends Backend
             $result = $res->toArray();
             $dataList = [];
             // $adminNameArr = DB::table('ba_admin')->column('username','id');
-            $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
-            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
             $companyNameArr = DB::table('ba_company')->field('id,prepayment_type')->select()->toArray();
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+
             if(!empty($result['data'])) {
                 $dataList = $result['data'];
-                $adminNameArr = array_column($adminNameArr,'nickname','id');
                 $companyNameArr = array_column($companyNameArr,'prepayment_type','id');
                 $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
 
@@ -100,12 +98,13 @@ class Recharge extends Backend
                 foreach($dataList as &$v){
                     $companyId = $v['account']['company_id']??'';
                     $v['account']['currency_number'] = ROUND($v['account']['currency_number']??0, 2);
-                    $username = '';
-                    if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $username = $companyAdminNameArr[$companyId]['nickname'];
-                    else $username = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['admin_id']].")";
+
+                    $nickname = '';
+                    if(!empty($companyId)) $nickname = $companyAdminNameArr[$companyId]['nickname'];
+
                     $v['add_operate_user_name'] = $adminNameArr[$v['add_operate_user']]??"";
                     // $v['username'] = $adminNameArr[$v['admin_id']]['nickname']??"";
-                    $v['username'] = $username;
+                    $v['username'] = $nickname;
                     $v['prepayment_type'] = $companyNameArr[$companyId]??"";
                     if(in_array($v['account_id'],$wk)){
                         $v['wk_type'] = 1;
