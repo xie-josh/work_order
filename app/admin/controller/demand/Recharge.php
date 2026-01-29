@@ -83,7 +83,7 @@ class Recharge extends Backend
 
             $result = $res->toArray();
             $dataList = [];
-            // $adminNameArr = DB::table('ba_admin')->column('username','id');
+            $adminNameArr = DB::table('ba_admin')->column('username','id');
             $companyNameArr = DB::table('ba_company')->field('id,prepayment_type')->select()->toArray();
             $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
             $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
