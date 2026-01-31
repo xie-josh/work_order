@@ -6,6 +6,8 @@ services:
     container_name: thinkphp_app_1
     volumes:
       - .:/var/www
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     networks:
       - thinkphp_network
     restart: always
