@@ -121,6 +121,12 @@ class Bm extends Backend
                 $v[0] = 'accountrequestProposal.admin_id';
                 continue;
             }
+            if($v[0] == 'admin.nickname'){
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
+                if(!empty($companyId)) array_push($where,['admin.company_id','IN',$companyId]);
+                unset($where[$k]);
+                continue;
+            }
 
         }
         $disposeType = $this->request->get('dispose_type');
@@ -172,12 +178,19 @@ class Bm extends Backend
                 $adminList[$v['id']] = $v['nickname'];
             }
            
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
             
             foreach($dataList as &$v){
+                $companyId = $v['admin']['company_id'];
+                $nickname = '';
+                $nickname = $companyAdminNameArr[$companyId]['nickname'];
+
                 $v['admin'] = [
                     // 'username'=>$adminNameArr[$v['admin_id']]??"",
-                    'nickname'=>$adminNameArr[$v['admin_id']]??""
+                    'nickname'=>$nickname
                 ];
+
                 $v['account_requestProposal_admin'] = $adminList[$v['accountrequestProposal']['admin_id']??0]??'';
                 if(in_array($v['bm'],$bmBlackList)) $v['blacklist'] = '黑名单';
                 else $v['blacklist'] = '';
