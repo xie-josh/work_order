@@ -88,6 +88,12 @@ class AccountrequestProposal extends Backend
                 array_push($where, ['accountrequest_proposal.admin_id','in',$adminIds]);
                 unset($where[$k]);
             }
+            if($v[0] == 'account.nickname'){
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
+                if(!empty($companyId)) array_push($where,['account.company_id','IN',$companyId]);
+                unset($where[$k]);
+                continue;
+            }
         }
         
         $res = $this->model
@@ -97,7 +103,7 @@ class AccountrequestProposal extends Backend
             ->where($where)
             ->order($order)
             ->paginate($limit);
-        $res->visible(['cards'=>['card_no'],'account'=>['id','is_','open_time','idle_time','admin_id']]);
+        $res->visible(['cards'=>['card_no'],'account'=>['id','is_','open_time','idle_time','admin_id','company_id']]);
 
 
         $result = $res->toArray();
@@ -107,16 +113,14 @@ class AccountrequestProposal extends Backend
         if(!empty($result['data'])) {
             $dataList = $result['data'];
 
-            // dd($dataList);
-
             // $channel = DB::table('ba_account_channel')->field('id,name')->select()->toArray();
             // $channelList = array_column($channel,'name','id');
 
             $admin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
             $adminList = array_column($admin,'nickname','id');
 
-            
-
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
 
             $accountRecycleList = [];
             if($status === "0"){
@@ -136,9 +140,13 @@ class AccountrequestProposal extends Backend
 
             foreach($dataList as &$v){
                 $accountAdminId = $v['account']['admin_id']??'';
-                $channelAdminId = $v['admin_id']??'';
+                $channelAdminId = $v['admin_id']??'';                
+                $companyId = $v['account']['company_id']??'';
 
-                $v['account']['nickname'] = $adminList[$accountAdminId]??'';
+                $nickname = '';
+                if(!empty($companyId)) $nickname = $companyAdminNameArr[$companyId]['nickname'];
+
+                $v['account']['nickname'] = $nickname;
                 $v['channel']['nickname'] = $adminList[$channelAdminId]??'';
                 $idleTime = $v['account']['idle_time']??'';
 
