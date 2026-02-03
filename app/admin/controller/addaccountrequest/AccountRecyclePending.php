@@ -379,8 +379,9 @@ class AccountRecyclePending extends Backend
                 // $bmList = array_column($bmNum,'num','account_id');
 
                 $where = [
+                    //预充账户 / 待回收 / 终止使用
                     // ['accountrequest_proposal.recycle_type','<>',3],
-                    ['accountrequest_proposal.status','=',94],
+                    ['accountrequest_proposal.status','in',[94,99,96]],
                     ['accountrequest_proposal.account_id','IN',$accountIds],
                 ];
                 $res = DB::table('ba_account')
