@@ -352,10 +352,10 @@ class AdminMoneyLog extends Backend
                 // 模型验证
                 if(empty($data['images'])) throw new \Exception("请上传凭证");
                 
-                $result = DB::table('ba_admin_money_log')->where('id',$row['id'])->update([
-                    'images'=>implode(',', $data['images']??[]),
-                ]);
-                // $result = $row->save(['images'=>$data['images']??[]]);
+                // $result = DB::table('ba_admin_money_log')->where('id',$row['id'])->update([
+                //     'images'=>implode(',', $data['images']??[]),
+                // ]);
+                $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
