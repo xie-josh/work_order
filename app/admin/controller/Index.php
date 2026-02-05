@@ -372,6 +372,7 @@ class Index extends Backend
             $this->model->startTrans();
             try {
                 $data['status']     = 0;   
+                $data['delete_time']     = 252000;
                 $result             = $this->model->save($data);
                 $user['company_id'] = $this->model->id;
                 $validate = new \app\admin\validate\user\Admin;
