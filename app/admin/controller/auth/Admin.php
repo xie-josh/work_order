@@ -76,12 +76,12 @@ class Admin extends Backend
             array_push($where,['admin.status','=',1]);
             $rateArr      = DB::table('ba_rate')->order('create_time asc')->column('rate','company_id');//费率
             $billAateArr  = DB::table('ba_bill_rate')->order('create_time asc')->column('bill_rate','company_id');//入账手续费率
-            foreach($where as $k => &$v){
-                if($v[0] == 'admin.username|admin.nickname'){
-                    $v[1] = "=";        
-                    $v[2] = trim($v[2], '%');  
-                }
-            }
+            // foreach($where as $k => &$v){
+            //     if($v[0] == 'admin.username|admin.nickname'){
+            //         $v[1] = "=";        
+            //         $v[2] = trim($v[2], '%');  
+            //     }
+            // }
         }
 
         $res = $this->model
