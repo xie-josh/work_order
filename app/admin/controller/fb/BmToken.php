@@ -85,6 +85,12 @@ class BmToken extends Backend
                     }
                 }
                 if(empty($data['personalbm_token_ids'])) new \Exception('请选择个人token');
+
+                if(!empty($data['business_id']))
+                {
+                    $bmBlacklist = DB::table('ba_bm_blacklist')->where('bm',$data['business_id'])->find();
+                    if(empty($bmBlacklist)) DB::table('ba_bm_blacklist')->insert(['bm'=>$data['business_id'],'type'=>2]);
+                }
                 $result = $this->model->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -144,6 +150,13 @@ class BmToken extends Backend
                     }
                 }
                 DB::table('ba_accountrequest_proposal')->where('bm_token_id',$id)->update(['bm'=>$data['name']]);
+
+                if(!empty($data['business_id']))
+                {
+                    $bmBlacklist = DB::table('ba_bm_blacklist')->where('bm',$data['business_id'])->find();
+                    if(empty($bmBlacklist)) DB::table('ba_bm_blacklist')->insert(['bm'=>$data['business_id'],'type'=>2]);
+                }
+
                 $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {

@@ -23,7 +23,7 @@ class AccountRecyclePending extends Backend
     protected string|array $preExcludeFields = [];
 
     protected string|array $quickSearchField = ['id'];
-    protected array $noNeedPermission = ['index','getExportProgress','export','batchTurnDownRecycle'];
+    protected array $noNeedPermission = ['index','getExportProgress','export','batchTurnDownRecycle','idleExport','getIdleExportProgress'];
 
     public function initialize(): void
     {
@@ -355,6 +355,166 @@ class AccountRecyclePending extends Backend
     public function getExportProgress()
     {
         $progress = Cache::store('redis')->get('export_progress'.'_'.$this->auth->id, 0);
+        return $this->success('',['progress' => $progress]);
+    }
+
+
+
+    public function idleExport()
+    {
+        set_time_limit(300);
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $type = $this->request->get('type');
+
+        if ($type == 1) {
+            $where[] = ['accountrequest_proposal.recycle_type', '=', 3];
+        } else {
+            $where[] = ['accountrequest_proposal.recycle_type', '<>', 3];
+        }
+
+        $where[] = ['account.status', '=', 4];
+        $where[] = ['account.idle_time', '>=', (7 * 86400)];
+        $where[] = ['accountrequest_proposal.status', '=', 1];
+
+        $batchSize = 2000;
+        $processedCount = 0;
+        $redisKey = 'idle_export_progress_' . $this->auth->id;
+
+        // 基础查询（后面 clone 用）
+        $baseQuery = DB::table('ba_account')
+            ->alias('account')
+            ->field(
+                'account.admin_id account_admin_id,
+                account.company_id,
+                accountrequest_proposal.admin_id accountrequest_proposal_admin_id,
+                accountrequest_proposal.recycle_date,
+                accountrequest_proposal.status,
+                account.account_id,
+                accountrequest_proposal.serial_name,
+                accountrequest_proposal.bm,
+                account.idle_time,
+                accountrequest_proposal.total_consumption,
+                accountrequest_proposal.account_status,
+                accountrequest_proposal.time_zone,
+                account.open_time'
+            )
+            ->leftJoin(
+                'ba_accountrequest_proposal accountrequest_proposal',
+                'accountrequest_proposal.account_id = account.account_id'
+            )
+            ->where($where);
+
+        // 总数（用于进度）
+        // $total = (clone $baseQuery)->count();
+
+        // 所有 company_id
+        $companyIds = (clone $baseQuery)
+            ->distinct(true)
+            ->column('account.company_id');
+
+        if(empty($companyIds)) $this->error('未找到匹配的数据！');
+
+        $companyAdminNameArr = DB::table('ba_admin')
+            ->field('company_id,nickname,id')
+            ->where('type', 2)
+            ->select()
+            ->toArray();
+        $companyAdminNameArr = array_column($companyAdminNameArr, null, 'company_id');
+
+        $adminNameArr = DB::table('ba_admin')
+            ->field('nickname,id')
+            ->select()
+            ->toArray();
+        $adminNameArr = array_column($adminNameArr, 'nickname', 'id');
+
+        $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+        $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+
+        // Excel 目录
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+
+        $header = [
+            "账户ID",
+            "账户名称",
+            "管理BM",
+            "闲置天数",
+            "历史总消耗",
+            "时区",
+            "开户时间"
+        ];
+
+        // zip 初始化
+        $zipName = 'idle_export_' . date('Ymd_His') . '.zip';
+        $zipPath = $folders['path'] . '/' . $zipName;
+
+        $zip = new \ZipArchive();
+        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+        $total = count($companyIds);
+        foreach ($companyIds as $k => $companyId) {
+
+            $nickname = $companyAdminNameArr[$companyId]['nickname'];
+
+            $query = clone $baseQuery;
+            $query->where('account.company_id', $companyId);
+
+            $companyTotal = $query->count();
+            if ($companyTotal == 0) continue;
+
+            $excelName = "{$nickname}-闲置超过七天账户-".date('md').".xlsx";
+            $excel = new \Vtiful\Kernel\Excel(['path' => $folders['path']]);
+
+            $sheetInit = false;
+
+            for ($offset = 0; $offset < $companyTotal; $offset += $batchSize) {
+
+                $rows = $query->limit($offset, $batchSize)->select()->toArray();
+                $dataList = [];
+
+                foreach ($rows as $v) {
+                    $dataList[] = [
+                        $v['account_id'],
+                        $v['serial_name'],
+                        $v['bm'],
+                        floor($v['idle_time'] / 86400),
+                        $v['total_consumption'],
+                        $v['time_zone'],
+                        $v['open_time']?date('Y-m-d H:i',$v['open_time']):''
+                    ];
+                    $processedCount++;
+                }
+                
+                if (!$sheetInit) {
+                    $filePath = $excel->fileName($excelName, 'sheet1')
+                    ->header($header)
+                    ->data($dataList);
+                    $sheetInit = true;
+                } else {
+                    $excel->data($dataList);
+                }
+            }
+                
+            $excel->output();
+            // 进度
+            $progress = min(100, ceil($k / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+            // 加入 zip
+            $zip->addFile($folders['path'] . '/' . $excelName, $excelName);
+        }
+
+        $zip->close();
+
+        Cache::store('redis')->delete($redisKey);
+        $this->success('', [
+            'path' => $folders['filePath'] . '/' . $zipName
+        ]);
+    }
+
+
+    public function getIdleExportProgress()
+    {
+        $progress = Cache::store('redis')->get('idle_export_progress_'.$this->auth->id, 0);
         return $this->success('',['progress' => $progress]);
     }
 
