@@ -376,6 +376,7 @@ class AccountRecyclePending extends Backend
         $where[] = ['account.status', '=', 4];
         $where[] = ['account.idle_time', '>=', (7 * 86400)];
         $where[] = ['accountrequest_proposal.status', '=', 1];
+        $where[] = ['accountrequest_proposal.account_status', 'in', [1,3]];
 
         $batchSize = 2000;
         $processedCount = 0;
