@@ -495,6 +495,14 @@ class AccountRecyclePending extends Backend
                     $excel->data($dataList);
                 }
             }
+
+            $filePath->setColumn('A:A', 13)
+                    ->setColumn('B:B', 55)
+                    ->setColumn('C:C', 25)
+                    ->setColumn('D:D', 5)
+                    ->setColumn('E:E', 10)
+                    ->setColumn('F:F', 12)
+                    ->setColumn('G:G', 12);
                 
             $excel->output();
             // 进度
