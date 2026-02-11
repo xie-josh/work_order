@@ -134,6 +134,13 @@ class Account extends Backend
                 unset($where[$k]);
                 continue;
             }
+            if($v[0] == 'account.channe_list'){                
+                $channelIds = DB::table('ba_admin')->whereLike('nickname',$v[2])->column('id');
+                $aoamIds = DB::table('ba_aoam_channel_relat')->whereIn('channel_id',$channelIds)->column('aoam_id');
+                array_push($where,['account.aoam_id','IN',$aoamIds]);
+                unset($where[$k]);
+                continue;
+            }
         }
         if($status == 1){
             array_push($where,['account.status','in',[1,3,4,5,6]]);
