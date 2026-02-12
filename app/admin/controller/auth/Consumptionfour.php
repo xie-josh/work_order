@@ -31,13 +31,16 @@ class Consumptionfour extends Backend
         if ($this->request->param('select')) {
             $this->select();
         }
-        $name = $this->request->get('trusteeship');
-        if(empty($name)) $this->error('请选择托管人');
         // list($where, $alias, $limit, $order) = $this->queryBuilder();
 
+        $name = $this->request->get('trusteeship');
+        if(empty($name)) $this->error('请选择托管人');
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
         $res   = Db::table('ba_account_consumption_trusteeship')
-        ->field("trusteeship,dollar,date_start")
+        ->field("trusteeship,dollar,date_start,account_id")
         ->where('trusteeship',$name)
+        // ->where($where)
         ->order('date_start desc')
         ->paginate(15);//->select()->toArray();
 
@@ -48,7 +51,8 @@ class Consumptionfour extends Backend
                 $dataList[] = [
                     'trusteeship' => $v['trusteeship'],
                     'dollar' => number_format($v['dollar'], 2),
-                    'date_start' => $v['date_start']
+                    'date_start' => $v['date_start'],
+                    'account_id' => $v['account_id'],
                 ];
             }
         }
