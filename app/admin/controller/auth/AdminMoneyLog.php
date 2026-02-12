@@ -345,7 +345,7 @@ class AdminMoneyLog extends Backend
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
 
-            $data   = $this->excludeFields($data);
+            // $data   = $this->excludeFields($data);
             $result = false;
             $this->model->startTrans();
             try {
@@ -355,6 +355,8 @@ class AdminMoneyLog extends Backend
                 // $result = DB::table('ba_admin_money_log')->where('id',$row['id'])->update([
                 //     'images'=>implode(',', $data['images']??[]),
                 // ]);
+                if(!empty($data['create_time'])) $data['create_time'] =  strtotime($data['create_time']);
+
                 $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
