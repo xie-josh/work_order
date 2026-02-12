@@ -40,7 +40,7 @@ class Consumptionfour extends Backend
         $res   = Db::table('ba_account_consumption_trusteeship')
         ->field("trusteeship,dollar,date_start,account_id")
         ->where('trusteeship',$name)
-        // ->where($where)
+        ->where('date_start','>',0)
         ->order('date_start desc')
         ->paginate(15);//->select()->toArray();
 
