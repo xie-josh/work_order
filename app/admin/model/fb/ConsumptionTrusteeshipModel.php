@@ -11,7 +11,7 @@ use think\model\relation\BelongsTo;
  */
 class ConsumptionTrusteeshipModel extends Model
 {
-    protected $name = 'ba_account_consumption_trusteeship';
+    protected $name = 'account_consumption_trusteeship';
     protected $autoWriteTimestamp = true;
     protected $time = '-1';
 
