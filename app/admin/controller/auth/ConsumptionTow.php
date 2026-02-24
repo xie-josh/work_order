@@ -74,7 +74,7 @@ class ConsumptionTow extends Backend
         $query = $this->model
         ->alias('account_consumption')
         // ->field('consumption_trusteeship.*,accountrequest_proposal.bm,accountrequest_proposal.admin_id,accountrequest_proposal.affiliation_bm,accountrequest_proposal.trusteeship_user,accountrequest_proposal.trusteeship_type')
-        ->leftJoin('ba_accountrequest_proposal_trusteeship accountrequest_proposal','accountrequest_proposal.account_id=consumption_trusteeship.account_id')
+        ->leftJoin('ba_accountrequest_proposal_trusteeship accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
         ->leftJoin('ba_account account','account.account_id=account_consumption.account_id')
         ->order('account_consumption.create_time','desc')
         ->where('account_consumption.date_start', '>=', $create_time)
