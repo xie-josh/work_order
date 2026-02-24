@@ -67,17 +67,32 @@ class ConsumptionTow extends Backend
         $where = [];
         $create_time = $this->request->get('create_time');
         $end_time    = $this->request->get('end_time');
+        $isCount = $data['is_count']??2;
         if(empty($create_time)) $this->error('请选择开始时间');
         if(empty($end_time)) $this->error('请选择结束时间');
 
         $query = $this->model
-        ->alias('consumption_trusteeship')
-        ->field('consumption_trusteeship.*,accountrequest_proposal.bm,accountrequest_proposal.admin_id,accountrequest_proposal.affiliation_bm,accountrequest_proposal.trusteeship_user,accountrequest_proposal.trusteeship_type')
+        ->alias('account_consumption')
+        // ->field('consumption_trusteeship.*,accountrequest_proposal.bm,accountrequest_proposal.admin_id,accountrequest_proposal.affiliation_bm,accountrequest_proposal.trusteeship_user,accountrequest_proposal.trusteeship_type')
         ->leftJoin('ba_accountrequest_proposal_trusteeship accountrequest_proposal','accountrequest_proposal.account_id=consumption_trusteeship.account_id')
-        ->order('consumption_trusteeship.create_time','desc')
-        ->where('consumption_trusteeship.date_start', '>=', $create_time)
-        ->where('consumption_trusteeship.date_start', '<=', $end_time);
+        ->leftJoin('ba_account account','account.account_id=account_consumption.account_id')
+        ->order('account_consumption.create_time','desc')
+        ->where('account_consumption.date_start', '>=', $create_time)
+        ->where('account_consumption.date_start', '<=', $end_time);
         $total = $query->count(); 
+        if($total <= 0) $this->error('没有可导出的数据！');
+        $statusList = config('basics.ACCOUNT_STATUS');
+
+        if($isCount == 1)
+        {
+            // $query->field('consumption_trusteeship.*,accountrequest_proposal.bm,accountrequest_proposal.admin_id,accountrequest_proposal.affiliation_bm,accountrequest_proposal.trusteeship_user,accountrequest_proposal.trusteeship_type');
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
+            $query->group('account_consumption.account_id');
+        }else{
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,accountrequest_proposal.currency,accountrequest_proposal.status
+            ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
+            ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');        
+        }
 
         $resultAdmin = DB::table('ba_admin')->select()->toArray();
 
@@ -88,16 +103,31 @@ class ConsumptionTow extends Backend
         // $cardsList = DB::table('ba_account_card')->select()->toArray();
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
+        // $header = [
+        //     'id',
+        //     'account_id',
+        //     'dollar',
+        //     'bm',
+        //     'affiliation_bm',
+        //     'admin_id',
+        //     'trusteeship_type',
+        //     'trusteeship',
+        //     'date_start',
+        // ];
         $header = [
-            'id',
-            'account_id',
-            'dollar',
-            'bm',
-            'affiliation_bm',
-            'admin_id',
-            'trusteeship_type',
-            'trusteeship',
-            'date_start',
+            '账户状态',
+            '账户名称',
+            '账户ID',
+            '货币',
+            '消耗',
+            '开始时间',
+            '结束时间',
+            '归属用户',
+            '管理BM',
+            '归属BM',
+            '系统状态',
+            '渠道',
+            '时区',
         ];
 
         // for($i = 0; $i < $maxCount; $i++){
@@ -115,17 +145,34 @@ class ConsumptionTow extends Backend
         $data = $query->select()->toArray();
         $dataList=[];
         $excelData = [];
+        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
         foreach($data as $k => $v) {
+               $adminChannel = $adminList[$v['admin_channel']]??'';
+               $statusValue = $statusList[$v['status']]??'未找到状态';
+               $adminChannel = $adminList[$v['admin_channel']]??'';
                 $excelData  = [
-                    'id'=>$v['id'],
-                    'account_id'=>$v['account_id'],
-                    'dollar'=>$v['dollar'],
-                    'bm'=>$v['bm'],
-                    'affiliation_bm'=>$v['affiliation_bm'],
-                    'admin_id'=> $adminList[$v['admin_id']]??'',
-                    'trusteeship_type'=> $statusValue[$v['trusteeship_type']]??'未知的状态',
-                    'trusteeship'=>$v['trusteeship'],
-                    'date_start'=>$v['date_start'],
+                    // 'id'=>$v['id'],
+                    // 'account_id'=>$v['account_id'],
+                    // 'dollar'=>$v['dollar'],
+                    // 'bm'=>$v['bm'],
+                    // 'affiliation_bm'=>$v['affiliation_bm'],
+                    // 'admin_id'=> $adminList[$v['admin_id']]??'',
+                    // 'trusteeship_type'=> $statusValue[$v['trusteeship_type']]??'未知的状态',
+                    // 'trusteeship'=>$v['trusteeship'],
+                    // 'date_start'=>$v['date_start'],
+                    $accountStatus[$v['account_status']]??'未找到状态',
+                    $v['bm']??'',                    
+                    $v['account_id'],
+                    $v['currency'],
+                    (float)$v['spend']??0,
+                    $v['date_start'],
+                    $v['date_stop'],
+                    $nickname,
+                    $v['bm'],
+                    $v['affiliation_bm'],
+                    $statusValue,
+                    $adminChannel,
+                    $v['time_zone'],
                 ];
                 $dataList[] = $excelData ;  
                 // $processedCount++;
