@@ -32,9 +32,15 @@ class AccountPendingRecycle
             $ts1 = time();
             $ts2 = strtotime($consumptionDate);
 
+            $recyclingGracePeriodList = DB::table('ba_recycling_grace_period')->field('id,star_time,end_time')->where([['star_time','<=',date('Y-m-d',$ts1)],['end_time','>=',date('Y-m-d',$ts2)]])->where('status',1)->order(['star_time'=>'asc'])->select()->toArray();
+
+            $pDays = $this->overlapDays($ts2, $ts1, $recyclingGracePeriodList);
+
             $seconds = $ts1 - $ts2;
 
-
+            $pIdleTime = $seconds;
+            if($pDays > 0) $pIdleTime =  ($seconds - ($pDays * 86400));
+            
             // if($seconds > floor(30 * 86400)) 
             // {
 
@@ -48,7 +54,9 @@ class AccountPendingRecycle
             //     );                
             // }
 
-            DB::table('ba_account')->where('account_id',$accountId)->update(['idle_time'=>$seconds]);
+            DB::table('ba_account')->where('account_id',$accountId)->update(['idle_time'=>$seconds,'p_idle_time'=>$pIdleTime]);
+
+            $seconds = $pIdleTime;
 
             $accountSpent = DB::table('ba_account_consumption')->where('account_id',$accountId)->sum('dollar');            
             $totalConsumption = bcadd((string)$accountSpent,"0",2);
@@ -63,15 +71,16 @@ class AccountPendingRecycle
             
             $companyIsopen = DB::table('ba_company')->where('id',$companyId)->value('isopen');
             if($seconds > floor(31 * 86400) && $companyIsopen == 1) {
-                if(empty($recycleStart)) $accountrequestProposalData = ['status'=>94];
-                elseif(!empty($recycleStart) && (time() - strtotime($recycleStart)) > 7 * 86400) $accountrequestProposalData = ['status'=>94];
+                // if(empty($recycleStart)) $accountrequestProposalData = ['status'=>94];
+                // elseif(!empty($recycleStart) && (time() - strtotime($recycleStart)) > 7 * 86400) $accountrequestProposalData = ['status'=>94];
             }else{
                 $where[] = ['status','=',94];
                 $where[] = ['recycle_type','=',3];
                 $accountrequestProposalData = ['status'=>1];
             }
             $where[] = ['admin_id','<>',368];
-            DB::table('ba_accountrequest_proposal')->where($where)->update($accountrequestProposalData);
+            $where[] = ['admin_id','<>',400];
+            if(!empty($accountrequestProposalData)) DB::table('ba_accountrequest_proposal')->where($where)->update($accountrequestProposalData);
                        
             $job->delete();
         } catch (\Throwable $th) {
@@ -79,6 +88,38 @@ class AccountPendingRecycle
         } finally {
             if ($job->attempts() >= 3) $job->delete();
         }
+    }
+
+
+    function overlapDays($mainStart, $mainEnd, $ranges)
+    {
+        $mainStart =  $mainStart;
+        $mainEnd   =  $mainEnd;
+
+        $result = [];
+
+        $d = 0;
+        foreach ($ranges as $range) {
+
+            $start =  strtotime($range['star_time']);
+            $end   =  strtotime($range['end_time']);
+
+            // 取最大开始时间
+            $overlapStart = max($mainStart, $start);
+            
+            // 取最小结束时间
+            $overlapEnd = min($mainEnd, $end);
+
+            if ($overlapStart <= $overlapEnd) {
+                $days = floor(($overlapEnd - $overlapStart) / 86400) + 1;
+            } else {
+                $days = 0;
+            }
+
+            $d += $days;
+        }
+
+        return $d;
     }
 
 }
