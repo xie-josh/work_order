@@ -141,7 +141,7 @@ class ConsumptionTow extends Backend
         $data = $query->select()->toArray();
         $dataList=[];
         $excelData = [];
-        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
+        $accountStatus = [0=>'不可用',1=>'活跃',2=>'封户',3=>'待支付'];
         foreach($data as $k => $v) {
                $adminChannel = $adminList[$v['admin_channel']]??'';
                 $excelData  = [
