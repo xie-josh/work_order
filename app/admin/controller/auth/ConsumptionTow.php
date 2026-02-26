@@ -87,10 +87,10 @@ class ConsumptionTow extends Backend
         if($isCount == 1)
         {
             // $query->field('consumption_trusteeship.*,accountrequest_proposal.bm,accountrequest_proposal.admin_id,accountrequest_proposal.affiliation_bm,accountrequest_proposal.trusteeship_user,accountrequest_proposal.trusteeship_type');
-            $query->field('account_consumption.trusteeship,account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.trusteeship_type,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
+            $query->field('account_consumption.trusteeship,account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.trusteeship_type,accountrequest_proposal.serial_name,min(account_consumption.date_start) date_start,max(account_consumption.date_stop) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
             $query->group('account_consumption.trusteeship,account_consumption.account_id');
         }else{
-            $query->field('account_consumption.trusteeship,account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,accountrequest_proposal.currency,accountrequest_proposal.status
+            $query->field('account_consumption.trusteeship,account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.status
             ,accountrequest_proposal.trusteeship_type,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
             ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');        
         }
@@ -116,17 +116,13 @@ class ConsumptionTow extends Backend
         //     'date_start',
         // ];
         $header = [
-            '托管用户',
+            '托管状态',
             '账户状态',
-            // '账户名称',
             '账户ID',
             '货币',
             '消耗',
             '开始时间',
-            '结束时间',
-            '管理BM',
-            '归属BM',
-            '渠道',
+            '结束时间'
             // '时区',
         ];
 
@@ -158,17 +154,14 @@ class ConsumptionTow extends Backend
                     // 'trusteeship_type'=> $statusValue[$v['trusteeship_type']]??'未知的状态',
                     // 'trusteeship'=>$v['trusteeship'],
                     // 'date_start'=>$v['date_start'],
-                    $v['trusteeship'],
                     $statusValue[$v['trusteeship_type']]??'未知的状态',
+                    $accountStatus[$v['account_status']]??'未找到状态',
                     // $v['bm']??'',                    
                     $v['account_id'],
                     $v['currency'],
                     (float)$v['spend']??0,
                     $v['date_start'],
-                    $v['date_stop'],
-                    $v['bm'],
-                    $v['affiliation_bm'],
-                    $adminChannel,
+                    $v['date_stop']
                     // $v['time_zone'],
                 ];
                 $dataList[] = $excelData ;  

@@ -128,6 +128,7 @@ class FbAccountUnUpdate
                     if($k == 2) continue;
                     //DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'bm_token_id'=>$id,'close_time'=>'','pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
                     DB::table('ba_accountrequest_proposal')->whereIn('account_id',$v)->update(['account_status'=>$k,'pull_status'=>1,'pull_account_status'=>date('Y-m-d H:i',time())]);
+                    DB::table('ba_accountrequest_proposal_trusteeship')->whereIn('account_id',$v)->update(['account_status'=>$k]);
                 }
             }
         } catch (\Throwable $th) {

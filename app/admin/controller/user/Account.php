@@ -288,8 +288,9 @@ class Account extends Backend
                     }
                     $v['bes'] = json_encode($bmList??[], true);
 
-                    // if(isset($data['is_keep']) && in_array($data['type'],[1,3]) && $data['is_keep'] == 1) $data['is_keep'] = 1;
-                    // else $data['is_keep'] = 0;
+                    if(isset($data['is_keep'])  && $data['is_keep'] == 1) $data['is_keep'] = 1;
+                    else $data['is_keep'] = 0;
+                    
                     $v['admin_id'] = $this->auth->id;
                     $v['company_id']  = $company['id'];
                     $v['aoam_id']     = $v['aoam_id']??0;
@@ -734,6 +735,7 @@ class Account extends Backend
                 $timeZoneList[$v['name']] = $v['time_zone_list'];
             }
             
+            $companyIsKeep = DB::table('ba_company')->where('id',$this->auth->company_id)->value('is_keep');
 
             $notMoneyAdminList = explode(',',env('CACHE.NOT_MONEY_admin',''));
             $data = [];
@@ -750,11 +752,12 @@ class Account extends Backend
                 else $money = 0;
 
                 // if(in_array($accountTypeId,[1,3]) && $v[5] == 1)
+                if($v[5] == 1 && $companyIsKeep != 1) throw new \Exception("导入失败：企业未开启‘养户模式’，请联系相关负责人开启或重新编辑导入文件！");
                 if($v[5] == 1)
                 {
-                    throw new \Exception("暂不支持养户！");
-                    // $isKeep = 1;//---养户充值
-                    // $isKeepCount++;
+                    // throw new \Exception("暂不支持养户！");
+                    $isKeep = 1;//---养户充值
+                    $isKeepCount++;
                 } 
                 // if(!in_array($accountTypeId,[1,3]) && $v[5] == 1)
                 // {
@@ -792,8 +795,10 @@ class Account extends Backend
                 $i=6;
                 while ($i <= 100) {
                     if(!empty($v[$i])){
-                        if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)) 
-                        $bes[] = $v[$i];
+                        if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)){
+                            if(in_array($v[$i],$bes)) {$i++; continue;}
+                            $bes[] = $v[$i];
+                        } 
                         else throw new \Exception($v[$i]."邮箱格式错误,请填写正确的邮箱后重新导入！");
                         $i++;  
                     }else{ break; }
