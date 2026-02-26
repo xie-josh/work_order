@@ -116,7 +116,7 @@ class ConsumptionTow extends Backend
         //     'date_start',
         // ];
         $header = [
-            '托管状态',
+            // '托管状态',
             '账户状态',
             '账户ID',
             '货币',
@@ -154,7 +154,7 @@ class ConsumptionTow extends Backend
                     // 'trusteeship_type'=> $statusValue[$v['trusteeship_type']]??'未知的状态',
                     // 'trusteeship'=>$v['trusteeship'],
                     // 'date_start'=>$v['date_start'],
-                    $statusValue[$v['trusteeship_type']]??'未知的状态',
+                    // $statusValue[$v['trusteeship_type']]??'未知的状态',
                     $accountStatus[$v['account_status']]??'未找到状态',
                     // $v['bm']??'',                    
                     $v['account_id'],
