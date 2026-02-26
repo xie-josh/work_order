@@ -67,7 +67,8 @@ class ConsumptionTow extends Backend
         $where = [];
         $create_time = $this->request->get('create_time');
         $end_time    = $this->request->get('end_time');
-        $isCount = $data['is_count']??2;
+        $isCount    = $this->request->get('is_count');
+        $isCount    = $isCount??2;
         if(empty($create_time)) $this->error('请选择开始时间');
         if(empty($end_time)) $this->error('请选择结束时间');
 
