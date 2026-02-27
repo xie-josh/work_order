@@ -153,7 +153,7 @@ class ConsumptionTow extends Backend
                     // 'affiliation_bm'=>$v['affiliation_bm'],
                     // 'admin_id'=> $adminList[$v['admin_id']]??'',
                     // 'trusteeship_type'=> $statusValue[$v['trusteeship_type']]??'未知的状态',
-                    'trusteeship'=>$v['trusteeship'],
+                    $v['trusteeship'],
                     // 'date_start'=>$v['date_start'],
                     // $statusValue[$v['trusteeship_type']]??'未知的状态',
                     $accountStatus[$v['account_status']]??'未找到状态',
