@@ -77,7 +77,7 @@ class ConsumptionTow extends Backend
         // ->field('consumption_trusteeship.*,accountrequest_proposal.bm,accountrequest_proposal.admin_id,accountrequest_proposal.affiliation_bm,accountrequest_proposal.trusteeship_user,accountrequest_proposal.trusteeship_type')
         ->leftJoin('ba_accountrequest_proposal_trusteeship accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
         ->leftJoin('ba_account account','account.account_id=account_consumption.account_id')
-        ->order('account_consumption.create_time','desc')
+        ->order('account_consumption.date_stop','desc')
         ->where('account_consumption.date_start', '>=', $create_time)
         ->where('account_consumption.date_start', '<=', $end_time);
         $total = $query->count(); 
