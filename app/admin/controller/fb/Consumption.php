@@ -675,24 +675,24 @@ class Consumption extends Backend
         $page   = $data['page']??0;
         $limit  = $data['limit']??15;
         $month  = $data['month']??1;
-        $v = DB::table('ba_company')->field('*')->where(['id'=>$companyId])->find();
+        $vvv = DB::table('ba_company')->field('*')->where(['id'=>$companyId])->find();
         $dataList = [];
         $thePreviousDayDollar = 0;
-        if($v) {
+        if($vvv) {
                 $consumptionService = new \app\admin\services\fb\Consumption();
-                $totalDollar = $consumptionService->getTotalDollar($v['id']);
-                $thePreviousDayDollar = $consumptionService->thePreviousDay($v['id']); //前一天消耗总金额
+                $totalDollar = $consumptionService->getTotalDollar($vvv['id']);
+                $thePreviousDayDollar = $consumptionService->thePreviousDay($vvv['id']); //前一天消耗总金额
                 
                 $result = DB::query("
                 SELECT CAST(ROUND(SUM(money), 2) AS CHAR) AS total
                 FROM ba_admin_money_log
-                WHERE company_id = ".$v['id']." and status =1 and type in ('1','4')"
+                WHERE company_id = ".$vvv['id']." and status =1 and type in ('1','4')"
                 );
 
                 $money = bcdiv((String)$result[0]['total']??'0', '1', 2);
                 $remainingAmount = bcsub((string)$money,(string)$totalDollar,'2');
                 $dataList[] = [
-                    'id' => $v['id'],
+                    'id' => $vvv['id'],
                     // 'nickname' => $v['nickname'],
                     'money' => $money,
                     // 'total_dollar' => bcadd((string)$totalDollar,'0',2),
@@ -796,7 +796,13 @@ class Consumption extends Backend
             //  $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
              if($k == 0)
              {
-                $v['remaining_amount'] = round($dataList[$k]['money']-$shiji, 2);       //可用金额
+                // $v['remaining_amount'] = round($dataList[$k]['money']-$shiji, 2);       
+                if($vvv['prepayment_type'] == 1){//可用金额
+                    $v['remaining_amount'] = round($dataList[$k]['money']-$sunAllData['total_dollar'], 2);
+                }else{
+                    $v['remaining_amount'] = round($dataList[$k]['money']-$vvv['used_money'], 2);
+                }
+
                 $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
                 $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
 
