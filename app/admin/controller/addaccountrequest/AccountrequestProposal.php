@@ -711,7 +711,7 @@ class AccountrequestProposal extends Backend
 
         $query = $this->model
         ->alias('accountrequest_proposal')
-        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no,account.status open_account_status')
+        ->field('accountrequest_proposal.*,account.name account_name,account.bm account_bm,admin.nickname,cards_info.card_no,account.status open_account_status,account.company_id')
         ->leftJoin('ba_account account','account.account_id=accountrequest_proposal.account_id')
         ->leftJoin('ba_admin admin','admin.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
@@ -725,6 +725,9 @@ class AccountrequestProposal extends Backend
 
         $statusValue = config('basics.ACCOUNT_STATUS');
         $openAccountStatusValue = config('basics.OPEN_ACCOUNT_STATUS');
+
+        $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+        $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
 
         // $cardsList = DB::table('ba_account_card')->select()->toArray();
 
@@ -786,13 +789,18 @@ class AccountrequestProposal extends Backend
             $dataList=[];
             $excelData = [];
             foreach($data as $v){
+                $companyId = $v['company_id']??'';
+
+                $affiliationAdminName = '';
+                if(!empty($companyId)) $affiliationAdminName = $companyAdminNameArr[$companyId]['nickname'];
+
                 $excelData  = [
                     'account_id'=>$v['account_id'],
                     'bm'=>$v['bm'],
                     'time_zone'=>$v['time_zone'],
                     'account_name'=>$v['serial_name'],
                     'affiliation_bm'=>$v['affiliation_bm'],
-                    'affiliation_admin_name'=> $adminList[$v['affiliation_admin_id']]??'',
+                    'affiliation_admin_name'=> $affiliationAdminName,
                     'account_bm'=> $v['account_bm'],
                     'status'=> $statusValue[$v['status']]??'未知的状态',
                     'open_account_status'=> $openAccountStatusValue[$v['open_account_status']]??'未知的状态',

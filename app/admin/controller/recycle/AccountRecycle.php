@@ -49,6 +49,17 @@ class AccountRecycle extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        foreach($where as $k => &$v)
+        {
+            if($v[0] == 'admin.username'){
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
+                if(!empty($companyId)) array_push($where,['account_recycle_model.company_id','IN',$companyId]);
+                unset($where[$k]);
+                continue;
+            }
+        }
+
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -57,8 +68,26 @@ class AccountRecycle extends Backend
             ->paginate($limit);
         $res->visible(['admin' => ['username']]);
 
+        $result = $res->toArray();
+        $dataList = [];
+        if(!empty($result['data'])) {
+            $dataList = $result['data'];
+
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+
+            foreach($dataList as &$v){
+                $companyId = $v['company_id']??'';
+
+                $nickname = '';
+                if(!empty($companyId)) $nickname = $companyAdminNameArr[$companyId]['nickname'];
+                $v['admin']['username'] = $nickname;
+
+            }
+       }
+
         $this->success('', [
-            'list'   => $res->items(),
+            'list'   => $dataList,
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
