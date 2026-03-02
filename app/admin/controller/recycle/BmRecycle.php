@@ -54,7 +54,37 @@ class BmRecycle extends Backend
             ->paginate($limit);
         $res->visible(['admin' => ['username'],'type' => ['name']]);
 
+        foreach($where as $k => &$v)
+        {
+            if($v[0] == 'admin.username'){
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
+                $adminIds = DB::table('ba_admin')->whereIn('company_id',$companyId)->column('id');
+                if(!empty($adminIds)) array_push($where,['recharge_recycle_model.admin_id','IN',$adminIds]);
+                unset($where[$k]);
+                continue;
+            }
+        }
+
+        $result = $res->toArray();
+        $dataList = [];
+        if(!empty($result['data'])) {
+            $dataList = $result['data'];
+
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+
+            foreach($dataList as &$v){
+                $companyId = $v['company_id']??'';
+
+                $nickname = '';
+                if(!empty($companyId)) $nickname = $companyAdminNameArr[$companyId]['nickname'];
+                $v['admin']['username'] = $nickname;
+
+            }
+       }
+
         $this->success('', [
+            'list'   => $dataList,
             'list'   => $res->items(),
             'total'  => $res->total(),
             'remark' => get_route_remark(),

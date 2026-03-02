@@ -59,11 +59,17 @@ class AdminMoneyLog extends Backend
                 unset($where[$k]);
             }
         }
-
-        if(!empty($compnay_id)){
+        $section = [];
+        if(!empty($compnay_id))
+        {
             array_push($where,['admin_money_log.company_id','=',$compnay_id]);
             array_push($where,['admin_money_log.status','=',1]);
             array_push($where,['admin_money_log.type','IN',[1,4]]);
+            $result = DB::table('ba_bill_rate')->where('company_id',$compnay_id)->order('create_time asc')->select()->toArray();
+            if(!empty($result))foreach($result as $k => $v)
+            {
+                $section[] =  ['start_tmie' => $v['create_time'],'end_tmie' => isset($result[$k+1]['create_time'])?$result[$k+1]['create_time']:'','bill_rate'=>$v['bill_rate']];
+            }
         }
 
         $res = $this->model
@@ -76,11 +82,32 @@ class AdminMoneyLog extends Backend
         $dataList = $res->toArray()['data'];
         
         $naickArr = Db::table('ba_admin')->where('type',2)->column('nickname','company_id');
-        foreach($dataList as &$v){
+        foreach($dataList as &$v)
+        {
             $v['nickname'] = $naickArr[$v['company_id']]??'';
             $v['create_time'] = date('Y-m-d',$v['create_time']);
             $v['raw_money'] = round($v['raw_money'], 2);
             $v['money'] = round($v['money'], 2);
+            $v['service_rate'] = 0;
+            if($compnay_id == $v['company_id'])
+            {
+                //入账手续费
+                if(!empty($section))foreach($section as $kk => $vv)
+                {
+                    $start = strtotime($vv['start_tmie']);
+                    $end   = strtotime($vv['end_tmie']);
+                    //大于设定日期,设定当日不生效
+                    if (strtotime($v['create_time']) >= $start && strtotime($v['create_time']) <= $end) {
+                        //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
+                        $v['service_rate'] =  round($v['raw_money']*$vv['bill_rate'], 2);
+                    }
+                    if (strtotime($v['create_time']) >= $start && empty($end)) {
+                        //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
+                        $v['service_rate'] =  round($v['raw_money']*$vv['bill_rate'], 2);
+                    }
+                }
+                $v['money'] = $v['raw_money']-$v['service_rate'];
+            }
         }
 
         $this->success('', [

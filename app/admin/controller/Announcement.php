@@ -64,6 +64,7 @@ class Announcement extends Backend
             'pending_payment_audit'=>0,           //待支付
             'fb_bm_expired'=>0,           //个号过期
             'account_preheating'=>0,           //预热账户
+            // 'authorization_status'=>0,           //FB授权限额
         ];
 
 
@@ -87,10 +88,11 @@ class Announcement extends Backend
 
 
         $data['fb_bm_expired']    = DB::table('ba_fb_personalbm_token')->where([
-            ['expired_time','<',date("Y-m-d",strtotime("+6 day"))],
+            ['expired_time','<',date("Y-m-d",strtotime("+4 day"))],
             ['status','=',1]
         ])->count();
         $data['account_preheating']    = DB::table('ba_account')->whereIn('status',[4,6])->where('is_keep',1)->where('keep_succeed','<>',1)->count();
+        // $data['authorization_status']    = DB::table('ba_accountrequest_proposal')->whereIn('authorization_status',[3,5])->count();
 
         $this->success('', [
             'list'   => $data
