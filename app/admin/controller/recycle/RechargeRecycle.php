@@ -70,22 +70,25 @@ class RechargeRecycle extends Backend
         if(!empty($result['data'])) {
             $dataList = $result['data'];
 
-            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
-            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,'nickname','company_id');
+
+            $adminNameArr = DB::table('ba_admin')->field('company_id,id')->select()->toArray();
+            $adminNameArrList = [];
+
+            foreach($adminNameArr as $v)
+            {
+                $adminNameArrList[$v['id']] = $companyAdminNameArr[$v['company_id']]??'';
+            }
 
             foreach($dataList as &$v){
-                $companyId = $v['company_id']??'';
-
-                $nickname = '';
-                if(!empty($companyId)) $nickname = $companyAdminNameArr[$companyId]['nickname'];
-                $v['admin']['username'] = $nickname;
+                $v['admin']['username'] = $adminNameArrList[$v['admin_id']]??'';
 
             }
        }
 
         $this->success('', [
             'list'   => $dataList,
-            'list'   => $res->items(),
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);

@@ -46,6 +46,18 @@ class BmRecycle extends Backend
          * 3. paginate 数据集可使用链式操作 each(function($item, $key) {}) 遍历处理
          */
         list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        foreach($where as $k => &$v)
+        {
+            if($v[0] == 'admin.username'){
+                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
+                $adminIds = DB::table('ba_admin')->whereIn('company_id',$companyId)->column('id');
+                if(!empty($adminIds)) array_push($where,['bm_recycle_model.admin_id','IN',$adminIds]);
+                unset($where[$k]);
+                continue;
+            }
+        }
+
         $res = $this->model
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
@@ -54,38 +66,30 @@ class BmRecycle extends Backend
             ->paginate($limit);
         $res->visible(['admin' => ['username'],'type' => ['name']]);
 
-        foreach($where as $k => &$v)
-        {
-            if($v[0] == 'admin.username'){
-                $companyId = DB::table('ba_admin')->where('type',2)->where([['nickname','like',$v[2]]])->column('company_id');
-                $adminIds = DB::table('ba_admin')->whereIn('company_id',$companyId)->column('id');
-                if(!empty($adminIds)) array_push($where,['recharge_recycle_model.admin_id','IN',$adminIds]);
-                unset($where[$k]);
-                continue;
-            }
-        }
-
         $result = $res->toArray();
         $dataList = [];
         if(!empty($result['data'])) {
             $dataList = $result['data'];
 
-            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
-            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,'nickname','company_id');
+
+            $adminNameArr = DB::table('ba_admin')->field('company_id,id')->select()->toArray();
+            $adminNameArrList = [];
+
+            foreach($adminNameArr as $v)
+            {
+                $adminNameArrList[$v['id']] = $companyAdminNameArr[$v['company_id']]??'';
+            }
 
             foreach($dataList as &$v){
-                $companyId = $v['company_id']??'';
-
-                $nickname = '';
-                if(!empty($companyId)) $nickname = $companyAdminNameArr[$companyId]['nickname'];
-                $v['admin']['username'] = $nickname;
+                $v['admin']['username'] = $adminNameArrList[$v['admin_id']]??'';
 
             }
        }
 
         $this->success('', [
             'list'   => $dataList,
-            'list'   => $res->items(),
             'total'  => $res->total(),
             'remark' => get_route_remark(),
         ]);
