@@ -796,12 +796,12 @@ class Consumption extends Backend
             //  $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
              if($k == 0)
              {
-                // $v['remaining_amount'] = round($dataList[$k]['money']-$shiji, 2);       
-                if($vvv['prepayment_type'] == 1){//可用金额
-                    $v['remaining_amount'] = round($dataList[$k]['money']-$sunAllData['total_dollar'], 2);
-                }else{
-                    $v['remaining_amount'] = round($dataList[$k]['money']-$vvv['used_money'], 2);
-                }
+                $v['remaining_amount'] = round($dataList[$k]['money']-$shiji, 2);       
+                // if($vvv['prepayment_type'] == 1){//可用金额
+                //     $v['remaining_amount'] = round($dataList[$k]['money']-$sunAllData['total_dollar'], 2);
+                // }else{
+                //     $v['remaining_amount'] = round($dataList[$k]['money']-$vvv['used_money'], 2);
+                // }
 
                 $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
                 $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
