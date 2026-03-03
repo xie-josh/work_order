@@ -24,7 +24,7 @@ class FbAccountConsumptionTrusteeshipTask extends Command
         $result = DB::table('ba_accountrequest_proposal_trusteeship')
         ->alias('accountrequest_proposal_trusteeship')
         ->distinct(true)
-        ->field('fb_bm_token.is_token,accountrequest_proposal_trusteeship.id,accountrequest_proposal_trusteeship.bm_token_id,accountrequest_proposal_trusteeship.account_id,accountrequest_proposal_trusteeship.type,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.personalbm_token_ids,accountrequest_proposal_trusteeship.currency,accountrequest_proposal_trusteeship.trusteeship_user')
+        ->field('fb_bm_token.is_token,accountrequest_proposal_trusteeship.id,accountrequest_proposal_trusteeship.jurisdiction_status,accountrequest_proposal_trusteeship.bm_token_id,accountrequest_proposal_trusteeship.account_id,accountrequest_proposal_trusteeship.type,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.personalbm_token_ids,accountrequest_proposal_trusteeship.currency,accountrequest_proposal_trusteeship.trusteeship_user')
         ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal_trusteeship.bm_token_id')
         // ->whereNotIn('accountrequest_proposal_trusteeship.status',$notConsumptionStatus)
         ->whereNotNull('accountrequest_proposal_trusteeship.bm_token_id')

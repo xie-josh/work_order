@@ -36,6 +36,7 @@ class FbAccountConsumptionTrusteeship
             $businessId = $params['business_id']??'';
             $currency   =  $params['currency']??'';
             $type       =  $params['type']??1;
+            $jurisdiction_status =  $params['jurisdiction_status'];
             $bmTokenId       =  $params['bm_token_id']??1;
             $params['stort_time'] = date('Y-m-d', strtotime('-7 days'));
             // $params['stort_time'] = '2024-11-01';
@@ -66,6 +67,16 @@ class FbAccountConsumptionTrusteeship
                 DB::table('ba_accountrequest_proposal_trusteeship')->where('account_id',$accountId)->update(
                     [
                         'jurisdiction_status'=>2
+                    ]
+                );
+                return true;
+            }
+
+            if($jurisdiction_status == 2)
+            {
+                DB::table('ba_accountrequest_proposal_trusteeship')->where('account_id',$accountId)->update(
+                    [
+                        'jurisdiction_status'=>1
                     ]
                 );
             }
