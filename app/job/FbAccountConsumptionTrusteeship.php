@@ -61,6 +61,15 @@ class FbAccountConsumptionTrusteeship
             if(!empty($token)) $params['token'] = $token;
          
             $result = (new \app\services\FacebookService())->insights($params);
+            if(in_array((int)$result['code'],[0,4,5]))
+            {
+                DB::table('ba_accountrequest_proposal_trusteeship')->where('account_id',$accountId)->update(
+                    [
+                        'jurisdiction_status'=>2
+                    ]
+                );
+            }
+
             if(!empty($result) && $result['code'] == 4){
                 $jobHandlerClassName = 'app\job\FbAccountConsumptionTrusteeship';
                 $jobQueueName = 'FbAccountConsumptionTrusteeship';
