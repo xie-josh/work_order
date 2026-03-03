@@ -1870,10 +1870,10 @@ class AccountrequestProposal extends Backend
             }
 
             $accountIds = array_column($fileObject,0);
-            $accountIds = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where(function ($q) {
-                $q->whereNull('cards_id')
-                ->whereOr('cards_id', '');
-            })->column('account_id');
+            $accountIds = DB::table('ba_accountrequest_proposal')->whereIn('ba_accountrequest_proposal.account_id',$accountIds)->where('account.status',3)->where(function ($q) {
+                $q->whereNull('ba_accountrequest_proposal.cards_id')
+                ->whereOr('ba_accountrequest_proposal.cards_id', '');
+            })->leftjoin('ba_account account','account.account_id = ba_accountrequest_proposal.account_id')->column('ba_accountrequest_proposal.account_id');
 
             $cardModel = new \app\admin\model\card\CardsModel();
             $cardInfoModel = new \app\admin\model\card\CardsInfoModel();
@@ -1900,8 +1900,8 @@ class AccountrequestProposal extends Backend
                 $param['card_id'] = $cardId;
                 $param['nickname'] = $this->getNickname($accountId); 
 
-                // $resultCards =  $cardModel->updateCard($card,$param);
-                // if($resultCards['code'] != 1) $errorList[] = ['account_id'=>$accountId,'msg'=>$resultCards['msg']];
+                $resultCards =  $cardModel->updateCard($card,$param);
+                if($resultCards['code'] != 1) $errorList[] = ['account_id'=>$accountId,'msg'=>$resultCards['msg']];
                 $cardInfoModel->where('cards_id',$cardsId)->update(['is_use'=>1]);
                 $this->model->where('account_id',$accountId)->update(['cards_id'=>$cardsId]); 
             }
