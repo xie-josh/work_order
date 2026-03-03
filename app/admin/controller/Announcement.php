@@ -65,6 +65,7 @@ class Announcement extends Backend
             'fb_bm_expired'=>0,           //个号过期
             'account_preheating'=>0,           //预热账户
             // 'authorization_status'=>0,           //FB授权限额
+            'hosting_no_sum'=>0,           //托管没权限
         ];
 
 
@@ -93,6 +94,7 @@ class Announcement extends Backend
         ])->count();
         $data['account_preheating']    = DB::table('ba_account')->whereIn('status',[4,6])->where('is_keep',1)->where('keep_succeed','<>',1)->count();
         // $data['authorization_status']    = DB::table('ba_accountrequest_proposal')->whereIn('authorization_status',[3,5])->count();
+        $data['hosting_no_sum'] = DB::table('ba_accountrequest_proposal_trusteeship')->where('jurisdiction_status',2)->count();
 
         $this->success('', [
             'list'   => $data
