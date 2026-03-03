@@ -29,32 +29,37 @@ class FbAccountConsumptionTrusteeship
     }
 
     public function accountConsumption($params)
-    {   
+    {
         try {
             $accountId = $params['account_id'];
             $trusteeship_user = $params['trusteeship_user'];
             $businessId = $params['business_id']??'';
-            $currency  =  $params['currency']??'';
+            $currency   =  $params['currency']??'';
+            $type       =  $params['type']??1;
+            $bmTokenId       =  $params['bm_token_id']??1;
             $params['stort_time'] = date('Y-m-d', strtotime('-7 days'));
             // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = date('Y-m-d',time());
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
-            $this->fbSpendCap($params);
+            // $this->fbSpendCap($params);
 
             // if($params['type'] == 1) $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             // else $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
 
             // $token = DB::table('ba_fb_personalbm_token')->where('type',1)->value('token');
             // if($params['type'] == 2) $token = DB::table('ba_fb_personalbm_token')->where('type',2)->value('token');
-
+            
             // $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(1,'',$params['id']);
             // if($params['type'] == 2) $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken(2,'',$params['id']);
-
-            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($params['personalbm_token_ids']);            
-            
+            if($type == 1){
+                $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($params['personalbm_token_ids']);     
+            }else{
+                $token = DB::table('ba_fb_personalbm_token_trusteeship')->where('id',$bmTokenId)->value('token');
+            }
+                   
             if(!empty($token)) $params['token'] = $token;
-            
+         
             $result = (new \app\services\FacebookService())->insights($params);
             if(!empty($result) && $result['code'] == 4){
                 $jobHandlerClassName = 'app\job\FbAccountConsumptionTrusteeship';

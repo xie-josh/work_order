@@ -106,7 +106,6 @@ class AccountrequestProposalTrusteeship extends Backend
         $result = $res->toArray();
         $dataList = [];
         // $account_easy = config('basics.account_easy');
-
         if(!empty($result['data'])) {
             $dataList = $result['data'];
 
@@ -587,9 +586,17 @@ class AccountrequestProposalTrusteeship extends Backend
 
                 $accountList = $this->model->whereIn('account_id',$ids)->column('account_id');
 
-                $bmTokenResult = DB::table('ba_fb_bm_token')->where('id',$bm)->find();
-                if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
-                
+                if($type==1){
+                    $bmTokenResult = DB::table('ba_fb_bm_token')->where('id',$bm)->find();
+                    if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
+                    $bm = $bmTokenResult['name'];
+                    $bmTokenId = $bmTokenResult['id'];
+                }else{
+                    $bmTokenResult = DB::table('ba_fb_personalbm_token_trusteeship')->where('id',$bm)->find();
+                    if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
+                    $bm = $bmTokenResult['name'];
+                    $bmTokenId = $bmTokenResult['id'];
+                }
                 // $cardList = [];
                 // if($automaticCardIs == 2)
                 // {
@@ -606,8 +613,7 @@ class AccountrequestProposalTrusteeship extends Backend
                 //     if(count($cardList) < count($ids)) throw new \Exception("所需卡数量余量不足，请调整后重试!");
                 // }
                 
-                $bm = $bmTokenResult['name'];
-                $bmTokenId = $bmTokenResult['id'];
+
 
                 foreach($ids as $k =>$v){
                     // if(in_array($v,$accountList)) continue;
@@ -692,7 +698,17 @@ class AccountrequestProposalTrusteeship extends Backend
                         $validate->check($data);
                     }
                 }
-
+                if($data['type']==1){
+                    $bmTokenResult = DB::table('ba_fb_bm_token')->where('id',$data['bm'])->find();
+                    if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
+                    $data['bm'] = $bmTokenResult['name'];
+                    $data['bm_token_id'] = $bmTokenResult['id'];
+                }else{
+                    $bmTokenResult = DB::table('ba_fb_personalbm_token_trusteeship')->where('id',$data['bm'])->find();
+                    if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
+                    $data['bm'] = $bmTokenResult['name'];
+                    $data['bm_token_id'] = $bmTokenResult['id'];
+                }
                 $result = $row->save($data);
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -705,6 +721,8 @@ class AccountrequestProposalTrusteeship extends Backend
                 $this->error(__('No rows updated'));
             }
         }
+        $row->bm = $row->bm_token_id;
+        $row->type = (String)$row->type;
 
         $this->success('', [
             'row' => $row

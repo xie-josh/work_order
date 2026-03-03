@@ -26,7 +26,7 @@ class AccountrequestProposal extends Backend
 
     protected string|array $quickSearchField = ['id'];
 
-    protected array $noNeedPermission = ['index','accountRefresh','bmList','editStatusAll','Export','getAccountrequestProposal','getExportProgress',"accountCardBind","accountCardBindDel","accountCardList","accountCardHandoff","allEditLabelRelevance","manageExport","getManageExportProgress","getCountBalance","getCardplatform","allEditAccountName"];
+    protected array $noNeedPermission = ['index','accountRefresh','bmList','editStatusAll','Export','getAccountrequestProposal','getExportProgress',"accountCardBind","accountCardBindDel","accountCardList","accountCardHandoff","allEditLabelRelevance","manageExport","getManageExportProgress","getCountBalance","getCardplatform","allEditAccountName","cardBindingImport","importTemplate"];
 
     protected bool|string|int $dataLimit = 'parent';
 
@@ -1831,6 +1831,93 @@ class AccountrequestProposal extends Backend
                 $this->error(__('No rows updated'),['errrorList'=>$errorList]);
             }
         }
+    }
+
+
+    public function cardBindingImport(){
+
+        $result = false;
+        $errorList = [];
+        try {
+            $file = $this->request->file('file');
+            $aoamId = $this->request->post('aoamId');
+            
+            //$path = '/www/wwwroot/workOrder.test/public/storage/excel';
+            $path = $_SERVER['DOCUMENT_ROOT'].'/storage/excel';
+            $fineName = 'cardBindingImport'.time().'.xlsx';
+            $info = $file->move($path,$fineName);
+    
+            $config = [
+                'path' => $path
+            ];
+
+            $excel = new \Vtiful\Kernel\Excel($config);
+
+            $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
+
+            unset($fileObject[0],$fileObject[1],$fileObject[2]);
+
+            $yAccountList = [];
+            $yCardIds = [];
+            foreach($fileObject as $v)
+            {
+                if(empty($v[0]) || empty($v[1])) continue;
+                if(!empty($yAccountList[$v[0]])) throw new \Exception($v[0].'：账号重复！');
+                if(in_array($v[1],$yCardIds)) throw new \Exception($v[1].'：卡号重复！');
+
+                $yAccountList[$v[0]] = $v;
+                $yCardIds[] = $v[1];
+            }
+
+            $accountIds = array_column($fileObject,0);
+            $accountIds = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->where(function ($q) {
+                $q->whereNull('cards_id')
+                ->whereOr('cards_id', '');
+            })->column('account_id');
+
+            $cardModel = new \app\admin\model\card\CardsModel();
+            $cardInfoModel = new \app\admin\model\card\CardsInfoModel();
+
+            $cardsList = DB::table('ba_cards_info')->field('card_no,card_id,cards_id,account_id')->whereIn('card_no',$yCardIds)->where('is_use',0)->select()->toArray();
+            $cardsValue = array_column($cardsList,null,'card_no');
+
+            if(count($yCardIds) != count($cardsList)) {
+                throw new \Exception('卡号找不到或已经使用请检查后再提交！');
+            }
+
+
+            $param = [];
+            foreach($accountIds  as $v){
+                $account = $yAccountList[$v];
+                $accountId = $account[0];
+                $cardNo = $account[1];
+                
+                $card = $cardsValue[$cardNo];
+                $cardId = $card['card_id'];
+                $cardsId = $card['cards_id'];
+
+
+                $param['card_id'] = $cardId;
+                $param['nickname'] = $this->getNickname($accountId); 
+
+                // $resultCards =  $cardModel->updateCard($card,$param);
+                // if($resultCards['code'] != 1) $errorList[] = ['account_id'=>$accountId,'msg'=>$resultCards['msg']];
+                $cardInfoModel->where('cards_id',$cardsId)->update(['is_use'=>1]);
+                $this->model->where('account_id',$accountId)->update(['cards_id'=>$cardsId]); 
+            }
+            
+            // $result = true;
+            //$fileObject->closeSheet();  
+        } catch (Throwable $th) {
+            $this->error($th->getMessage(),['error_list'=>$errorList]);
+        }
+        $this->success(__('Added successfully'),['error_list'=>$errorList]);
+    }
+
+    
+    public function importTemplate()
+    {
+        $this->success('',['row'=>['path'=>'/storage/default/绑卡模版.xlsx']]);
     }
 
 
