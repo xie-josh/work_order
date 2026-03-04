@@ -71,7 +71,8 @@ class ConsumptionTow extends Backend
         $isCount    = $isCount??2;
         if(empty($create_time)) $this->error('请选择开始时间');
         if(empty($end_time)) $this->error('请选择结束时间');
-
+        $batchSize = 3000;
+        $processedCount = 0;
         $query = $this->model
         ->alias('account_consumption')
         // ->field('consumption_trusteeship.*,accountrequest_proposal.bm,accountrequest_proposal.admin_id,accountrequest_proposal.affiliation_bm,accountrequest_proposal.trusteeship_user,accountrequest_proposal.trusteeship_type')
@@ -94,7 +95,7 @@ class ConsumptionTow extends Backend
             ,accountrequest_proposal.trusteeship_type,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.date_start,account_consumption.date_stop
             ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');        
         }
-
+       
         $resultAdmin = DB::table('ba_admin')->select()->toArray();
 
         $adminList = array_column($resultAdmin,'nickname','id');
@@ -139,13 +140,15 @@ class ConsumptionTow extends Backend
         $name = $folders['name'].'.xlsx';
 
         
-        $data = $query->select()->toArray();
-        $dataList=[];
+        
         $excelData = [];
         $accountStatus = [0=>'不可用',1=>'活跃',2=>'封户',3=>'待支付'];
-        foreach($data as $k => $v) {
-               $adminChannel = $adminList[$v['admin_channel']]??'';
-                $excelData  = [
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+           $dataList=[];
+           $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
+           foreach($data as $v){
+                $adminChannel = $adminList[$v['admin_channel']]??'';
+                $dataList[]  = [
                     // 'id'=>$v['id'],
                     // 'account_id'=>$v['account_id'],
                     // 'dollar'=>$v['dollar'],
@@ -165,18 +168,18 @@ class ConsumptionTow extends Backend
                     $v['date_stop']
                     // $v['time_zone'],
                 ];
-                $dataList[] = $excelData ;  
-                // $processedCount++;
-
+                 $processedCount++;
+            }  
+            $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList);
             // $progress = min(100, ceil($processedCount / $total * 100));
             // Cache::store('redis')->set('export_progress1', $progress, 300);
             // 刷新缓冲区
             //ob_flush();
             //flush();
         }   
-        $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
-        ->header($header)
-        ->data($dataList);
+
         $excel->output();
         // Cache::store('redis')->delete('export_progress1');
 
