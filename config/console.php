@@ -22,5 +22,6 @@ return [
         'MonthConsumptionTotalTask' => 'app\command\MonthConsumptionTotalTask',
         'CopyYesterdayConsumptionTask' => 'app\command\CopyYesterdayConsumptionTask',
         'AccountPendingRecycleTask' => 'app\command\AccountPendingRecycleTask',
+        'AccountReportTask' => 'app\command\AccountReportTask',
     ],
 ];
