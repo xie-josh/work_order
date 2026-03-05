@@ -65,8 +65,9 @@ class AccountReportCheck
 
             for ($offset = 0; $offset < $total; $offset += $batchSize) {
                 $data = $query->limit($offset, $batchSize)->select()->toArray();
+                $dataList = [];
                 foreach($data as $v){
-                        $data[] = [
+                    $dataList[] = [
                             $companyArr[$v['company_id']]??'无',
                             $v['account_id']??'',
                             $v['account_id']??'',
