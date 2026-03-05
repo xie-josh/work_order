@@ -18,6 +18,7 @@ class AccountReport
             $accountId = $data['account_id'];
             $params['business_id'] = $data['business_id'];
             $params['account_id'] = $data['account_id'];
+            $params['personalbm_token_ids'] = $data['personalbm_token_ids'];
             $currency  =  $data['currency']??'';
             $params['stort_time'] = $data['create_report_time'];
             // $params['stort_time'] = '2024-11-01';
