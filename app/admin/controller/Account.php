@@ -1674,12 +1674,19 @@ class Account extends Backend
             ['account_id','IN',$ids],            
         ];
 
-        if(!$this->auth->isSuperAdmin()) $where[] = ['open_time','>',strtotime('-1 days')];
+        // if(!$this->auth->isSuperAdmin()) $where[] = ['open_time','>',strtotime('-1 days')];
 
         // dd($where,$this->auth->isSuperAdmin());
 
-        $accountIds = DB::table('ba_account')->where($where)->column('account_id');
-        if(empty($accountIds)) $this->error('未找到可以修改的数据，请先确实在条件内[(待绑定/完成) + 开户一天内]');
+        $accountIds = DB::table('ba_account')->where($where)
+        ->where(function($query){
+            $query->where(function($query){
+                $query->where('is_keep',1)->where('keep_succeed',0);
+            })->whereOr(function($query){
+                $query->where('open_time','>',strtotime('-1 days'));
+            });
+        })->column('account_id');
+        if(empty($accountIds)) $this->error('未找到可以修改的数据，请先确实在条件内[(待绑定/完成) + （养护中 OR 开户一天内）]');
 
         $accountRechargeCIds = DB::table('ba_recharge')->whereIn('account_id',$accountIds)->column('account_id');
         if(!empty($accountRechargeCIds)) $this->error('你选择的数据有充值需求，不可变更!');
