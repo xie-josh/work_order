@@ -27,10 +27,11 @@ class AccountReportTask extends Command
                 $notConsumptionStatus = array_values(array_diff($notConsumptionStatus, [94]));
                 $result2 = DB::table('ba_accountrequest_proposal')
                 ->alias('accountrequest_proposal')
-                ->field('detali.id as report_id,fb_bm_token.is_token,accountrequest_proposal.id,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids,accountrequest_proposal.currency')
+                ->field('detali.report_id,detali.id self_id,fb_bm_token.is_token,accountrequest_proposal.id,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids,accountrequest_proposal.currency')
                 ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
                 ->leftJoin('ba_account_report_detali detali','detali.account_id=accountrequest_proposal.account_id')
                 ->where('detali.report_id',$Id)
+                ->where('detali.status',1)
                 ->whereNotIn('accountrequest_proposal.status',$notConsumptionStatus)
                 ->whereNotNull('accountrequest_proposal.bm_token_id')
                 ->select()->toArray();

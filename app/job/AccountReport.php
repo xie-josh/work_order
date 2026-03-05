@@ -20,13 +20,14 @@ class AccountReport
             $params['account_id'] = $data['account_id'];
             $params['personalbm_token_ids'] = $data['personalbm_token_ids'];
             $currency  =  $data['currency']??'';
+            $self_id  =  $data['self_id']??0;
             $params['stort_time'] = $data['create_report_time'];
             // $params['stort_time'] = '2024-11-01';
             $params['stop_time'] = $data['end_report_time'];
 
             $sSTimeList = $this->generateTimeArray($params['stort_time'],$params['stop_time']);
 
-            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($params['personalbm_token_ids']);            
+            $token = (new \app\admin\services\fb\FbService())->getPersonalbmToken($params['personalbm_token_ids']);
             
             if(!empty($token)) $params['token'] = $token;
             
@@ -51,10 +52,38 @@ class AccountReport
                 $exchangeRate = DB::table('ba_exchange_rate')->whereIn('time',$sSTimeList)->where('currency',$currency)->field('time,rate')->select()->toArray();
                 $exchangeRate = array_column($exchangeRate,'rate','time');
             }
+
+            $accountList = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,open_time,admin_id,is_keep,keep_succeed,company_id')->where('status',4)->select()->toArray();
+            $accountRecycleList = DB::table('ba_account_recycle')->where('account_id',$accountId)->field('account_id,open_time,admin_id,company_id')->where('status',4)->order('open_time','asc')->select()->toArray();
+
+            $accountInfo = $accountList[0]??[];
+
+            $accountList = array_merge($accountRecycleList,$accountList);
+
+            $accountTimeList = [];
+            foreach($accountList as $k => &$item)
+            {                    
+                $item['strat_open_time'] = date('Y-m-d',$item['open_time']);
+                $item['end_open_time'] = '';
+                if(isset($accountList[$k+1])) $item['end_open_time'] = date('Y-m-d',$accountList[$k+1]['open_time']);
+                else $item['end_open_time'] = date('Y-m-d',strtotime('+1 day',time()));
+                $accountTimeList[] = $item;
+            }
+            $accountTimeList = array_reverse($accountList);    
+
             $data = [];
             foreach($accountConsumption as $consumption)
             {
                 $date_start = $consumption['date_start'];
+                $companyId = '';
+                $dollar = 0;
+                foreach($accountTimeList as $v1)
+                {
+                    if($date_start >= $v1['strat_open_time'] && $date_start <= $v1['end_open_time']){
+                        $companyId = $v1['company_id'];
+                        break;
+                    }
+                }
 
                 if($currency == 'USD')
                 {
@@ -90,6 +119,7 @@ class AccountReport
                     'date_start'=>$consumption['date_start'],
                     'date_stop'=>$consumption['date_stop'],
                     'report_id'=>$reportId,
+                    'company_id'=>$companyId,
                     'create_time'=>time(),
                     'campaign_name'=>$consumption["campaign_name"] ?? null,
                     'campaign_id'=>$consumption["campaign_id"] ?? null,
@@ -109,14 +139,15 @@ class AccountReport
 
             DB::table('ba_account_consumption_test2')->insertAll($data);
 
-            if($reportId)
+            if($self_id)
             {
-                DB::table('ba_account_report_detali')->where('id',$reportId)->update(
+                DB::table('ba_account_report_detali')->where('id',$self_id)->update(
                     [
                         'status'=>2
                     ]
                 );
-            }
+            } 
+            $job->delete();
         } catch (\Throwable $th) 
         {
             (new \app\services\Basics())->logs('AccountReportJobError',$data,$th->getMessage());
@@ -124,7 +155,7 @@ class AccountReport
             $result = false;
             DB::table('ba_fb_logs')->insert(
                 ['log_id'=>$accountId??'','type'=>'job_AccountReport','data'=>json_encode($params),'logs'=>$logs,'create_time'=>date('Y-m-d H:i:s',time())]
-            );
+            );$job->delete();
             // DB::table('ba_account')->where('account_id',$accountId)->update(['comment'=>$th->getMessage()]);
         }
         return true;     
