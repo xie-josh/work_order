@@ -62,14 +62,13 @@ class AccountReportCheck
             }
             // $result =DB::table('ba_account_report_detali')->where('report_id',$id)->where('status',1)->find();
             $companyArr =DB::table('ba_admin')->column('nickname','company_id');
-
+            $batchSize = 2000;
             for ($offset = 0; $offset < $total; $offset += $batchSize) {
                 $data = $query->limit($offset, $batchSize)->select()->toArray();
                 $dataList = [];
                 foreach($data as $v){
                     $dataList[] = [
                             $companyArr[$v['company_id']]??'无',
-                            $v['account_id']??'',
                             $v['account_id']??'',
                             $v['date_start']??'',
                             $v['campaign_name']??'',
