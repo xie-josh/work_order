@@ -161,6 +161,15 @@ class AccountReport
         return 0;
     }
 
+    function generateTimeArray($startDate, $endDate) {
+        $startTimestamp = strtotime($startDate);
+        $endTimestamp = strtotime($endDate);
+        $timeArray = [];
+        for ($currentTimestamp = $startTimestamp; $currentTimestamp <= $endTimestamp; $currentTimestamp += 86400) {
+            $timeArray[] = date('Y-m-d', $currentTimestamp);
+        }
+        return $timeArray;
+    }
 
     /**
      * 获取 action_value（ROAS）
