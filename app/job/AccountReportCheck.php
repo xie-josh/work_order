@@ -31,7 +31,7 @@ class AccountReportCheck
             $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
             $header = [
                 '公司昵称',
-                '系统账户状态',
+                '账户状态',
                 '广告账户ID',
                 '日期',
                 '广告系列名称',
