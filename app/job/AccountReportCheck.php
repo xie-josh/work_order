@@ -25,7 +25,7 @@ class AccountReportCheck
             $query =DB::table('ba_account_consumption_test2')->where('report_id',$id);//->select()->toArray();
             $query2 = clone $query;
             $total = $query2->count();
-            $resultPath = "excel/".date('Ym').'/settlement'.date('d').'/'."账户报告";
+            $resultPath = "excel/".date('Ym').'/reportcheck';
             // if(file_exists($resultPath)) unlink($resultPath);
     
             $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
@@ -54,14 +54,14 @@ class AccountReportCheck
             $excel  = new \Vtiful\Kernel\Excel($config);
             $month = date('y-m-d',strtotime($params['stort_time']));
             $day  = date('y-m-d',strtotime($params['stop_time']));
-            $excelName = "-{$month}-{$day}广告消耗";
+            $excelName = "{$month}~{$day}广告消耗";
             $name = $excelName.'.xlsx';
             if($total == 0){
                 $job->delete();
                 return true;
             }
             // $result =DB::table('ba_account_report_detali')->where('report_id',$id)->where('status',1)->find();
-            $companyArr =DB::table('ba_admin')->column('nickname','company_id');
+            $companyArr =DB::table('ba_admin')->where('type',2)->column('nickname','company_id');
             $batchSize = 2000;
             for ($offset = 0; $offset < $total; $offset += $batchSize) {
                 $data = $query->limit($offset, $batchSize)->select()->toArray();
