@@ -71,7 +71,13 @@ class AccountReport extends Backend
             $this->model->startTrans();
             try {
                 $temp = array_unique($data['account_ids']);
+                $account = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$temp)->column('account_id');
+                $notExists = array_diff($temp, $account);
+                if(!empty($notExists)){
+                    throw new \Exception("非账户列表数据请检查！".implode(',',$notExists));
+                }
                 $data['account_ids'] = implode(',',array_unique($data['account_ids'])??[]);
+                $data['name'] = $this->auth->getInfo()['nickname']?$this->auth->getInfo()['nickname']:$this->auth->getInfo()['username'];
                 // 模型验证
                 $result = $this->model->save($data);
                 if ($temp) {

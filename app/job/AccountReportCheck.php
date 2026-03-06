@@ -31,6 +31,7 @@ class AccountReportCheck
             $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
             $header = [
                 '公司昵称',
+                '系统账户状态',
                 '广告账户ID',
                 '日期',
                 '广告系列名称',
@@ -63,12 +64,17 @@ class AccountReportCheck
             // $result =DB::table('ba_account_report_detali')->where('report_id',$id)->where('status',1)->find();
             $companyArr =DB::table('ba_admin')->where('type',2)->column('nickname','company_id');
             $batchSize = 2000;
+            $notConsumptionStatus = config('basics.ACCOUNT_STATUS');
             for ($offset = 0; $offset < $total; $offset += $batchSize) {
                 $data = $query->limit($offset, $batchSize)->select()->toArray();
+                $accountIdsArr = array_column($data,'account_id');
+                $statusArr = DB::table('ba_accountrequest_proposal')->whereIn('account_id',array_unique($accountIdsArr))->column('status','account_id');
                 $dataList = [];
                 foreach($data as $v){
+                    $status = $statusArr[$v['account_id']]??'963';
                     $dataList[] = [
                             $companyArr[$v['company_id']]??'无',
+                            $notConsumptionStatus[$status]??'无',
                             $v['account_id']??'',
                             $v['date_start']??'',
                             $v['campaign_name']??'',
@@ -94,8 +100,8 @@ class AccountReportCheck
             $filePath->setColumn('A:A', 13)
             ->setColumn('B:B', 55)
             ->setColumn('C:C', 20)
-            ->setColumn('D:D', 5)
-            ->setColumn('E:E', 80)
+            ->setColumn('D:D', 60)
+            ->setColumn('E:E', 40)
             ->setColumn('F:F', 12)
             ->setColumn('G:G', 12)
             ->setColumn('H:H', 12)
@@ -106,7 +112,8 @@ class AccountReportCheck
             ->setColumn('M:M', 12)
             ->setColumn('N:N', 12)
             ->setColumn('O:O', 12)
-            ->setColumn('P:P', 12);
+            ->setColumn('P:P', 12)
+            ->setColumn('Q:Q', 12);
 
             $excel->output();
 
