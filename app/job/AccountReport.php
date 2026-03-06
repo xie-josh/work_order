@@ -41,7 +41,7 @@ class AccountReport
             $accountConsumption = $result['data']['data']??[];
             if(empty($accountConsumption))
             {
-                DB::table('ba_account_consumption_test2')->insert(['account_id'=>$accountId]);
+                DB::table('ba_account_consumption_test2')->insert(['account_id'=>$accountId,'report_id'=>$reportId]);
                 DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
                 $job->delete();
                 return true;
