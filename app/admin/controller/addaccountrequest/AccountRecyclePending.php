@@ -320,10 +320,8 @@ class AccountRecyclePending extends Backend
             $dataList=[];
             foreach($data as $v){
                 $companyId = $v['company_id'];
-                $nickname_b = '';
-                
-                if($v['account_admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname_b = $companyAdminNameArr[$companyId]['nickname'];
-                else $nickname_b = $companyAdminNameArr[$companyId]['nickname']."(".$adminNameArr[$v['account_admin_id']].")";
+                $nickname_b = '';            
+                if(!empty($companyId)) $nickname_b = $companyAdminNameArr[$companyId]['nickname'];
 
                 $nickname_a = $adminNameArr[$v['accountrequest_proposal_admin_id']]??'';
 
@@ -474,7 +472,7 @@ class AccountRecyclePending extends Backend
 
             for ($offset = 0; $offset < $companyTotal; $offset += $batchSize) {
 
-                $rows = $query->limit($offset, $batchSize)->select()->toArray();
+                $rows = $query->limit($offset, $batchSize)->order('account.idle_time','desc')->select()->toArray();
                 $dataList = [];
 
                 foreach ($rows as $v) {
