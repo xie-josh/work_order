@@ -32,17 +32,16 @@ class AccountReport
             if(!empty($token)) $params['token'] = $token;
             
             $result = (new \app\services\FacebookService())->insights3($params);
-            if(!empty($result) && $result['code'] == 4){
-                $jobHandlerClassName = 'app\job\AccountReport';
-                $jobQueueName = 'AccountReport';
-                Queue::later(1200, $jobHandlerClassName, $params, $jobQueueName);
+            if(!empty($result) && in_array($result['code'],[0,4,5]))
+            {
+                 DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
+                $job->delete();
                 return true;
             }
-            if(empty($result) || $result['code'] == 0){
-                return true;
-            }
-            
-            if(empty($result) || $result['code'] == 5){
+            if(empty($result))
+            {
+                 DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
+                $job->delete();
                 return true;
             }
             $accountConsumption = $result['data']['data']??[];
