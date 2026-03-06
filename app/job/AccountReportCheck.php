@@ -55,7 +55,8 @@ class AccountReportCheck
             $excel  = new \Vtiful\Kernel\Excel($config);
             $month = date('y-m-d',strtotime($params['stort_time']));
             $day  = date('y-m-d',strtotime($params['stop_time']));
-            $excelName = "{$month}~{$day}广告消耗";
+            $thistime  = date('Y-m-d H:i:s');
+            $excelName = "{$thistime}~广告消耗";
             $name = $excelName.'.xlsx';
             if($total == 0){
                 $job->delete();
