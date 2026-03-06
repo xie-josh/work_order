@@ -64,18 +64,18 @@ class AccountReportCheck
             }
             // $result =DB::table('ba_account_report_detali')->where('report_id',$id)->where('status',1)->find();
             $companyArr =DB::table('ba_admin')->where('type',2)->column('nickname','company_id');
+            $accountStatus = [0=>'不可用',1=>'活跃',2=>'封户',3=>'待支付'];
             $batchSize = 2000;
-            $notConsumptionStatus = config('basics.ACCOUNT_STATUS');
             for ($offset = 0; $offset < $total; $offset += $batchSize) {
                 $data = $query->limit($offset, $batchSize)->select()->toArray();
                 $accountIdsArr = array_column($data,'account_id');
-                $statusArr = DB::table('ba_accountrequest_proposal')->whereIn('account_id',array_unique($accountIdsArr))->column('status','account_id');
+                $statusArr = DB::table('ba_accountrequest_proposal')->whereIn('account_id',array_unique($accountIdsArr))->column('account_status','account_id');
                 $dataList = [];
                 foreach($data as $v){
                     $status = $statusArr[$v['account_id']]??'963';
                     $dataList[] = [
                             $companyArr[$v['company_id']]??'无',
-                            $notConsumptionStatus[$status]??'无',
+                            $accountStatus[$status]??'无',
                             $v['account_id']??'',
                             $v['date_start']??'',
                             $v['campaign_name']??'',
