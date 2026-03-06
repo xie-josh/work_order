@@ -90,7 +90,7 @@ class AccountReport extends Backend
                 $this->model->rollback();
                 $this->error($e->getMessage());
             }finally{
-                     $Id = $data['id'];
+                     $Id = $this->model->id;
                      $notConsumptionStatus = config('basics.NOT_consumption_status');
                      $notConsumptionStatus = array_values(array_diff($notConsumptionStatus, [94]));
                      $result2 = DB::table('ba_accountrequest_proposal')
