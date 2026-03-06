@@ -70,7 +70,7 @@ class AccountReport extends Backend
             $result = false;
             $this->model->startTrans();
             try {
-                $temp = $data['account_ids'];
+                $temp = array_unique($data['account_ids']);
                 $data['account_ids'] = implode(',',$data['account_ids']??[]);
                 // 模型验证
                 $result = $this->model->save($data);
