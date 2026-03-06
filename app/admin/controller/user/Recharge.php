@@ -210,6 +210,8 @@ class Recharge extends Backend
                                 if(isset($resultCards['data']['cardStatus'])) DB::table('ba_cards_info')->where('id',$cards['id'])->update(['card_status'=>$resultCards['data']['cardStatus']]);
                                 (new \app\admin\services\card\Cards())->allCardFreeze($accountId);
                             }
+
+                            $this->pausedAdsCampaigns([$accountId]);
                         }
                     }else{
                         throw new \Exception('该账户暂时被锁定，请稍后再试！');
@@ -421,6 +423,16 @@ class Recharge extends Backend
     }
 
 
+    public function pausedAdsCampaigns($accountIds)
+    {
 
+        foreach($accountIds as $v)
+        {            
+            $jobHandlerClassName = 'app\job\FBAccountAdv';
+            $jobQueueName = 'FBAccountAdv';
+            Queue::later(60, $jobHandlerClassName, ['account_id'=>$v,'type'=>1], $jobQueueName);
+        }
+        return ['code'=>1,'msg'=>''];
+    }
     
 }
