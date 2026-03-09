@@ -272,7 +272,7 @@ class AccountRecyclePending extends Backend
         
         $query = DB::table('ba_account')
         ->alias('account')
-        ->field('account.admin_id account_admin_id,account.company_id,accountrequest_proposal.admin_id accountrequest_proposal_admin_id,accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,account.idle_time,accountrequest_proposal.total_consumption,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
+        ->field('account.admin_id account_admin_id,account.company_id,accountrequest_proposal.admin_id accountrequest_proposal_admin_id,accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,account.idle_time,account.p_idle_time,accountrequest_proposal.total_consumption,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         // ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         // ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
@@ -298,6 +298,7 @@ class AccountRecyclePending extends Backend
             "管理BM",
             "渠道",
             "闲置天数",
+            "有效闲置天数",
             "历史总消耗",
             "归属用户",
             "账户状态",
@@ -331,6 +332,7 @@ class AccountRecyclePending extends Backend
                     $v['bm'],
                     $nickname_a,
                     floor($v['idle_time'] / 86400),
+                    floor($v['p_idle_time'] / 86400),
                     $v['total_consumption'],
                     $nickname_b,
                     $acountStatusValue[$v['account_status']]??'未知状态',
@@ -348,6 +350,19 @@ class AccountRecyclePending extends Backend
             Cache::store('redis')->set($redisKey, $progress, 300);
         }
 
+        $filePath->setColumn('A:A', 20)
+                    ->setColumn('B:B', 50)
+                    ->setColumn('C:C', 30)
+                    ->setColumn('D:D', 8)
+                    ->setColumn('E:E', 8)
+                    ->setColumn('F:F', 12.5)
+                    ->setColumn('G:G', 12)
+                    ->setColumn('H:H', 13)
+                    ->setColumn('I:I', 8.5)
+                    ->setColumn('J:J', 11)
+                    ->setColumn('K:K', 8)
+                    ->setColumn('L:L', 18)
+                    ->setColumn('M:M', 18);
         $excel->output();
         Cache::store('redis')->delete($redisKey);
 
@@ -397,6 +412,7 @@ class AccountRecyclePending extends Backend
                 accountrequest_proposal.serial_name,
                 accountrequest_proposal.bm,
                 account.idle_time,
+                account.p_idle_time,
                 accountrequest_proposal.total_consumption,
                 accountrequest_proposal.account_status,
                 accountrequest_proposal.time_zone,
@@ -442,6 +458,7 @@ class AccountRecyclePending extends Backend
             "账户名称",
             "管理BM",
             "闲置天数",
+            "有效闲置天数",
             "历史总消耗",
             "时区",
             "开户时间"
@@ -481,6 +498,7 @@ class AccountRecyclePending extends Backend
                         $v['serial_name'],
                         $v['bm'],
                         floor($v['idle_time'] / 86400),
+                        floor($v['p_idle_time'] / 86400),
                         $v['total_consumption'],
                         $v['time_zone'],
                         $v['open_time']?date('Y-m-d H:i',$v['open_time']):''
@@ -504,7 +522,7 @@ class AccountRecyclePending extends Backend
                     ->setColumn('D:D', 5)
                     ->setColumn('E:E', 10)
                     ->setColumn('F:F', 12)
-                    ->setColumn('G:G', 12);
+                    ->setColumn('G:G', 18);
                 
             $excel->output();
             // 进度
