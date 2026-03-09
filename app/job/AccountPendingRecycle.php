@@ -79,7 +79,7 @@ class AccountPendingRecycle
                 $accountrequestProposalData = ['status'=>1];
             }
             $where[] = ['admin_id','<>',368];
-            $where[] = ['admin_id','<>',400];
+            // $where[] = ['admin_id','<>',400];
             if(!empty($accountrequestProposalData)) DB::table('ba_accountrequest_proposal')->where($where)->update($accountrequestProposalData);
                        
             $job->delete();
