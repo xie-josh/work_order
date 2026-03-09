@@ -913,6 +913,7 @@ class Consumption extends Backend
     public function export3()
     {
         set_time_limit(600);
+        ini_set('memory_limit', '320M');
 
         $data = $this->request->post();
 
@@ -932,7 +933,7 @@ class Consumption extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
-        $batchSize = 3000;
+        $batchSize = 10000;
         $processedCount = 0;
         $redisKey = 'export3_consumpotion'.'_'.$this->auth->id;
         
