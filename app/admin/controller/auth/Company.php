@@ -182,7 +182,7 @@ class Company extends Backend
                 $v['rate'] = $rate * 100;
                 $v['username'] =  $adminArr[$v['id']]['username']??'';    
                 $v['nickname'] =  $adminArr[$v['id']]['nickname']??'';     
-                $v['totalconsume'] = ROUND($sunAllData[$v['id']]['total_dollar']??0, 2);//总消耗
+                $v['totalconsume'] = $sunAllData[$v['id']]['total_dollar']??0;//总消耗
                 if($v['prepayment_type'] == 1){
                     $v['totalMoney']   = ROUND($moneyArr[$v['id']]??0, 2);      //总金额
                     $v['kyMoney'] = bcsub($v['totalMoney'], $v['totalconsume'])-$sunAllData[$v['id']]['rate'];//可用余额
