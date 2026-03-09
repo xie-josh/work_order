@@ -83,13 +83,88 @@ class Company extends Backend
 
         // if(empty($redisValue))
         // {
-            $consumptionArr  = DB::table('ba_account_consumption')->whereIn('company_id',$comapnyids)->whereRaw("company_id IS NOT NULL")->group('company_id')->column('sum(dollar)','company_id');//总消耗
+            // $consumptionArr  = DB::table('ba_account_consumption')->whereIn('company_id',$comapnyids)->whereRaw("company_id IS NOT NULL")->group('company_id')->column('sum(dollar)','company_id');//总消耗
             // $consumptionArr = DB::query("SELECT company_id, SUM(dollar) AS dollar FROM ba_account_consumption WHERE company_id IS NOT NULL GROUP BY company_id");
             // $consumptionArr = array_column($consumptionArr,'dollar','company_id');
         //     Cache::store('redis')->set($key, $consumptionArr, 240);
         // }else{
         //     $consumptionArr = Cache::store('redis')->get($key);
         // }
+
+            //--------------------------
+            $allConsumption = DB::table('ba_account_consumption')
+            ->field('SUM(dollar) as total_dollar, company_id, date_start')
+            ->whereIn('company_id', $comapnyids)
+            ->whereNotNull('company_id')
+            ->group('company_id,date_start')
+            ->select()
+            ->toArray();
+            
+            $allRates = DB::table('ba_rate')
+                ->whereIn('company_id', $comapnyids)
+                ->order('company_id')
+                ->order('create_time')
+                ->select()
+                ->toArray();
+    
+             $consumptionMap = [];
+             foreach ($allConsumption as $v) {
+                 $consumptionMap[$v['company_id']][] = $v;
+             }
+             
+             $rateMap = [];
+             foreach ($allRates as $v) {
+                 $rateMap[$v['company_id']][] = $v;
+             }
+   
+            $sunAllData = [];
+            foreach ($comapnyids as $companyId) 
+            {
+                $records = $consumptionMap[$companyId] ?? [];
+                $rates   = $rateMap[$companyId] ?? [];
+    
+                if (empty($records)) {
+                    $sunAllData[$companyId] = [
+                        'rate' => 0,
+                        'total_dollar' => 0
+                    ];
+                    continue;
+                }
+           
+                // 汇率倒序（最近时间在前）
+                usort($rates, function ($a, $b) {
+                    return strtotime($b['create_time']) - strtotime($a['create_time']);
+                });
+                
+                $rateSum = 0;
+                $dollarSum = 0;
+    
+                foreach ($records as $v) {
+    
+                    $consumeTime = strtotime($v['date_start']);
+                    $currentRate = 0;
+    
+                    foreach ($rates as $rate) {
+                        if ($consumeTime > strtotime($rate['create_time'])) {
+                            $currentRate = $rate['rate'];
+                            break;
+                        }
+                    }
+    
+                    $rateSum += round($v['total_dollar'] * $currentRate, 2);
+                    $dollarSum += $v['total_dollar'];
+                }
+    
+                $sunAllData[$companyId] = [
+                    'rate' => round($rateSum, 2),
+                    'total_dollar' => round($dollarSum, 2),
+                ];
+            }
+        
+            //--------------------------
+
+
+
         $AccountCountArr = DB::table('ba_account')->whereIn('company_id',$comapnyids)->where(['status'=>4])->group('company_id')->column('count(*)','company_id');//账户数量
         $AccountcloseArr = DB::table('ba_accountrequest_proposal')->alias('p')->leftJoin('ba_account account','account.account_id=p.account_id')
                                ->where(['p.account_status'=>2])->where([['p.status','<>',99]])->group('account.company_id')->column('count(*)','company_id');//封户数量
@@ -107,10 +182,10 @@ class Company extends Backend
                 $v['rate'] = $rate * 100;
                 $v['username'] =  $adminArr[$v['id']]['username']??'';    
                 $v['nickname'] =  $adminArr[$v['id']]['nickname']??'';     
-                $v['totalconsume'] = ROUND($consumptionArr[$v['id']]??0, 2);//总消耗
+                $v['totalconsume'] = ROUND($sunAllData[$v['id']]['total_dollar']??0, 2);//总消耗
                 if($v['prepayment_type'] == 1){
                     $v['totalMoney']   = ROUND($moneyArr[$v['id']]??0, 2);      //总金额
-                    $v['kyMoney'] = bcsub($v['totalMoney'], $v['totalconsume']);//可用余额
+                    $v['kyMoney'] = bcsub($v['totalMoney'], $v['totalconsume'])-$sunAllData[$v['id']]['rate'];//可用余额
                 }else{
                     $v['totalMoney']   = $v['money'];                           //总金额
                     $v['kyMoney']      = bcsub((string)$v['money'],(string)$v['used_money'],2);
