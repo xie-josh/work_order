@@ -49,7 +49,7 @@ class AccountReport extends Backend
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         $res = $this->model
             ->alias($alias)
-            ->where($where)
+            // ->where($where)
             ->order($order)
             ->paginate($limit);
 
