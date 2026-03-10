@@ -1801,6 +1801,7 @@ class Account extends Backend
             $data = $this->request->post();
             $ids  = $data['account_list'];
             $result = false;
+            $errorList = [];
             try {
                     foreach($ids as $accountId)
                     {
@@ -1818,7 +1819,10 @@ class Account extends Backend
                             $params['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($personalbmTokenIds);
                         
                             $campaignsList = $facebookService->getAdsCampaignsList($params);
-                            if($campaignsList['code'] != 1) throw new \Exception("拉取广告系列错误：".$campaignsList['msg']);
+                            if($campaignsList['code'] != 1) {
+                                $errorList[] = ['account_id'=>$accountId,'msg'=>"拉取广告系列错误：".$campaignsList['msg']];
+                                continue;
+                            }
                             $campaignsListData = $campaignsList['data']??[];
                             $after = $campaignsListData['paging']['cursors']['after']??'';
                             
@@ -1828,7 +1832,10 @@ class Account extends Backend
                                 $campaignsId = $v['id'];
                                 $params['campaigns_id'] = $campaignsId;
                                 $deleteAdsCampaigns = $facebookService->deleteAdsCampaigns($params);
-                                if($deleteAdsCampaigns['code'] != 1) throw new \Exception("删除广告系列错误：".$deleteAdsCampaigns['msg']);
+                                if($deleteAdsCampaigns['code'] != 1){
+                                    $errorList[] = ['account_id'=>$accountId,'msg'=>"删除广告系列错误：".$deleteAdsCampaigns['msg']];
+                                    continue;
+                                }
                             }
                     }
                     $result = true;
@@ -1836,9 +1843,9 @@ class Account extends Backend
                 DB::table('ba_account')->where('account_id',$accountId)->update(['comment'=>$th->getMessage()]);
         }
         if ($result !== false) {
-            $this->success(__('Update successful'));
+            $this->success(__('Update successful'),['error_list'=>$errorList]);
         } else {
-            $this->error(__('No rows updated'));
+            $this->error(__('No rows updated'),['error_list'=>$errorList]);
         }
     }
 
