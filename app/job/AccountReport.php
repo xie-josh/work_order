@@ -34,7 +34,8 @@ class AccountReport
             $result = (new \app\services\FacebookService())->insights3($params);
             if(!empty($result) && in_array($result['code'],[0,4,5]))
             {
-                 DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
+                DB::table('ba_account_consumption_test2')->insert(['account_id'=>$accountId,'report_id'=>$reportId,'self_status'=>"异常045"]);
+                DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
                 $job->delete();
                 return true;
             }
