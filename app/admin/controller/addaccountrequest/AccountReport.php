@@ -40,7 +40,7 @@ class AccountReport extends Backend
         if ($this->request->param('select')) {
             $this->select();
         }
-
+        
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
          * 2. 以下的别名设置了主表别名，同时便于拼接查询参数等
@@ -52,7 +52,7 @@ class AccountReport extends Backend
             // ->where($where)
             ->order($order)
             ->paginate($limit);
-
+            
         $this->success('', [
             'list'   => $res->items(),
             'total'  => $res->total(),
