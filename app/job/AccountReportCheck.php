@@ -66,10 +66,6 @@ class AccountReportCheck
             $companyArr =DB::table('ba_admin')->where('type',2)->column('nickname','company_id');
             $accountStatus = [0=>'不可用',1=>'活跃',2=>'封户',3=>'待支付'];
             $batchSize = 2000;
-            $filePath = $excel->fileName($excelName.'.xlsx', 'sheet1')->header($header);
-            $textFormat = $excel->getFormat();
-            $textFormat->setNumFormat(\Vtiful\Kernel\Format::FORMAT_STRING);
-            $filePath->format('A:Q', $textFormat); 
             for ($offset = 0; $offset < $total; $offset += $batchSize) {
                 $data = $query->limit($offset, $batchSize)->select()->toArray();
                 $accountIdsArr = array_column($data,'account_id');
@@ -97,7 +93,9 @@ class AccountReportCheck
                             $v['cost_per_reg']??'',
                         ];
                }
-               $filePath->data($dataList);
+               $filePath = $excel->fileName($excelName.'.xlsx', 'sheet1')
+                ->header($header)
+                ->data($dataList);   
             }
 
             // $excel->getActiveSheet()
