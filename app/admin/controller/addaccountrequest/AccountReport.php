@@ -21,6 +21,8 @@ class AccountReport extends Backend
     protected object $model;
 
     protected bool|string|int $dataLimit = 'parent';
+    protected array $noNeedPermission = ['index','add'];
+
 
     public function initialize(): void
     {
