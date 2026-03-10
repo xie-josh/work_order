@@ -83,7 +83,7 @@ class AccountReportCheck
                             $v['reach']??'',
                             $v['impressions']??'',
                             $v['frequency']??'',
-                            $v['spend']??'',
+                            $v['spend']??0,
                             $v['clicks']??'',
                             $v['cpc']??'',
                             $v['purchase']??'',
