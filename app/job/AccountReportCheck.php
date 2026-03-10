@@ -99,11 +99,11 @@ class AccountReportCheck
             }
 
             $filePath->setColumn('A:A', 13)
-            ->setColumn('B:B', 55)
+            ->setColumn('B:B', 13)
             ->setColumn('C:C', 20)
-            ->setColumn('D:D', 60)
+            ->setColumn('D:D', 20)
             ->setColumn('E:E', 40)
-            ->setColumn('F:F', 12)
+            ->setColumn('F:F', 25)
             ->setColumn('G:G', 12)
             ->setColumn('H:H', 12)
             ->setColumn('I:I', 12)
