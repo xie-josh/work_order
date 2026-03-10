@@ -31,22 +31,6 @@ class AccountReport
             
             if(!empty($token)) $params['token'] = $token;
             
-            $result = (new \app\services\FacebookService())->insights3($params);
-            if(!empty($result) && in_array($result['code'],[0,4,5]))
-            {
-                DB::table('ba_account_consumption_test2')->insert(['account_id'=>$accountId,'report_id'=>$reportId,'self_status'=>"异常045"]);
-                DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
-                $job->delete();
-                return true;
-            }
-            $accountConsumption = $result['data']['data']??[];
-            if(empty($accountConsumption))
-            {
-                DB::table('ba_account_consumption_test2')->insert(['account_id'=>$accountId,'report_id'=>$reportId]);
-                DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
-                $job->delete();
-                return true;
-            }
             $exchangeRate = [];
             if(!empty($currency) && $currency != 'USD' && $currency != '其他')
             {
@@ -71,6 +55,48 @@ class AccountReport
                 $accountTimeList[] = $item;
             }
             $accountTimeList = array_reverse($accountList);    
+
+            $result = (new \app\services\FacebookService())->insights3($params);
+            if(!empty($result) && in_array($result['code'],[0,4,5]))
+            {
+                foreach($sSTimeList as $thisTime)
+                {
+                    $companyId = '';
+                    $dollar = 0;
+                    foreach($accountTimeList as $v1)
+                    {
+                        if($thisTime >= $v1['strat_open_time'] && $thisTime <= $v1['end_open_time']){
+                            $companyId = $v1['company_id'];
+                            break;
+                        }
+                    }
+                    DB::table('ba_account_consumption_test2')->insert(['account_id'=>$accountId,'company_id'=>$companyId,'date_start'=>$thisTime,'report_id'=>$reportId,'self_status'=>"异常045"]);
+                }
+                DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
+                $job->delete();
+                return true;
+            }
+            $accountConsumption = $result['data']['data']??[];
+            if(empty($accountConsumption))
+            {
+                foreach($sSTimeList as $thisTime)
+                {
+                    $companyId = '';
+                    $dollar = 0;
+                    foreach($accountTimeList as $v1)
+                    {
+                        if($thisTime >= $v1['strat_open_time'] && $thisTime <= $v1['end_open_time']){
+                            $companyId = $v1['company_id'];
+                            break;
+                        }
+                    }
+                    DB::table('ba_account_consumption_test2')->insert(['account_id'=>$accountId,'date_start'=>$thisTime,'company_id'=>$companyId,'report_id'=>$reportId]);
+                }
+                DB::table('ba_account_report_detali')->where('id',$self_id)->update(['status'=>2]);
+                $job->delete();
+                return true;
+            }
+            
 
             $data = [];
             foreach($accountConsumption as $consumption)

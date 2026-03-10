@@ -77,7 +77,7 @@ class AccountReportCheck
                             $companyArr[$v['company_id']]??'无',
                             $accountStatus[$status]??'无',
                             $v['account_id']??'',
-                            $v['date_start']??$params['stort_time']."-".$params['stop_time'],
+                            $v['date_start']??'',
                             $v['campaign_name']??'',
                             $v['campaign_id']??'',
                             $v['reach']??'',
