@@ -97,11 +97,11 @@ class AccountReportCheck
                 ->header($header)
                 ->data($dataList);   
             }
-            
-            $excel->getActiveSheet()
-            ->getStyle('A:Q')
-            ->getNumberFormat()
-            ->setFormatCode('@');
+
+            // $excel->getActiveSheet()
+            // ->getStyle('A:Q')
+            // ->getNumberFormat()
+            // ->setFormatCode('@');
 
             $filePath->setColumn('A:A', 13)
             ->setColumn('B:B', 13)
