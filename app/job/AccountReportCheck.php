@@ -102,8 +102,8 @@ class AccountReportCheck
             // ->getStyle('A:Q')
             // ->getNumberFormat()
             // ->setFormatCode('@');
-            $decimalFormat = new \Vtiful\Kernel\Format($excel->getHandle());
-            $decimalFormat->setNumFormat('0.00');
+            // $decimalFormat = new \Vtiful\Kernel\Format($excel->getHandle());
+            // $decimalFormat->setNumFormat('0.00');
 
 
             $filePath->setColumn('A:A', 13)
@@ -115,7 +115,7 @@ class AccountReportCheck
             ->setColumn('G:G', 12)
             ->setColumn('H:H', 12)
             ->setColumn('I:I', 12)
-            ->setColumn('J:J', 12,$decimalFormat)
+            ->setColumn('J:J', 12)
             ->setColumn('K:K', 12)
             ->setColumn('L:L', 12)
             ->setColumn('M:M', 12)
