@@ -382,7 +382,12 @@ class AdminMoneyLog extends Backend
                 // $result = DB::table('ba_admin_money_log')->where('id',$row['id'])->update([
                 //     'images'=>implode(',', $data['images']??[]),
                 // ]);
-                if(!empty($data['create_time'])) $data['create_time'] =  strtotime($data['create_time']);
+               
+                $data['raw_money'] = $data['money'];
+                // $data['money'] = $rechargeMoney;
+                $r = 1 + $row['rate'] + $row['bill_rate'];
+                $data['money'] =round(bcdiv((string)($data['money']), (string)$r,3),2);
+                $data['create_time'] = strtotime($data['create_time']);
 
                 $result = $row->save($data);
                 $this->model->commit();
@@ -396,7 +401,7 @@ class AdminMoneyLog extends Backend
                 $this->error(__('No rows updated'));
             }
         }
-
+        $row['money'] = $row['raw_money'];
         $this->success('', [
             'row' => $row
         ]);
