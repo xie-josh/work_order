@@ -292,6 +292,7 @@ class Bm extends Backend
 
             $accountList = $data['account_list'];
             $bmList = $data['bm_list'];
+            $bmListCount = count($bmList);
             $bmList = array_column($bmList,"choice_jurisdiction",'bm');
 
             if(empty($accountList) || empty(array_unique(array_keys($bmList)))) $this->error('参数错误');
@@ -348,6 +349,25 @@ class Bm extends Backend
                         if($v['status'] == 94) $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已进入系统回收池，当前不可操作，如需继续使用，请联系管理员。'];
                         else $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'该账户已经终止使用，不可操作，请联系管理员！'];
                         
+                        unset($accountListC[$k]);
+                    }
+
+                    $bmCount =  $bm = Db::table('ba_bm')
+                            ->where('account_id', $v['account_id'])
+                            ->whereIn('demand_type', [1,4])
+                            ->where('new_status', 1) 
+                            ->where(function($query) {
+                                $query->where(function($q) {
+                                    $q->where('status', '<>', '2')
+                                    ->where('dispose_type', '<>', '2');
+                                })->whereOr(function($q) {
+                                    $q->where('dispose_type', '1');
+                                });
+                            })
+                        ->count();
+                    $c = $bmCount + $bmListCount;
+                    if($c > 3) {
+                        $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'广告账户最多绑定3个邮箱/BM，请先解绑部分邮箱/ BM后再试'];
                         unset($accountListC[$k]);
                     }
                 }

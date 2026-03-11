@@ -642,6 +642,12 @@ class Account extends Backend
         try {
             $file = $this->request->file('file');
             $aoamId = $this->request->post('aoamId');
+            $nn = $file->getOriginalName();
+
+            if (str_contains($nn, '新账户申请') === false) {            
+                throw new \Exception("旧模版已失效，请下载最新模版重新上传");
+            }
+            // dd($file->getOriginalName());
             
             //$path = '/www/wwwroot/workOrder.test/public/storage/excel';
             $path = $_SERVER['DOCUMENT_ROOT'].'/storage/excel';
@@ -684,7 +690,7 @@ class Account extends Backend
 
 
             $countNumber = count($filteredArray);
-            if($countNumber < 1) throw new \Exception("Error Processing Request");
+            if($countNumber < 1) throw new \Exception("没有数据!");
             
 
             //dd($fileObject,$filteredArray);
@@ -793,16 +799,17 @@ class Account extends Backend
                 
                 $bes = [];
                 $i=6;
-                while ($i <= 100) {
-                    if(!empty($v[$i])){
-                        if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)){
-                            if(in_array($v[$i],$bes)) {$i++; continue;}
-                            $bes[] = $v[$i];
-                        } 
-                        else throw new \Exception($v[$i]."邮箱格式错误,请填写正确的邮箱后重新导入！");
-                        $i++;  
-                    }else{ break; }
-                }
+                if(!empty($v[$i])) $bes[] = $v[$i];
+                // while ($i <= 100) {
+                //     if(!empty($v[$i])){
+                //         if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)){
+                //             if(in_array($v[$i],$bes)) {$i++; continue;}
+                //             $bes[] = $v[$i];
+                //         } 
+                //         else throw new \Exception($v[$i]."邮箱格式错误,请填写正确的邮箱后重新导入！");
+                //         $i++;  
+                //     }else{ break; }
+                // }
                 if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) ) throw new \Exception($v[$i]."缺少参数[行业-时区-账户名称-绑定邮箱]！");
 
                 $d = [
@@ -860,7 +867,7 @@ class Account extends Backend
     //模版下载
     public function importTemplate()
     {
-        $this->success('',['row'=>['path'=>'/storage/default/申请账户模板.xlsx']]);
+        $this->success('',['row'=>['path'=>'/storage/default/新账户申请模板.xlsx']]);
     }
 
     //下载数据
