@@ -92,21 +92,21 @@ class AdminMoneyLog extends Backend
             if($compnay_id == $v['company_id'])
             {
                 //入账手续费
-                if(!empty($section))foreach($section as $kk => $vv)
-                {
-                    $start = strtotime($vv['start_tmie']);
-                    $end   = strtotime($vv['end_tmie']);
-                    //大于设定日期,设定当日不生效
-                    if (strtotime($v['create_time']) >= $start && strtotime($v['create_time']) <= $end) {
-                        //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
-                        $v['service_rate'] =  round($v['raw_money']*$vv['bill_rate'], 2);
-                    }
-                    if (strtotime($v['create_time']) >= $start && empty($end)) {
-                        //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
-                        $v['service_rate'] =  round($v['raw_money']*$vv['bill_rate'], 2);
-                    }
-                }
-                $v['money'] = $v['raw_money']-$v['service_rate'];
+                // if(!empty($section))foreach($section as $kk => $vv)
+                // {
+                //     $start = strtotime($vv['start_tmie']);
+                //     $end   = strtotime($vv['end_tmie']);
+                //     //大于设定日期,设定当日不生效
+                //     if (strtotime($v['create_time']) >= $start && strtotime($v['create_time']) <= $end) {
+                //         //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
+                //         $v['service_rate'] =  round($v['raw_money']*$vv['bill_rate'], 2);
+                //     }
+                //     if (strtotime($v['create_time']) >= $start && empty($end)) {
+                //         //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
+                //         $v['service_rate'] =  round($v['raw_money']*$vv['bill_rate'], 2);
+                //     }
+                // }
+                $v['money'] = bcadd((string)($v['raw_money'] / (1 + $v['rate'] + $v['bill_rate'])),"0",2);
             }
         }
 
