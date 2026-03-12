@@ -493,6 +493,7 @@ class Company extends Backend
 
         unset($row['salt']);
         $rateArr  = DB::table('ba_rate')->where('company_id',$info['id'])->order('create_time asc')->column('rate','company_id');//费率
+        $tkrateArr  = DB::table('ba_rate_tk')->where('company_id',$info['id'])->order('create_time asc')->column('tk_rate','company_id');//费率
         $billRateArr  = DB::table('ba_bill_rate')->where('company_id',$info['id'])->order('create_time asc')->column('bill_rate','company_id');//费率
         $adminUser  = DB::table('ba_admin')->where('company_id',$info['id'])->where('type',2)->find();//admin
         $listArr  = DB::table('ba_company_join_account_card')->where('company_id',$info['id'])->order('create_time asc')->select()->toArray();//公司关联的卡片
@@ -501,6 +502,7 @@ class Company extends Backend
         $row['list'] = $listArr??[];
         $row['count'] = $listArrcount??0;
         $row['rate'] = $rateArr[$info['id']]??0;
+        $row['tk_rate'] = $tkrateArr[$info['id']]??0;
         $row['bill_rate'] = $billRateArr[$info['id']]??0;
         $row['username']  = $adminUser['username']??'';
         $row['nickname'] = $adminUser['nickname']??'';
