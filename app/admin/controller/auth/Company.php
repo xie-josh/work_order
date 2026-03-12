@@ -252,6 +252,7 @@ class Company extends Backend
             $user['email'] = $data['email']??'';
             $list = $data['list']??[];
             $rate = $data['rate']??0;
+            $tkRate = $data['tk_rate']??0;
             $billRate = $data['bill_rate']??0;
             unset($data['password'],$data['username'],$data['nickname'],$data['rate'],$data['bill_rate']);
             if (!$data) {
@@ -309,6 +310,13 @@ class Company extends Backend
                     DB::table('ba_rate')->insert($inserData);
                 }
 
+                //TK费率处理
+                if(isset($tkRate)&&!empty($tkRate))
+                {
+                    $inserData  = ['create_time'=>date('Y-m-d',time()),'company_id'=>$this->model->id,'tk_rate'=>$tkRate];
+                    DB::table('ba_rate_tk')->insert($inserData);
+                }
+                
                 //入账手续费处理
                 if(isset($billRate)&&!empty($billRate))
                 {
@@ -387,6 +395,7 @@ class Company extends Backend
 
             try {
                 $rate = $data['rate']??0;
+                $tkRate = $data['tk_rate']??0;
                 $billRate = $data['bill_rate']??0;
                 $list = $data['list']??[];
                 unset($data['rate'],$data['bill_rate'],$data['list']);
@@ -432,6 +441,24 @@ class Company extends Backend
                      }else{
                              DB::table('ba_rate')->insert($inserData);
                      }
+                }
+
+                //tk费率处理
+                $rateResult = DB::table('ba_rate_tk')->where('company_id',$id)->order('create_time desc')->find();
+                $inserData  = ['create_time'=>date('Y-m-d',time()),'company_id'=>$id,'tk_rate'=>$tkRate];
+                $rateResult['tk_rate']     = $rateResult['tk_rate']??0;
+                $rateResult['create_time'] = $rateResult['create_time']??0;
+                if($rateResult['tk_rate'] != $tkRate)
+                {
+                    if(!empty($rateResult))
+                    {
+                        if($rateResult['create_time'] == date('Y-m-d',time()))
+                            DB::table('ba_rate_tk')->where(['company_id'=>$id,'create_time'=>date('Y-m-d',time())])->update(['tk_rate'=>$tkRate]);
+                        else
+                            DB::table('ba_rate_tk')->insert($inserData);
+                    }else{
+                            DB::table('ba_rate_tk')->insert($inserData);
+                    }
                 }
 
                 //入账手续费处理
