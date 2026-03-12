@@ -886,6 +886,7 @@ class Consumption extends Backend
         $offset = ($page - 1) * $limit;
         $total = count($list);
         $list['all']  = array_slice($list['all'], $offset, $limit);
+        $list['tk']  = $tkAll;
         return $this->success('',$list);
     }
 
