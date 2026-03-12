@@ -755,7 +755,7 @@ class Consumption extends Backend
         $sunAllDataTk['rate'] = round(array_sum(array_column($tkAll, 'rate')), 2)??0;
         $sunAllDataTk['total_dollar'] = round(array_sum(array_column($tkAll, 'total_dollar')), 2)??0;
         // $sunAllDataTk['yesterday_total_dollar'] = $sunAllDataTk['total_dollar']??0;
-        $sunAllDataTk['date_start'] = "合计";
+        $sunAllDataTk['report_date'] = "合计";
         array_unshift($tkAll, $sunAllDataTk);
         $tkAllNumber = $sunAllDataTk['rate']+$sunAllDataTk['total_dollar'];
         //---------------------------------------------TK------------------------------------------------
