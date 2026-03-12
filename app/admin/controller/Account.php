@@ -26,7 +26,7 @@ class Account extends Backend
     protected array|string $preExcludeFields = ['id', 'account_id', 'admin_id', 'create_time', 'update_time'];
 
     protected array $withJoinTable = ['admin'];
-    protected array $noNeedPermission = ['accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress','importTemplate','exportAccountDealWith','getExportProgressWeal','updateStatus','errAccount','delAdvertising'];
+    protected array $noNeedPermission = ['tk_import','accountCountMoney','editIs_','audit','index','getAccountNumber','allAudit','distribution','inDistribution','export','getExportProgress','importTemplate','exportAccountDealWith','getExportProgressWeal','updateStatus','errAccount','delAdvertising'];
     protected string|array $quickSearchField = ['id'];
 
     // protected bool|string|int $dataLimit = 'parent';
@@ -487,7 +487,8 @@ class Account extends Backend
                 $status = $data['status'];
                 $accountrequestProposalStatus = $data['accountrequest_proposal_status']??2;
                 $timeZone = $data['time_zone']??'';
-                                
+                $automaticCardIs = $data['automatic_card_is']??1;
+                
                 if($status == 1){
                     $ids = $this->model->whereIn('id',$ids)->where('status',0)->select()->toArray();
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
@@ -546,7 +547,37 @@ class Account extends Backend
 
                         $data = ['status'=>1,'allocate_time'=>$allocateTime,'affiliation_admin_id'=>$v['admin_id'],'update_time'=>time(),'serial_name'=>$getSerialName,'currency'=>$v['currency']];
                         if(empty($accountrequestProposal['time_zone']) && !empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
+                        
+
+                        $cardList = [];
+                        if($automaticCardIs == 2)
+                        {
+                            // $cardPlatform = $data['card_platform']??'';
+                            // $cardTopSix = $data['card_top_six']??'';
+                            $idsCount = 1;
+
+                            $cardList = DB::table('ba_cards_info')->where([
+                                ['system_use_is','=',1],
+                                ['is_use','=',0],
+                                // ['account_id','=',$cardPlatform],
+                                // ['card_no','LIKE',$cardTopSix."%"],
+                            ])->limit($idsCount)->column('cards_id');
+                            if(count($cardList) < $idsCount) throw new \Exception("所需卡数量余量不足，请调整后重试!");
+                        }
+                        if($automaticCardIs == 2) $data['cards_id'] = $cardList[0];
+
+                        $data['automatic_card_is'] = $automaticCardIs;
+                        $data['binding_card_is'] = 1;
+
                         DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update($data);
+                        // DB::table('ba_account')->where('id',$v['id'])->update(
+                        //     [
+                        //         'automatic_card_is'=>$automaticCardIs,
+                        //         'binding_card_is'=>1,
+                        //     ]
+                        // );
+                        if(!empty($data['cards_id'])) DB::table('ba_cards_info')->whereIn('cards_id',$data['cards_id'])->update(['is_use'=>1]);
+
                         
                     //     $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('admin_id',$adminId)->where('status',0)->find();
                     //     if(empty($accountrequestProposal))  continue;//throw new \Exception("该渠道暂时没有账号可以分配");
@@ -842,6 +873,51 @@ class Account extends Backend
         }
     }
 
+    public function auditImport()
+    {
+        $result = false;
+        try {
+            $file = $this->request->file('file');
+            $path = $_SERVER['DOCUMENT_ROOT'].'/storage/excel';
+            $fineName = 'accountImport'.time().'.xlsx';
+            $info = $file->move($path,$fineName);
+
+            $config = [
+                'path' => $path
+            ];
+
+            $excel = new \Vtiful\Kernel\Excel($config);
+
+            $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
+
+            unset($fileObject[0]);
+            
+            $timeList = config('basics.TIME_ZONE');
+
+            dd($fileObject);
+
+            $dataList = [];
+            foreach($fileObject as $v){
+
+                $time = $timeList[(String)$v[1]]??'';
+                
+                $dataList[] = [                            
+                    'status'=>0,
+                    'type'=>2,
+                    'account_id'=>$v,                            
+                    'account_status'=>1,
+                    'create_time'=>time()
+                ];
+            }
+
+            Db::table('ba_accountrequest_proposal')->insertAll($dataList);
+
+
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
     public function disposeStatus(): void
     {
        
@@ -961,6 +1037,20 @@ class Account extends Backend
                 }
                 $resultAccountList = DB::table('ba_account')->whereIn('id',$ids)->where('status',1)->select()->toArray();                
                 // $bmDataList = [];
+
+
+                // $automaticCardIs = $data['automatic_card_is']??1;
+                // $cardList = [];
+                // if($automaticCardIs == 2)
+                // {
+                //     $idsCount = count($resultAccountList);
+                //     $cardList = DB::table('ba_cards_info')->where([
+                //         ['system_use_is','=',1],
+                //         ['is_use','=',0],
+                //     ])->limit($idsCount)->column('cards_id');
+                //     if(count($cardList) < $idsCount) throw new \Exception("所需卡数量余量不足，请调整后重试!");
+                // }
+
                 foreach($accountIds as $k => $v)
                 {
                     $resultAccount = $resultAccountList[$k]??[];
@@ -1026,7 +1116,10 @@ class Account extends Backend
                     
                     $data = ['status'=>1,'affiliation_admin_id'=>$resultAccount['admin_id'],'allocate_time'=>$allocateTime,'update_time'=>time(),'serial_name'=>$getSerialName,'currency'=>$resultAccount['currency']];
                     if(empty($v['time_zone']) && !empty($resultAccount['time_zone'])) $data['time_zone'] = $resultAccount['time_zone'];
+                    
+                    // if($automaticCardIs == 2) $data['cards_id'] = $cardList[$k];
                     DB::table('ba_accountrequest_proposal')->where('account_id',$v['account_id'])->update($data);
+                    // if(!empty($data['cards_id'])) DB::table('ba_cards_info')->whereIn('cards_id',$data['cards_id'])->update(['is_use'=>1]);
                 }
                 // if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
 
@@ -1471,8 +1564,94 @@ class Account extends Backend
         return $this->success('',['progress' => $progress]);
     }
 
+    public function tk_import()
+    {
+            $result = false;
+            try {
+        
+                $file = $this->request->file('file');
+        
+                $path = $_SERVER['DOCUMENT_ROOT'].'/storage/excel';
+                $fineName = 'account_consumption_tk.xlsx';
+        
+                $info = $file->move($path,$fineName);
+        
+                $config = [
+                    'path' => $path
+                ];
+        
+                $excel = new \Vtiful\Kernel\Excel($config);
+        
+                $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
+        
+                // 删除表头
+                unset($fileObject[0]);
+           
+                $data = [];
+                $accountIds = array_column($fileObject,0);
+                $company_account_column =  DB::table('ba_account')->whereIn('account_id',$accountIds)->column('company_id','account_id');
 
-    public function import(){
+
+                foreach($fileObject as $v){
+                    if(empty($v[0])) continue;  // 账户ID不是纯数字就跳过
+                    if(empty($v[3]) || $v[3] == '-') continue;
+                    if (preg_match('/[\x{4e00}-\x{9fa5}]/u', $v[0])) continue;
+                    $d = [
+                        'account_id' => $v[0],
+                        'account_name' => $v[1],
+                        'timezone' => $v[2],
+                        'report_date' => $v[3],
+                        'currency' => $v[4],
+                        'spend' => (float)$v[5],
+                        'cpc' => (float)$v[6],
+                        'cpm' => (float)$v[7],
+                        'impressions' => (int)$v[8],
+                        'clicks' => (int)$v[9],
+                        'ctr' => str_replace('%','',$v[10]) / 100,
+                        'conversions' => (int)$v[11],
+                        'cpa' => (float)$v[12],
+                        'cvr' => str_replace('%','',$v[13]) / 100,
+                        'realtime_conversions' => (int)$v[14],
+                        'realtime_cpa' => (float)$v[15],
+                        'realtime_cvr' => str_replace('%','',$v[16]) / 100,
+                        'reach' => (int)$v[17],
+                        'account_type' => $v[18],
+                        'skan_conversions' => (int)$v[19],
+                        'skan_cpa' => (float)$v[20],
+                        'skan_cvr' => str_replace('%','',$v[21]) / 100,
+                        'company_name' => $v[22] ?? '',
+                        'company_id' => $company_account_column[$v[0]]??0,
+                        'contact_name' => $v[23] ?? '',
+                        'create_time' => date('Y-m-d H:i:s')
+                    ];
+                    $data[] = $d;
+                }
+        
+                if(empty($data)){
+                    throw new \Exception("Excel没有可导入数据");
+                }
+        
+                DB::table('ba_account_consumption_tk')->insertAll($data);
+        
+                $result = true;
+        
+            } catch (Throwable $th) {
+        
+                $this->error($th->getMessage());
+        
+            }
+        
+            if ($result !== false) {
+                $this->success(__('Added successfully'));
+            } else {
+                $this->error(__('No rows were added'));
+            }
+     
+    }
+
+
+    public function import()
+    {
 
         $result = false;
         try {
@@ -1652,6 +1831,7 @@ class Account extends Backend
             $this->error(__('No rows were added'));
         }
     }
+
 
     public function importTemplate()
     {
