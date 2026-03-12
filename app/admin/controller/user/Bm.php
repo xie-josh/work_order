@@ -171,6 +171,8 @@ class Bm extends Backend
     public function getBmList()
     {
         $bmList = [];
+        $canBmCount1 = 0;
+        $canBmCount2 = 0;
         try {
             $accountId = $this->request->get('account_id');
             
@@ -192,6 +194,7 @@ class Bm extends Backend
 
 
             $result =  DB::table('ba_bm')
+            ->field('account_id,bm')
             ->where('account_id',$accountId)
             ->whereIn('demand_type',[1,4])
             ->where('dispose_type',1)
@@ -199,11 +202,28 @@ class Bm extends Backend
             ->group('account_id,bm')
             ->select()->toArray();
 
+            $canBmCount1 = DB::table('ba_company')->where('id',$this->auth->company_id)->value('binding_bm_number');
+
+
+            $bmCount = Db::table('ba_bm')
+                    ->where('account_id', $accountId)
+                    ->whereIn('demand_type', [1,4])
+                    ->where('new_status', 1) 
+                    ->where(function($query) {
+                        $query->where(function($q) {
+                            $q->where('status', '<>', '2')
+                            ->where('dispose_type', '<>', '2');
+                        })->whereOr(function($q) {
+                            $q->where('dispose_type', '1');
+                        });
+                    })
+                ->count();
+
             $bmList = array_column($result,'bm');
         } catch (Throwable $th) {
             $this->error($th->getMessage());
         }
-        $this->success('',['bmList'=>$bmList]);
+        $this->success('',['bmList'=>$bmList,'bmCount'=>$bmCount,'canBmCount'=>$canBmCount1]);
     }
 
     public function batchUnbindAdd(): void
@@ -330,7 +350,7 @@ class Bm extends Backend
                 $where[] = ['account.status','=',4];
                 $table = DB::table('ba_account')
                 ->alias('account')
-                ->field('accountrequest_proposal.account_id,accountrequest_proposal.status')
+                ->field('accountrequest_proposal.account_id,accountrequest_proposal.status,account.company_id')
                 ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
                 ->whereIn('account.account_id',$accountList);
 
@@ -343,6 +363,8 @@ class Bm extends Backend
 
                 $nOTConsumptionStatus = config('basics.NOT_consumption_status');
 
+                $canBmCount = DB::table('ba_company')->where('id',$this->auth->company_id)->value('binding_bm_number');
+
                 foreach($accountListC as $k => $v){
                     if(in_array($v['status'],$nOTConsumptionStatus))
                     {
@@ -352,7 +374,7 @@ class Bm extends Backend
                         unset($accountListC[$k]);
                     }
 
-                    $bmCount =  $bm = Db::table('ba_bm')
+                    $bmCount =  Db::table('ba_bm')
                             ->where('account_id', $v['account_id'])
                             ->whereIn('demand_type', [1,4])
                             ->where('new_status', 1) 
@@ -365,9 +387,10 @@ class Bm extends Backend
                                 });
                             })
                         ->count();
+
                     $c = $bmCount + $bmListCount;
-                    if($c > 3) {
-                        $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>'广告账户最多绑定3个邮箱/BM，请先解绑部分邮箱/ BM后再试'];
+                    if($c > $canBmCount) {
+                        $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>"广告账户最多绑定{$canBmCount}个邮箱/BM，请先解绑部分邮箱/ BM后再试"];
                         unset($accountListC[$k]);
                     }
                 }
