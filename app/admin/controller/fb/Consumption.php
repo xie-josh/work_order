@@ -722,14 +722,14 @@ class Consumption extends Backend
         $list['all'] = $list['day']; //  array_slice($list['day'], 0, 3);
         // array_merge($list['month'],$list['day']);
         //---------------------------------------------------------------------------------------------
-
+        
         //---------------------------------------------TK------------------------------------------------
-        $tkAll = DB::table('ba_account_consumption_tk')->field('report_date,sum(spend) total_dollar')->group('report_date')->where(['company_id',$companyId])->order('report_date desc')->select()->toArray();
+        $tkAll = DB::table('ba_account_consumption_tk')->where('company_id',$companyId)->field('report_date,spend as total_dollar')->group('report_date')->order('report_date desc')->select()->toArray();
         $result_tk = DB::table('ba_rate_tk')->where('company_id',$companyId)->order('create_time asc')->select()->toArray();
         $section = [];
         if(!empty($result_tk))foreach($result_tk as $tk => $tv)
         {
-            $tksection[] =  ['start_tmie' => $tv['create_time'],'end_tmie' => isset($result[$tk+1]['create_time'])?$result[$tk+1]['create_time']:'','tk_rate'=>$tv['tk_rate']];
+            $tksection[] =  ['start_tmie' => $tv['create_time'],'end_tmie' => isset($result_tk[$tk+1]['create_time'])?$result_tk[$tk+1]['create_time']:'','tk_rate'=>$tv['tk_rate']];
         }
         //跑出汇率
         foreach($tkAll AS $ks => &$kvv)
@@ -739,27 +739,28 @@ class Consumption extends Backend
              {
                  $start = strtotime($vv['start_tmie']);
                  $end   = strtotime($vv['end_tmie']);
-                 $tkRate= strtotime($vv['tk_rate']);
+                 $tkRate= $vv['tk_rate'];
                  //大于设定日期,设定当日不生效
-                 if (strtotime($kvv['date_start']) > $start && strtotime($kvv['date_start']) <= $end) {
+                 if (strtotime($kvv['report_date']) > $start && strtotime($kvv['report_date']) <= $end) {
                     //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
                     $kvv['rate'] =  round($kvv['total_dollar']*$tkRate, 2);
                  }
-                 if (strtotime($kvv['date_start']) > $start && empty($end)) {
+                 if (strtotime($kvv['report_date']) > $start && empty($end)) {
                     //  $dd[] =  $v['start_tmie'] .">$thsiTime 没有结束时间".$v['rate']."--".$v['end_tmie']."\n";
                     $kvv['rate'] =  round($kvv['total_dollar']*$tkRate, 2);
                  }
              }
-        }
+        } 
         $sunAllDataTk =[];
         $sunAllDataTk['rate'] = round(array_sum(array_column($tkAll, 'rate')), 2)??0;
         $sunAllDataTk['total_dollar'] = round(array_sum(array_column($tkAll, 'total_dollar')), 2)??0;
         // $sunAllDataTk['yesterday_total_dollar'] = $sunAllDataTk['total_dollar']??0;
         $sunAllDataTk['date_start'] = "合计";
         array_unshift($tkAll, $sunAllDataTk);
+        $tkAllNumber = $sunAllDataTk['rate']+$sunAllDataTk['total_dollar'];
         //---------------------------------------------TK------------------------------------------------
-
-
+       
+        
         $this->withJoinTable = [];
         $where = [];
         // $alias = ['ba_admin_money_log'=>'admin_money_log'];
@@ -820,7 +821,7 @@ class Consumption extends Backend
             if(isset($v['sign'])) unset($list['all'][$k]);  //删除标记sign
         }
 
-        $shiji =  bcadd((string)$sunAllData['total_dollar'],(string)$sunAllData['rate'],'2');
+        $shiji =  bcadd((string)$sunAllData['total_dollar'],(string)$sunAllData['rate'],'2')+$tkAllNumber;
         array_unshift($list['all'], $sunAllData); 
         $AllList = array_column($list['all'],'total_dollar','date_start');
         foreach($list['all'] AS $k => &$v)
