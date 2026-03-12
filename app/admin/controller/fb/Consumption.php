@@ -740,6 +740,7 @@ class Consumption extends Backend
                  $start = strtotime($vv['start_tmie']);
                  $end   = strtotime($vv['end_tmie']);
                  $tkRate= $vv['tk_rate'];
+                 $kvv['rate'] = 0;
                  //大于设定日期,设定当日不生效
                  if (strtotime($kvv['report_date']) > $start && strtotime($kvv['report_date']) <= $end) {
                     //  $dd[] =   $v['start_tmie'] .">$thsiTime 在区间内".$v['rate']."--".$v['end_tmie']."\n";
