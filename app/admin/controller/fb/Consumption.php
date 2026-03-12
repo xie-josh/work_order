@@ -724,7 +724,7 @@ class Consumption extends Backend
         //---------------------------------------------------------------------------------------------
         
         //---------------------------------------------TK------------------------------------------------
-        $tkAll = DB::table('ba_account_consumption_tk')->where('company_id',$companyId)->field('report_date,spend as total_dollar')->group('report_date')->order('report_date desc')->select()->toArray();
+        $tkAll = DB::table('ba_account_consumption_tk')->where('company_id',$companyId)->field('report_date,SUM(spend) as total_dollar')->group('report_date')->order('report_date desc')->select()->toArray();
         $result_tk = DB::table('ba_rate_tk')->where('company_id',$companyId)->order('create_time asc')->select()->toArray();
         $section = [];
         if(!empty($result_tk))foreach($result_tk as $tk => $tv)
