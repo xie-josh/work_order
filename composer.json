@@ -56,11 +56,5 @@
             "@php think service:discover",
             "@php think vendor:publish"
         ]
-    },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "packages/akms"
-        }
-    ]
+    }
 }
