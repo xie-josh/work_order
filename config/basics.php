@@ -46,5 +46,6 @@ return  [
     "QUOTA_USER"=>[200,201,234,121], //限额用户ID
     "proposal_status"=>[],
     "NOT_SERIAL_NAME"=>[200,87,234,282],
-    "ACCOUNT_RECYCLE_DAYS"=>7
+    "ACCOUNT_RECYCLE_DAYS"=>7,
+    "TK_CURRENCY_VALUE"=>[0=>'USD',1=>'HKD',2=>'CNY']
 ];

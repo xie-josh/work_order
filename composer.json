@@ -41,7 +41,8 @@
     "autoload": {
         "psr-4": {
             "app\\": "app",
-            "modules\\": "modules"
+            "modules\\": "modules",
+            "Goletter\\Akms\\": "packages/goletter/akms/src/"
         },
         "psr-0": {
             "": "extend/"
@@ -55,5 +56,11 @@
             "@php think service:discover",
             "@php think vendor:publish"
         ]
-    }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/akms"
+        }
+    ]
 }
