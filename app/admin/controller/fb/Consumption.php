@@ -759,6 +759,7 @@ class Consumption extends Backend
         $sunAllDataTk['report_date'] = "合计";
         array_unshift($tkAll, $sunAllDataTk);
         $tkAllNumber = $sunAllDataTk['rate']+$sunAllDataTk['total_dollar'];
+        $tkAllList = array_column($tkAll,'total_dollar','report_date');
         //---------------------------------------------TK------------------------------------------------
        
         
@@ -845,9 +846,11 @@ class Consumption extends Backend
                 $v['atLeast_money']    = bcmul($thePreviousDayDollar,'2','2')??''; // 最低打款
                 $v['suggestzui_money'] = bcmul($thePreviousDayDollar,'4','2')??''; // 建议打款
 
-                $thisDay = $AllList[date('Y-m-d', time())]??0;   
-                $yesterDay = $AllList[date('Y-m-d', strtotime('-1 day'))]??0;
+                // $thisDay = $AllList[date('Y-m-d', time())]??0;   
+                $fbyesterDay = $AllList[date('Y-m-d', strtotime('-1 day'))]??0;
+                $tkyesterDay = $tkAllList[date('Y-m-d', strtotime('-1 day'))]??0;
                 $temp = $v['remaining_amount'];
+                $yesterDay = $fbyesterDay + $tkyesterDay;
                 $towConsume = $yesterDay * 1.5; //计算今明两天的消耗
                 if($temp<$towConsume)
                 {
