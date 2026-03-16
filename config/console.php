@@ -23,5 +23,8 @@ return [
         'CopyYesterdayConsumptionTask' => 'app\command\CopyYesterdayConsumptionTask',
         'AccountPendingRecycleTask' => 'app\command\AccountPendingRecycleTask',
         'AccountReportCheckTask' => 'app\command\AccountReportCheckTask',
+        'TkRechargeTask' => 'app\command\TkRechargeTask',
+        'BmBindingTask' => 'app\command\BmBindingTask',
+        'AccountOpenTask' => 'app\command\AccountOpenTask',
     ],
 ];

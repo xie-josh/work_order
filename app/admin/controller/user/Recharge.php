@@ -199,11 +199,13 @@ class Recharge extends Backend
                             }
 
                             $cards = DB::table('ba_accountrequest_proposal')
-                            ->field('cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id,accountrequest_proposal.is_cards')
+                            ->field('accountrequest_proposal.type,cards_info.id,cards_info.card_status,cards_info.card_id,cards_info.account_id,accountrequest_proposal.is_cards')
                             ->alias('accountrequest_proposal')
                             ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
                             ->where('accountrequest_proposal.account_id',$accountId)
                             ->find();
+                            if($cards['type'] == 2) throw new \Exception("该功能暂未开放！");
+
                             if(!empty($cards) && $cards['is_cards'] != 2 && $cards['card_status'] == 'normal') {
                                 $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
                                 if($resultCards['code'] != 1) array_push($errorList,['account_id'=>$accountId,'msg'=>$resultCards['msg']]);// throw new \Exception($resultCards['msg']);

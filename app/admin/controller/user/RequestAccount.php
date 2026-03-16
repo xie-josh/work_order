@@ -87,7 +87,11 @@ class RequestAccount extends Backend
         $noWhere = [];
         foreach($where as $k => $v){
             if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
-            
+            if($v[0] == 'accountrequest_proposal.account_platform_id'){
+                array_push($where,['accountrequest_proposal.type','=',$v[2]]);
+                unset($where[$k]);
+                continue;
+            }
             if($v[0] == 'account.open_time'){
                 $openTime = date('Y-m-d H:i:s',$v[2][0]);
                 $endTime = date('Y-m-d H:i:s',$v[2][1]);
@@ -217,6 +221,7 @@ class RequestAccount extends Backend
 
     function gitIndexCount()
     {
+        $accountPlatformId = $this->request->get('account_platform_id');
         $data = [
             'total_count'=>0,        //全部
             'total_active'=>0,       //活跃
@@ -230,6 +235,7 @@ class RequestAccount extends Backend
         $where = [
             ['account.company_id','=',$this->auth->company_id],
             ['account.account_id','<>',''],
+            ['accountrequest_proposal.type','=',$accountPlatformId],
         ];
 
         if($this->auth->type == 4) array_push($where,['account.team_id','=',$this->auth->team_id]);
@@ -361,6 +367,7 @@ class RequestAccount extends Backend
             $data['total_recycle'] = DB::table('ba_account_recycle')->where(
                 [
                     ['company_id','=',$this->auth->company_id],
+                    ['account_platform_id','=',$accountPlatformId],
                 ]
             )->count();
         }else{

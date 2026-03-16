@@ -228,6 +228,7 @@ class Account extends Backend
 
                 $list = $data['list'];
                 $listData = [];
+                $aoamPlatformId = 0;
                 if(empty($list)) throw new \Exception("请提交数据！");
                 foreach($list as $v)
                 {            
@@ -290,11 +291,14 @@ class Account extends Backend
 
                     if(isset($data['is_keep'])  && $data['is_keep'] == 1) $data['is_keep'] = 1;
                     else $data['is_keep'] = 0;
-                    
+
+                    if(empty($aoamPlatformId)) $aoamPlatformId = DB::table('ba_account_opening_application_manage')->where('id',$v['aoam_id'])->value('platform_id');
+
                     $v['admin_id'] = $this->auth->id;
                     $v['company_id']  = $company['id'];
                     $v['aoam_id']     = $v['aoam_id']??0;
                     $v['create_time']  = time();
+                    $v['account_platform_id'] = $aoamPlatformId;
 
                     if($company['prepayment_type'] == 2){
                         $companyUsedMoney = $this->companyUsedMoney($v['money']);
@@ -658,6 +662,8 @@ class Account extends Backend
                 'path' => $path
             ];
 
+            if(empty($aoamPlatformId)) $aoamPlatformId = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->value('platform_id');
+
             $excel = new \Vtiful\Kernel\Excel($config);
 
             $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
@@ -828,6 +834,7 @@ class Account extends Backend
                     'type'=>$accountTypeId,
                     'is_keep'=>$isKeep, 
                     'aoam_id'=>$aoamId,
+                    'account_platform_id'=>$aoamPlatformId,
                     'create_time'=>time()
                 ];
                 $data[] = $d;

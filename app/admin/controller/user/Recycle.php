@@ -46,6 +46,11 @@ class Recycle extends Backend
                 unset($where[$k]);
                 continue;
             }
+            if($v[0] == 'account.account_platform_id'){
+                array_push($where,['type','IN',$v[2]]);
+                unset($where[$k]);
+                continue;
+            }
         }
 
         if($this->auth->type == 4) $this->success('', [

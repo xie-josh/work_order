@@ -565,62 +565,89 @@ class AccountrequestProposal extends Backend
        
         if ($this->request->isPost()) {
             $data = $this->request->post();
-            $affiliationBm = $this->request->param(false)['affiliationBm'];
             $result = false;
             $this->model->startTrans();
             try {
                 $ids = $data['ids'];
-                $bm = $data['bm'];
-                // $affiliationBm = $data['affiliationBm'];
-                $timeZone = $data['timeZone'];
-                $adminId = $data['adminId'];
-                $isCards = $data['is_cards']??0;
-                $labelIds = $data['label_ids']??[];
                 $type = $data['type']??1;
-                $currency = $data['currency']??'';
-                $nameList = $data['name_list']??[];
-                $dataList = [];
 
-                if(empty($ids)) throw new \Exception("账户为空！");
+                if($type == 1)
+                {
+                    $bm = $data['bm'];
+                    // $affiliationBm = $data['affiliationBm'];
+                    $timeZone = $data['timeZone'];
+                    $adminId = $data['adminId'];
+                    $isCards = $data['is_cards']??0;
+                    $labelIds = $data['label_ids']??[];
+                    $currency = $data['currency']??'';
+                    $nameList = $data['name_list']??[];
+                    $affiliationBm = $this->request->param(false)['affiliationBm'];
+                    $dataList = [];
 
-                $accountCount = $this->model->where('admin_id',$adminId)->count();
+                    if(empty($ids)) throw new \Exception("账户为空！");
 
-                $accountList = $this->model->whereIn('account_id',$ids)->column('account_id');
+                    $accountCount = $this->model->where('admin_id',$adminId)->count();
 
-                $bmTokenResult = DB::table('ba_fb_bm_token')->where('id',$bm)->find();
-                if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
-                
-                $bm = $bmTokenResult['name'];
-                $bmTokenId = $bmTokenResult['id'];
+                    $accountList = $this->model->whereIn('account_id',$ids)->column('account_id');
 
-                foreach($ids as $k =>$v){
-                    if(in_array($v,$accountList)) continue;
-                    $v = filter_var($v, FILTER_SANITIZE_NUMBER_INT);
-                    $accountCount++;
-                    $dataList[] = [
-                        'bm'=>$bm,
-                        'affiliation_bm'=>$affiliationBm,
-                        'admin_id'=>$adminId,
-                        'status'=>0,
-                        'time_zone'=>$timeZone,
-                        'currency'=>$currency,
-                        'account_id'=>$v,
-                        'is_cards'=>$isCards,
-                        'label_ids'=>implode(',', $labelIds),
-                        'name'=>$nameList[$k]??'',
-                        'type'=>$type,
-                        'serial_number'=>$accountCount,
-                        'bm_token_id'=>$bmTokenResult['id'],
-                        'account_status'=>1,
-                        'create_time'=>time()
-                    ];
-                    $usersJobParam = [
-                        'account_id'=>$v,
-                        'bm_token_id'=>$bmTokenId,
-                        'type'=>1
-                    ];
-                    $this->assignedUsersJob($usersJobParam);
+                    $bmTokenResult = DB::table('ba_fb_bm_token')->where('id',$bm)->find();
+                    if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
+                    
+                    $bm = $bmTokenResult['name'];
+                    $bmTokenId = $bmTokenResult['id'];
+
+                    foreach($ids as $k =>$v){
+                        if(in_array($v,$accountList)) continue;
+                        $v = filter_var($v, FILTER_SANITIZE_NUMBER_INT);
+                        $accountCount++;
+                        $dataList[] = [
+                            'bm'=>$bm,
+                            'affiliation_bm'=>$affiliationBm,
+                            'admin_id'=>$adminId,
+                            'status'=>0,
+                            'time_zone'=>$timeZone,
+                            'currency'=>$currency,
+                            'account_id'=>$v,
+                            'is_cards'=>$isCards,
+                            'label_ids'=>implode(',', $labelIds),
+                            'name'=>$nameList[$k]??'',
+                            'type'=>$type,
+                            'serial_number'=>$accountCount,
+                            'bm_token_id'=>$bmTokenResult['id'],
+                            'account_status'=>1,
+                            'create_time'=>time()
+                        ];
+                        $usersJobParam = [
+                            'account_id'=>$v,
+                            'bm_token_id'=>$bmTokenId,
+                            'type'=>1
+                        ];
+                        $this->assignedUsersJob($usersJobParam);
+                    }
+                }else if($type == 2){
+                    $dataList = [];
+                    $adminId = $data['adminId'];
+                    $labelIds = $data['label_ids']??[];
+                    
+                    foreach($ids as $v){
+                       $dataList[] = [    
+                            'admin_id'=>$adminId,
+                            'status'=>0,
+                            'label_ids'=>implode(',', $labelIds),
+                            'type'=>2,
+                            'account_id'=>$v,                            
+                            'account_status'=>1,
+                            'create_time'=>time()
+                        ];
+
+                        $usersJobParam = [
+                            'account_id'=>$v,
+                            'account_platform_id'=>2
+                        ];
+                        $this->assignedUsersJob($usersJobParam);
+                    }
                 }
+                
                 Db::table('ba_accountrequest_proposal')->insertAll($dataList);
 
                 $result = true;

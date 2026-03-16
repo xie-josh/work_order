@@ -5,6 +5,7 @@ namespace app\admin\services\demand;
 use think\facade\Db;
 use think\facade\Cache;
 use think\facade\Queue;
+use app\admin\services\TkService;
 use Throwable;
 
 class Recharge
@@ -12,10 +13,6 @@ class Recharge
 
     protected object $model;
     protected object $auth;
-
-    protected $currencyRate = ["EUR"=>"0.8","ARS"=>"940","PEN"=>"3.6","IDR"=>"16000","VND"=>"23500","GBP"=>"0.7"];
-
-    protected $currency100 = ["IDR","VND"];
 
     public function __construct($auth=null)
     {
@@ -88,7 +85,6 @@ class Recharge
             if($spendCap == 0.01) $spendCap = 0;
 
             $spendCap = bcadd((string)$spendCap,(string)$fbNumber,2);
-
 
             $cardsNumber = $result['number'];
 
@@ -451,6 +447,95 @@ class Recharge
         }
     }
 
+
+    public function spendUp2($params)
+    {
+        $result = false;
+        $isCards = false;
+        $cardsNumber = 0;
+        $cards = [];
+        $isCardStatus = false;
+        try {
+            
+            $id = $params['account_id'];
+            $money = $params['money'];
+
+
+            $account = DB::table('ba_account')->where('account_id',$id)->field('is_,money')->find();
+            //if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+
+            $key = 'recharge_spendUp_automatic_'.$id;
+            $redis = Cache::store('redis')->handler(); 
+            
+            $lock = $redis->set($key, 1, ['nx', 'ex' => 180]);
+            if (!$lock) throw new \Exception("该数据在处理中，不需要处理！");
+
+            $accountrequestProposal = DB::table('ba_accountrequest_proposal')
+            ->alias('accountrequest_proposal')
+            ->field('accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.is_token,accountrequest_proposal.is_permissions,accountrequest_proposal.bm_token_id')
+            ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
+            ->where('fb_bm_token.status',1)
+            ->whereNotNull('fb_bm_token.token')
+            ->where('accountrequest_proposal.account_id',$id)
+            ->find();
+
+            if(empty($accountrequestProposal)) throw new \Exception("未找到账户或账户授权异常！");
+            $currency = $accountrequestProposal['currency'];    
+            
+            if($accountrequestProposal['is_token'] !=1) $accountrequestProposal['token'] = (new \app\admin\services\fb\FbService())->getPersonalbmToken($accountrequestProposal['token']);
+
+            $FacebookService = new \app\services\FacebookService();
+            $result1 = $FacebookService->adAccounts($accountrequestProposal);
+            if($result1['code'] != 1) throw new \Exception($result1['msg']);
+            if(!in_array($result1['data']['account_status'],[1,3])) throw new \Exception('FB账户异常，请确认账户状态[已经封户或状态异常]！');
+
+            if(in_array($currency,$this->currency100)){
+                $result1['data']['spend_cap'] =  bcmul($result1['data']['spend_cap'], '100', 2);
+            }
+
+            $spendCap = $result1['data']['spend_cap'];
+            $spendCapUs = $result1['data']['spend_cap'];
+
+            $fbNumber = $money;
+            $accountMoney = $account['money'];
+            $currencyRate = json_decode(env('APP.currency'),true);
+            if(!empty($currencyRate[$currency])){
+                $fbNumber = bcmul((string)$fbNumber, $currencyRate[$currency],2);
+                $spendCapUs = bcdiv((string)$spendCapUs, $currencyRate[$currency],2);
+            }            
+            
+            if($spendCapUs == 0.01) $spendCapUs = 0;
+            if(empty($accountMoney)) $accountMoney = 0;
+
+            if($spendCapUs != $accountMoney) throw new \Exception("FB总限额与系统充值匹配错误！");
+
+            if($spendCap == 0.01) $spendCap = 0;
+
+            $spendCap = bcadd((string)$spendCap,(string)$fbNumber,2);
+
+            $accountrequestProposal['spend'] = $spendCap;
+            $result3 = $FacebookService->adAccountsLimit($accountrequestProposal);
+            if($result3['code'] != 1) throw new \Exception("FB重置限额错误，请联系管理员！");
+
+            Cache::store('redis')->delete($key);
+            $result = true;
+        } catch (Throwable $th) {
+            if(!empty($id)){
+                DB::table('ba_fb_logs')->insert(
+                    ['log_id'=>$id,'type'=>'services_error_spend_up2','data'=>json_encode($result),'logs'=>$th->getMessage().':'.$th->getFile().':'.$th->getLine(),'create_time'=>date('Y-m-d H:i:s',time())]
+                );
+                $result = $this->model->where('id',$id)->update(['comment'=>$th->getMessage()]);
+            }            
+
+            return ['code'=>0,'msg'=>$th->getMessage()];
+        }
+        if ($result !== false) {
+            return ['code'=>1,'msg'=>''];
+        } else {
+            return ['code'=>0,'msg'=>''];
+        }
+    }
+
     public function addUpJob($id)
     {
         $jobHandlerClassName = 'app\job\AccountSpendUp';
@@ -469,7 +554,6 @@ class Recharge
 
     public function teamUsedMoney($amount,$accountId='')
     {
-        
         $account = DB::table('ba_account')->where('account_id',$accountId)->field('team_id,company_id')->find();
         $companyId =  $account['company_id'];
         $teamId = $account['team_id'];
@@ -490,5 +574,237 @@ class Recharge
         }        
         return ['code'=>1,'msg'=>''];
     }
+
+        //TK充值
+        public function tkspendUp($params)
+        {
+            $result = false;
+            try {
+                
+                $id = $params['id']??0;
+    
+                $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[1]]])->find();
+                if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
+    
+                $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();
+                //if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+    
+                $key = 'recharge_tkspendUp_automatic_'.$id;
+                $redis = Cache::store('redis')->handler(); 
+                
+                $lock = $redis->set($key, 1, ['nx', 'ex' => 180]);
+                if (!$lock) throw new \Exception("该数据在处理中，不需要处理！");
+    
+                $currency = DB::table('ba_accountrequest_proposal')->where('account_id',$result['account_id'])->value('currency');
+                if(empty($currency)) throw new \Exception("未找到账户或账户授权异常！");
+                $currencyTk = ['USD'=>0,'HKD'=>1,'CNY'=>2,'APR'=>3];
+
+                $fbNumber   = $result['number'];
+                $appApi = (new TkService())->ApplicationApi([]);
+                $resultTk = $appApi->tiktokAmountSpend([
+                        'applications' => [
+                            [
+                                'account_id' => $result['account_id'],
+                                'amount' => $fbNumber,
+                                'currency' => 0, //USD
+                                'type' => '1' //充值
+                            ]
+                        ],
+                        'is_prepay'    => false,
+                ]);
+                $apply_id = $resultTk['data']['apply_id'];
+    
+                // DB::table('ba_account')->where('account_id',$result['account_id'])->inc('money',$result['number'])->update(['update_time'=>time(),'is_'=>1]);
+                $data = [
+                    // 'status'=>1,
+                    'apply_id'=>$apply_id,
+                    'is_apply'=>2,
+                ];
+                $this->model->where('id',$result['id'])->update($data);
+    
+                Cache::store('redis')->delete($key);
+                $result = true;
+            } catch (Throwable $th) {
+                // if(!empty($key)) Cache::store('redis')->delete($key);
+                if(!empty($id)){
+                    DB::table('ba_fb_logs')->insert(
+                        ['log_id'=>$id,'type'=>'services_error_tk_spend_up','data'=>json_encode($result),'logs'=>$th->getMessage().':'.$th->getFile().':'.$th->getLine(),'create_time'=>date('Y-m-d H:i:s',time())]
+                    );
+                    $result = $this->model->where('id',$id)->update(['comment'=>$th->getMessage()]);
+                }
+                return ['code'=>0,'msg'=>$th->getMessage()];
+            }
+            if ($result !== false) {
+                return ['code'=>1,'msg'=>''];
+            } else {
+                return ['code'=>0,'msg'=>''];
+            }
+        }
+
+    //清零
+    public function tkspendDelete($params)
+    {
+        $result = false;
+        try {
+            $id = $params['id']??0;
+
+            $result = $this->model->where('id',$id)->where([['status','=',0],['type','IN',[3,4]]])->find();
+            if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
+
+            $key = 'recharge_tk_delete_automatic_'.$id;
+            $redisValue = Cache::store('redis')->get($key);
+            if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+            Cache::store('redis')->set($key, '1', 180);
+
+            //====================
+            $currency = DB::table('ba_accountrequest_proposal')
+            ->where('account_id',$result['account_id'])
+            ->value('currency');
+
+            if(empty($currency)) throw new \Exception("未找到账户或账户授权异常！");
+            $currencyTk = [
+                'USD'=>0,
+                'HKD'=>1,
+                'CNY'=>2
+           ];
+           $appApi = (new TkService())->ApplicationApi([]);
+
+           $tkresult = $appApi->tiktokAccounts([
+            'account_id' => $result['account_id'],
+            // "apply_id"=>13837619,
+            "current_page"=>1,
+            "page_size"=>1000]);
+
+           $balance   =  $tkresult['data']['list'][0]['balance']??0;
+           $tkCurrency = $tkresult['data']['list'][0]['currency'];
+
+           if($tkCurrency != 0)
+           {
+                $currencyRate = ['HKD'=>"0.13",'CNY'=>"0.145"];
+                if(!empty($currencyRate['HKD']) && $tkCurrency ==1)
+                {
+                    $balance = bcmul((string)$balance, $currencyRate['HKD'],2);
+                }   
+                if(!empty($currencyRate['CNY']) && $tkCurrency ==2)
+                {
+                    $balance = bcmul((string)$balance, $currencyRate['CNY'],2);
+                }         
+           }
+
+
+            
+            $resultTk = $appApi->tiktokAmountSpend([
+                    'applications' => [
+                        [
+                            'account_id' => $result['account_id'],
+                            'amount' => 0,
+                            'currency' => 0,
+                            'type' => '3' //清零
+                        ]
+                    ],
+                    'is_prepay'    => false,
+            ]);
+
+            $apply_id = $resultTk['data']['apply_id'];
+            
+            // DB::table('ba_account')->where('account_id',$result['account_id'])->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
+            // $this->teamUsedMoney($currencyNumber,$result['account_id']);
+
+            $data = [
+                // 'status'=>1,
+                'apply_id'=>$apply_id,
+                'is_apply'=>2,
+                'number'  =>$balance,
+            ];
+            $this->model->where('id',$result['id'])->update($data);
+            Cache::store('redis')->delete($key);
+            $result = true;
+        } catch (Throwable $e) {
+            //if(!empty($key)) Cache::store('redis')->delete($key);
+            
+            if(!empty($id)){
+                DB::table('ba_fb_logs')->insert(
+                    ['log_id'=>$id,'type'=>'services_error_tk_spend_delete','data'=>json_encode($result),'logs'=>$e->getMessage().':'.$e->getFile().':'.$e->getLine(),'create_time'=>date('Y-m-d H:i:s',time())]
+                );
+                $result = $this->model->where('id',$id)->update(['comment'=>$e->getMessage()]);
+            }
+            return ['code'=>0,'msg'=>$e->getMessage()];
+        }
+        if ($result !== false) {
+            return ['code'=>1,'msg'=>''];
+        } else {
+            return ['code'=>0,'msg'=>''];
+        }
+    }
+
+        //扣款
+        public function tkspendDeductions($params)
+        {
+            $result = false;
+            try {
+                $id = $params['id']??0;
+    
+                $result = $this->model->where('id',$id)->where([['status','=',0],['type','=',2]])->find();
+                if(empty($result)) throw new \Exception("未找到需求或需求已经处理！");
+    
+                $account = DB::table('ba_account')->where('account_id',$result['account_id'])->field('is_,money')->find();
+                if($account['is_'] != 1) throw new \Exception("错误：系统账户不可用请先确认账户是否活跃或账户清零回来是否调整限额！"); 
+    
+                $key = 'recharge_deductions_tk_automatic_'.$id;
+                $redisValue = Cache::store('redis')->get($key);
+                if(!empty($redisValue)) throw new \Exception("该数据在处理中，不需要重复点击！");
+                Cache::store('redis')->set($key, '1', 180);
+    
+                //====================
+                $currency = DB::table('ba_accountrequest_proposal')
+                ->where('account_id',$result['account_id'])
+                ->value('currency');
+    
+                if(empty($currency)) throw new \Exception("未找到账户或账户授权异常！");
+    
+                $appApi = (new TkService())->ApplicationApi([]);
+                $resultTk = $appApi->tiktokAmountSpend([
+                        'applications' => [
+                            [
+                                'account_id' => $result['account_id'],
+                                'amount' => -$result['number'],
+                                'currency' => 0,
+                                'type' => '2' //扣款
+                            ]
+                        ],
+                        'is_prepay'    => false,
+                ]);
+    
+                $apply_id = $resultTk['data']['apply_id'];
+        
+                // DB::table('ba_account')->where('account_id',$result['account_id'])->dec('money',$result['number'])->update(['update_time'=>time()]);
+                // $this->teamUsedMoney($result['number'],$result['account_id']);
+    
+                $data = [
+                    // 'status'=>1,
+                    'apply_id'=>$apply_id,
+                    'is_apply'=>2,
+                ];
+                $this->model->where('id',$result['id'])->update($data);
+                Cache::store('redis')->delete($key);
+                $result = true;
+            } catch (Throwable $e) {
+                //if(!empty($key)) Cache::store('redis')->delete($key);
+                
+                if(!empty($id)){
+                    DB::table('ba_fb_logs')->insert(
+                        ['log_id'=>$id,'type'=>'services_error_tk_spend_delete','data'=>json_encode($result),'logs'=>$e->getMessage(),'create_time'=>date('Y-m-d H:i:s',time())]
+                    );
+                    $result = $this->model->where('id',$id)->update(['comment'=>$e->getMessage()]);
+                }
+    
+                return ['code'=>0,'msg'=>$e->getMessage()];
+            }
+            if ($result !== false) {
+                return ['code'=>1,'msg'=>''];
+            } else {
+                return ['code'=>0,'msg'=>''];
+            }
+        }
 
 }
