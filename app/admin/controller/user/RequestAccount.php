@@ -427,8 +427,10 @@ class RequestAccount extends Backend
             if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
             
             if($v[0] == 'account.open_time'){
-                $openTime = date('Y-m-d H:i:s',$v[2][0]);
-                $endTime = date('Y-m-d H:i:s',$v[2][1]);
+                $openTime = $v[2][0];
+                $endTime = $v[2][1];
+                // $openTime = date('Y-m-d H:i:s',$v[2][0]);
+                // $endTime = date('Y-m-d H:i:s',$v[2][1]);
                 unset($where[$k]);
                 continue;
             }
