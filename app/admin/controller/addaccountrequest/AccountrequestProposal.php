@@ -627,6 +627,7 @@ class AccountrequestProposal extends Backend
                 }else if($type == 2){
                     $dataList = [];
                     $adminId = $data['adminId'];
+                    $jiabaiRegion = $data['jiabai_region']??'';
                     $labelIds = $data['label_ids']??[];
                     
                     foreach($ids as $v){
@@ -635,6 +636,7 @@ class AccountrequestProposal extends Backend
                             'status'=>0,
                             'label_ids'=>implode(',', $labelIds),
                             'type'=>2,
+                            'jiabai_region'=>$jiabaiRegion,
                             'account_id'=>$v,                            
                             'account_status'=>1,
                             'create_time'=>time()

@@ -206,6 +206,10 @@ class Account extends Backend
             // $adminNameArr = array_column($adminNameArr,'nickname','id');
 
             foreach($dataList as &$v){
+                
+                if(!empty($v['jiabai_region'])) $v['jiabai_region'] = explode(',', $v['jiabai_region']);
+                else $v['jiabai_region'] = [];
+                
                 $companyId = $v['company_id'];
                 $nickname = '';
                 // if($v['admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname = $companyAdminNameArr[$companyId]['nickname'];
@@ -519,6 +523,9 @@ class Account extends Backend
                     $result = $this->model->whereIn('id',array_column($ids,'id'))->update(['status'=>$status,'update_time'=>time(),'operate_admin_id'=>$this->auth->id]);
                 }elseif($status == 3){
                     $ids = $this->model->whereIn('id',$ids)->where('status',1)->select()->toArray();
+
+                    $cc = array_column($ids,'account_platform_id');
+                    if(in_array('2',$cc)) throw new \Exception("TK户暂未开放单个账户分配，请使用批量分配账户！");
 
                     foreach($ids as $v){
                         $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->whereIn('status',config('basics.FH_status'))->find();
@@ -1055,17 +1062,23 @@ class Account extends Backend
                 {
                     $resultAccount = $resultAccountList[$k]??[];
                     if(empty($resultAccount)) continue;
+
+                    $accountPlatformId = $resultAccount['account_platform_id'];
+
+                    if($accountPlatformId != $v['type']) continue;
                     
                     $lableIds = explode(',',$v['label_ids']??'');
                     if(!empty($lableIds) && !empty($resultAccount['type']) && !in_array($resultAccount['type'],$lableIds)) continue;
                    
+
                     $data = [
                         'account_admin_id'=>$v['admin_id'],
                         'status'=>3,
                         'account_id'=>$v['account_id'],
                         'is_'=>1,
+                        'is_apply'=>3,
                         'update_time'=>time()
-                    ];                    
+                    ];
 
                     // if(!empty($v['bm']) || !empty($v['email'])){
                         
@@ -1106,6 +1119,46 @@ class Account extends Backend
                     //         ];
                     //     }
                     // }
+
+                    if($accountPlatformId == 2)
+                    {   
+                        $besArr =  json_decode($resultAccount['bes']??'', true)??[];
+                        $bmData = [];
+                        foreach($besArr as $be){
+                            $bmType = 1;
+                            if(filter_var($be, FILTER_VALIDATE_EMAIL) !== false) $bmType = 2;
+
+                            $bmData = [
+                                'account_id'=>$resultAccount['account_id'],
+                                'bm'=> $be,
+                                'demand_type'=>4,
+                                'bm_type'=>$bmType,
+                                'status'=>0,
+                                'dispose_type'=>0,
+                                'admin_id'=>$resultAccount['admin_id'],
+                                'is_apply'=>2,
+                                'create_time'=>time(),
+                            ];
+
+                            $id = DB::table('ba_bm')->insertGetId($bmData);
+                            $this->bmBindingJobJob(['id'=>$id]);
+                        }
+
+                        // $bmBindingJobParam = [
+                        //     'account_id'=>$v,
+                        //     'bm'=>$be                            
+                        // ];
+                        // $this->bmBindingJobJob($bmBindingJobParam);
+                        // if(!empty($bmDataList)) DB::table('ba_bm')->insertAll($bmDataList);
+
+
+                        // foreach(){
+                        //     $bmBindingJobParam = [
+                        //         'id'=>$v                         
+                        //     ];
+                        //     $this->bmBindingJobJob($bmBindingJobParam);
+                        // }
+                    }
                    
                     if(!empty($v['time_zone'])) $data['time_zone'] = $v['time_zone'];
                     DB::table('ba_account')->where('id',$resultAccount['id'])->update($data);
@@ -1136,6 +1189,14 @@ class Account extends Backend
             }
         }
 
+    }
+
+    public function bmBindingJobJob($usersJobParam)
+    {
+        $jobHandlerClassName = 'app\job\BmBinding';
+        $jobQueueName = 'BmBinding';
+        Queue::later(1, $jobHandlerClassName, $usersJobParam, $jobQueueName);
+        return true;
     }
 
 
