@@ -47,7 +47,7 @@ class Recycle extends Backend
                 continue;
             }
             if($v[0] == 'account.account_platform_id'){
-                array_push($where,['type','IN',$v[2]]);
+                array_push($where,['account_platform_id','IN',$v[2]]);
                 unset($where[$k]);
                 continue;
             }

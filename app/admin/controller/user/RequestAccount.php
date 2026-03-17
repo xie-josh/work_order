@@ -425,7 +425,11 @@ class RequestAccount extends Backend
         $idle = 0;
         foreach($where as $k => $v){
             if($v[0] == 'accountrequest_proposal.account_status') $is_ = false;
-            
+            if($v[0] == 'accountrequest_proposal.account_platform_id'){
+                array_push($where,['accountrequest_proposal.type','=',$v[2]]);
+                unset($where[$k]);
+                continue;
+            }
             if($v[0] == 'account.open_time'){
                 $openTime = $v[2][0];
                 $endTime = $v[2][1];
