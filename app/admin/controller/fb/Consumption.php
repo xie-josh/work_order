@@ -955,7 +955,7 @@ class Consumption extends Backend
 
     public function tkexport()
     {
-        // try {
+        try {
         set_time_limit(600);
         ini_set('memory_limit', '320M');
 
@@ -1010,7 +1010,7 @@ class Consumption extends Backend
             ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.report_date,account_consumption.report_date as date_stop
             ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');
 
-            $accountIskeepList = $this->accountIskeepList($accountRecycleWhere);
+            // $accountIskeepList = $this->accountIskeepList($accountRecycleWhere);
         }
         
         $adminChannelList = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
@@ -1031,7 +1031,8 @@ class Consumption extends Backend
             '账户ID',
             '货币',
             '消耗',
-            '时间',
+            '开始时间',
+            '结束时间',
             '归属用户',
             '系统状态',
             '开户状态',
@@ -1133,9 +1134,10 @@ class Consumption extends Backend
                     $v['currency'],
                     (float)$spend,
                     $dateStart,
+                    $v['date_stop'],
                     $nickname,
-                    $statusValue,
-                    $openStatus,
+                    $v['bm'],
+                    $v['affiliation_bm'],
                     $adminChannel,
                     $v['time_zone'],
                     $openTime,
@@ -1152,11 +1154,11 @@ class Consumption extends Backend
 
         $excel->output();
         Cache::store('redis')->delete($redisKey);
-    // } catch (\Throwable $th) {
-    //     $logs = '错误info:('.$th->getLine().')'.json_encode($th->getMessage());
-    //     dd($logs);
-    //     //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
-    // }
+    } catch (\Throwable $th) {
+        $logs = '错误info:('.$th->getLine().')'.json_encode($th->getMessage());
+        dd($logs);
+        //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
+    }
         $this->success('',['path'=>$folders['filePath'].'/'.$name]);
     }
 
