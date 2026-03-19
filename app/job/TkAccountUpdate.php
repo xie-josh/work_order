@@ -43,7 +43,7 @@ class TkAccountUpdate
 
              $appApi = (new TkService())->TikTokAccount([]);
 
-            $result = $appApi->getAdvertiser('7613986907370029057');
+            $result = $appApi->getAdvertiser($accountId);
 
             $status = $map[$result['status']??'STATUS_CONFIRM_FAIL']??'STATUS_CONFIRM_FAIL';
             $balance = $result['balance']??0;
