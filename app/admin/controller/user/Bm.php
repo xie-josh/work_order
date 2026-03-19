@@ -406,8 +406,9 @@ class Bm extends Backend
                     }
                 }
 
+                $accountListd = $accountListC;
                 $accountListC = array_column($accountListC,'account_id');
-                $accountListd = array_column($accountListC,'type','account_id');
+                $accountListd = array_column($accountListd,'type','account_id');
 
                 $bmListC = [];
                 foreach($bmList as $v => $vv){
