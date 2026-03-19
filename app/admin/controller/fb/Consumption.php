@@ -953,6 +953,213 @@ class Consumption extends Backend
 
     }
 
+    public function tkexport()
+    {
+        // try {
+        set_time_limit(600);
+        ini_set('memory_limit', '320M');
+
+        $data = $this->request->post();
+
+        // if(empty($data['status']) || $data['status'] != '99') $this->error('导出功能维护中!');
+
+        $isCount = $data['is_count']??2;
+        $startTime = $data['start_time']??'';
+        $endTime = $data['end_time']??'';
+        $companyId = $data['company_id']??'';
+
+        if(empty($startTime) || empty($endTime)) $this->error('请选择时间！');
+
+        $accountRecycleWhere = [
+            'report_date'=>$startTime,
+            'report_date'=>$endTime
+        ];
+
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+
+        $batchSize = 10000;
+        $processedCount = 0;
+        $redisKey = 'export3_consumpotion'.'_'.$this->auth->id;
+        
+        $accountRecycleWhere = [];
+        array_push($where,['report_date','>=',$startTime]);
+        array_push($where,['report_date','<=',$endTime]);
+        // array_push($where,['accountrequest_proposal.type','=',2]);
+        if(!empty($companyId)) array_push($where,['account_consumption.company_id','=',$companyId]);
+
+        //测试
+        // array_push($where,['account_consumption.account_id','=','614862981209237']);
+       
+        $query =  DB::table('ba_account_consumption_tk')
+        ->alias('account_consumption')        
+        ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account_consumption.account_id')
+        ->leftJoin('ba_account account','account.account_id=account_consumption.account_id')
+        ->leftJoin('ba_company company','company.id=account_consumption.company_id')
+        ->where($where)
+        ->order('account_consumption.id','asc');
+      
+        $statusList = config('basics.ACCOUNT_STATUS');
+
+        if($isCount == 1){
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,company.id company_id,accountrequest_proposal.currency,accountrequest_proposal.status,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,min(account_consumption.report_date) report_date,max(account_consumption.report_date) date_stop,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,sum(account_consumption.spend) as spend,accountrequest_proposal.time_zone');
+            $query->group('account_consumption.company_id,account_consumption.account_id');
+            // dd($query->fetchSql()->find());
+        }else{
+            $accountRecycleWhere = [];
+            $query->field('account.status open_account_status,account.open_time account_open_time,accountrequest_proposal.admin_id admin_channel,company.company_name,company.id company_id,accountrequest_proposal.currency,accountrequest_proposal.status
+            ,accountrequest_proposal.account_status,accountrequest_proposal.serial_name,account_consumption.spend,account_consumption.report_date,account_consumption.report_date as date_stop
+            ,accountrequest_proposal.account_id,accountrequest_proposal.bm,accountrequest_proposal.affiliation_bm,accountrequest_proposal.time_zone');
+
+            $accountIskeepList = $this->accountIskeepList($accountRecycleWhere);
+        }
+        
+        $adminChannelList = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
+        $adminChannelList = array_column($adminChannelList,'nickname','id');
+        $openAccountStatusValue = config('basics.OPEN_ACCOUNT_STATUS');
+
+        $adminCompanyList = DB::table('ba_admin')->where('type',2)->field('company_id,nickname')->select()->toArray();
+        $adminCompanyList = array_column($adminCompanyList,'nickname','company_id');
+        // dd($adminCompanyList);
+     
+        $total = $query->count();
+        if($total <= 0) $this->error('没有可导出的数据！');
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders();
+        $header = [
+            '账户状态',
+            '账户名称',
+            '账户ID',
+            '货币',
+            '消耗',
+            '时间',
+            '归属用户',
+            '系统状态',
+            '开户状态',
+            '渠道',
+            '时区',
+        ];
+
+        if($isCount != 1){
+            $header[] = '开户时间';
+            $header[] = '养户消耗(是)';
+        }
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $name = $folders['name'].'.xlsx';
+        
+        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $dataList=[];
+
+            $accountIds = array_unique(array_column($data,'account_id'));
+            $accountNameList = $this->accountNameList($accountIds);
+
+            foreach($data as $v){
+                
+                // if($isCount != 1 && !empty($v['account_open_time'])) $openTime = date('Y-m-d',$v['account_open_time']);
+                // else 
+                $openTime = '';
+                
+                $openStatus = $openAccountStatusValue[$v['open_account_status']]??'未知的状态';               
+                $adminChannel = $adminChannelList[$v['admin_channel']]??'';
+                $statusValue = $statusList[$v['status']]??'未找到状态';
+                
+                //$nickname = $v['company_name'];
+                $nickname = $adminCompanyList[$v['company_id']]??'';
+                $serialName = $v['serial_name'];
+                $spend = $v['spend']??0;
+                $dateStart =  $v['report_date'];
+                $isKeep = '';
+
+                if($isCount != 1 && isset($accountIskeepList[$v['account_id']])){
+                    $cc = $accountIskeepList[$v['account_id']]['keep']??[];
+                    $dd = $accountIskeepList[$v['account_id']]['open']??[];
+                    foreach($cc as $item)
+                    {
+                        if(!empty($item['keep_time']))
+                        {
+                            if($item['open_time'] <= $v['date_start'] &&  $item['keep_time'] >= $v['date_start']) $isKeep = '是';
+                        }else{
+                            if($item['open_time'] <= $v['date_start']) $isKeep = '是';
+                        }
+                        // if($item['open_time'] <= $v['date_start'] &&  $item['keep_time'] >= $v['date_start']) $isKeep = '是';
+                    }
+                    $openTimeC = $v['account_open_time']??'';
+                    if(!empty($openTimeC) && $v['date_start'] >= date("Y-m-d",$openTimeC))
+                    {
+                        $openTime = date("Y-m-d",$openTimeC);
+                        $serialName = $v['serial_name'];
+                    }else{
+                        foreach($dd as $item2)
+                        {
+                            if($item2['strat_open_time'] <= $v['date_start'] &&  $item2['end_open_time'] >= $v['date_start']){
+                                $openTime = $item2['strat_open_time'];
+                                $serialName = $item2['name'];
+                            }
+                        }
+                    }
+                }else{
+
+                    if(isset($accountNameList[$v['account_id']]))
+                    {
+                        $dd = $accountNameList[$v['account_id']];
+
+                        $openTime = $v['account_open_time']??'';
+                        if(!empty($openTime) && $v['report_date'] >= date("Y-m-d",$openTime))
+                        {
+                            $serialName = $v['serial_name'];
+                        }else{
+                            // dd($v,$accountNameList[$v['account_id']]);
+                            foreach($dd as $item2)
+                            {
+                                if($item2['strat_open_time'] <= $v['report_date'] &&  $item2['end_open_time'] >= $v['report_date']){
+                                    $serialName = $item2['name'];
+                                }
+                            }
+                        }
+                    }               
+                }
+                // dd($accountIskeepList['411380995335659']);
+                // if($v['account_id'] == '614862981209237') dd($accountNameList[$v['account_id']],$serialName,$data);
+                $dataList[] = [
+                    $accountStatus[$v['account_status']]??'未找到状态',
+                    $serialName,                    
+                    $v['account_id'],
+                    $v['currency'],
+                    (float)$spend,
+                    $dateStart,
+                    $nickname,
+                    $statusValue,
+                    $openStatus,
+                    $adminChannel,
+                    $v['time_zone'],
+                    $openTime,
+                    $isKeep
+                ];
+                $processedCount++;
+            }
+            $filePath = $excel->fileName($folders['name'].'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList);
+            $progress = min(100, ceil($processedCount / $total * 100));
+            Cache::store('redis')->set($redisKey, $progress, 300);
+        }
+
+        $excel->output();
+        Cache::store('redis')->delete($redisKey);
+    // } catch (\Throwable $th) {
+    //     $logs = '错误info:('.$th->getLine().')'.json_encode($th->getMessage());
+    //     dd($logs);
+    //     //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
+    // }
+        $this->success('',['path'=>$folders['filePath'].'/'.$name]);
+    }
+
     public function export3()
     {
         set_time_limit(600);
