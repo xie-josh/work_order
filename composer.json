@@ -42,6 +42,7 @@
         "psr-4": {
             "app\\": "app",
             "modules\\": "modules",
+            "Goletter\\Adv\\": "packages/goletter/adv/src/",
             "Goletter\\Akms\\": "packages/goletter/akms/src/"
         },
         "psr-0": {

@@ -71,6 +71,23 @@ class AccountAssignedUsers
                     'account_status'=>1,
                 ];
                 DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update($data);
+
+                $params = [
+                    'bc_id' => '7504233300559872017',
+                    'user_id' => '7604826193457021968',
+                    'asset_type' => 'ADVERTISER',
+                    'asset_id' => $accountId,
+                    'advertiser_role' => 'ADMIN',
+                    'catalog_role' => 'ADMIN',
+                    'form_library_role' => 'ADMIN',
+                    'tt_account_roles' => ['POST'],
+                    'business_account_roles' => ['BUSINESS_ACCOUNT_ADMIN'],
+                    'store_role' => 'AD_PROMOTION'
+                ];
+
+                $appApi = (new \app\admin\services\TkService())->TikTokBusiness([]);
+
+                $result = $appApi->assignBcAsset($params);
             }
             
             $job->delete();

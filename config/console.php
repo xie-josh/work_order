@@ -5,6 +5,7 @@
 return [
     // 指令定义
     'commands' => [
+        'TestTask' => 'app\command\TestTask',
         'CardListTast' => 'app\command\CardListTask',
         'CardInfoTask' => 'app\command\CardInfoTask',
         'AccountTask' => 'app\command\AccountTask',
@@ -26,5 +27,7 @@ return [
         'TkRechargeTask' => 'app\command\TkRechargeTask',
         'BmBindingTask' => 'app\command\BmBindingTask',
         'AccountOpenTask' => 'app\command\AccountOpenTask',
+        'TkAccountUpdateTest' => 'app\command\TkAccountUpdateTest',
+        'TkFbAccountConsumptionTask' => 'app\command\TkFbAccountConsumptionTask',
     ],
 ];
