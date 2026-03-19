@@ -41,6 +41,7 @@ class Bm extends Backend
         
         array_push($this->withJoinTable,'companyAccount');
         array_push($where,['companyAccount.company_id','=',$this->auth->company_id]);
+        array_push($where,['bm.account_id','<>','']);
         
         // $indexField = 'bm.id,bm.bm,bm.bm_type,bm.status,bm.dispose_type,bm.choice_jurisdiction,bm.comment,bm.create_time,bm.update_time,accountrequestProposal.serial_name,accountrequestProposal.account_id';
         $showAudit = 1;
@@ -49,6 +50,7 @@ class Bm extends Backend
             array_push($where,['bm.team_id','=',$this->auth->team_id]);
             $showAudit = 0;
         }
+        // dd($alias);
 
         
 
@@ -260,12 +262,20 @@ class Bm extends Backend
                 ->group('account_id,bm')
                 ->select()->toArray();
 
+                $accountIds = array_column($bmArr,'account_id');
+                $accountList =  DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->field('account_id,type')->select()->toArray();
+                $accountList = array_column($accountList,'type','account_id');
 
                 if(empty($bmArr)) throw new \Exception('未找到绑定完成的需求请确定或联系客服！');
                 $error = [];
 
                 foreach($bmArr as $v)
                 {
+                    if($v['bm'] == '7504233300559872017'){
+                        $error[] = ['bm'=>'(账户)'.$v['account_id'].' - (BM)'.$v['bm'],'msg'=>'该BC解绑已经禁用!'];
+                        continue;
+                    }
+
                     $bm = DB::table('ba_bm')->where('account_id',$v['account_id'])->where('bm',$v['bm'])
                     ->where(function ($quant){
                         $quant->whereOr([['status','=',0],['status','=',1]]);
@@ -277,9 +287,10 @@ class Bm extends Backend
                         $error[] = ['bm'=>'(账户)'.$v['account_id'].' - (BM)'.$v['bm'],'msg'=>'该BM解绑需求已经提交过需求，不需要重复提交!'];
                         continue;
                     }
-
+                    $isApplyType = $accountList[$v['account_id']]??1;
                     $dataList[] = [
                         'demand_type'=>2,
+                        'is_apply'=>$isApplyType==2?3:1,
                         'account_id'=>$v['account_id'],
                         'bm'=>$v['bm'],
                         'bm_type'=>$v['bm_type'],
@@ -350,7 +361,7 @@ class Bm extends Backend
                 $where[] = ['account.status','=',4];
                 $table = DB::table('ba_account')
                 ->alias('account')
-                ->field('accountrequest_proposal.account_id,accountrequest_proposal.status,account.company_id')
+                ->field('accountrequest_proposal.type,accountrequest_proposal.account_id,accountrequest_proposal.status,account.company_id')
                 ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
                 ->whereIn('account.account_id',$accountList);
 
@@ -396,6 +407,7 @@ class Bm extends Backend
                 }
 
                 $accountListC = array_column($accountListC,'account_id');
+                $accountListd = array_column($accountListC,'type','account_id');
 
                 $bmListC = [];
                 foreach($bmList as $v => $vv){
@@ -446,9 +458,11 @@ class Bm extends Backend
                         $auditStatus = 2;
                         if($subManagement == false)if($isAudit == true) $auditStatus = 1;//非二级//需审核
                     //  dd($this->auth->team_id);
+                        $isApplyType = $accountListd[$v]??1;
                         $dataList[] = [
                             'demand_type'=>1,
                             'account_id'=>$v,
+                            'is_apply'=>$isApplyType==2?3:1,
                             'bm'=>$k2,
                             'bm_type'=>$v2['bm_type'],
                             'choice_jurisdiction'=>$v2['choice_jurisdiction'],
