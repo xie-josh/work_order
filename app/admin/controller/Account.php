@@ -1076,7 +1076,7 @@ class Account extends Backend
                         'status'=>3,
                         'account_id'=>$v['account_id'],
                         'is_'=>1,
-                        'is_apply'=>3,
+                        // 'is_apply'=>3,
                         'update_time'=>time()
                     ];
 
@@ -1136,12 +1136,12 @@ class Account extends Backend
                                 'status'=>0,
                                 'dispose_type'=>0,
                                 'admin_id'=>$resultAccount['admin_id'],
-                                'is_apply'=>2,
+                                'is_apply'=>3,
                                 'create_time'=>time(),
                             ];
 
                             $id = DB::table('ba_bm')->insertGetId($bmData);
-                            $this->bmBindingJobJob(['id'=>$id]);
+                            // $this->bmBindingJobJob(['id'=>$id]);
                         }
 
                         // $bmBindingJobParam = [
