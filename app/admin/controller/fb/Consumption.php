@@ -1152,19 +1152,19 @@ class Consumption extends Backend
             $progress = min(100, ceil($processedCount / $total * 100));
             Cache::store('redis')->set($redisKey, $progress, 300);
         }
-        $filePath->setColumn('A:A', 20)
-        ->setColumn('B:B', 50)
-        ->setColumn('C:C', 50)
-        ->setColumn('D:D', 15)
+        $filePath->setColumn('A:A', 10)
+        ->setColumn('B:B', 35)
+        ->setColumn('C:C', 35)
+        ->setColumn('D:D', 10)
         ->setColumn('E:E', 15)
         ->setColumn('F:F', 15)
         ->setColumn('G:G', 15)
-        ->setColumn('H:H', 15)
-        ->setColumn('I:I', 15)
+        ->setColumn('H:H', 10)
+        ->setColumn('I:I', 10)
         ->setColumn('J:J', 15)
         ->setColumn('K:K', 15)
-        ->setColumn('L:L', 20)
-        ->setColumn('M:M', 20);
+        ->setColumn('L:L', 15)
+        ->setColumn('M:M', 15);
         $excel->output();
         Cache::store('redis')->delete($redisKey);
     } catch (\Throwable $th) {
