@@ -38,7 +38,6 @@ class Settlement
 
     function exportExcel($params)
     {
-
         $batchSize = 80000;
         $processedCount = 0;
 
@@ -75,6 +74,7 @@ class Settlement
 
         $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
         $header = [
+            '媒体类型',
             '账户状态',
             '账户名称',
             '账户ID',
@@ -123,6 +123,7 @@ class Settlement
                 }                
 
                 $dataList[]  = [
+                    'FB',
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,
                     $v['account_id'],
@@ -137,7 +138,7 @@ class Settlement
             ->header($header)
             ->data($dataList);        
         }
-
+        $this->exportk($params,$excel);
         $filePath->setColumn('A:A', 13)
                     ->setColumn('B:B', 55)
                     ->setColumn('C:C', 20)
@@ -169,6 +170,112 @@ class Settlement
         ]);
         return true;
     }
+    public function exportk($params,$excel)
+    {
+        $batchSize = 80000;
+        $processedCount = 0;
+       
+        $nickname = $params['admin_nickname'];
+     
+        $where = [
+            ['consumption.company_id','=',$params['id']],
+            ['consumption.report_date','>=',$params['start_time']],
+            ['consumption.report_date','<=',$params['end_time']],
+            ['accountrequest_proposal.type','=',2]
+        ];
+
+        $query = DB::table('ba_account_consumption_tk')
+            ->field('account.open_time account_open_time,consumption.account_id,consumption.report_date,consumption.spend,accountrequest_proposal.account_status,accountrequest_proposal.currency,accountrequest_proposal.serial_name')
+            ->alias('consumption')
+            ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id = consumption.account_id')
+            ->leftJoin('ba_account account','account.account_id=consumption.account_id')
+            ->order('consumption.id','desc')
+            ->where($where);
+
+        $query2 = clone $query;
+        $total = $query2->count();
+     
+
+        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
+
+        if($params['prepayment_type'] == 1){
+            $prepaymentName ='预付实销';
+        }else{
+            $prepaymentName = '预付';
+        }
+
+        $resultPath = "excel/".date('Ym').'/settlement'.date('d').'/'.$prepaymentName;
+        // if(file_exists($resultPath)) unlink($resultPath);
+
+        $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
+        $header = [
+            '媒体类型',
+            '账户状态',
+            '账户名称',
+            '账户ID',
+            '货币',
+            '消耗',
+            '开始时间',
+            '结束时间'
+        ];
+
+        $config = [
+            'path' => $folders['path']
+        ];
+        // $excel  = new \Vtiful\Kernel\Excel($config);
+
+        $month = date('m',strtotime($params['end_time']));
+        $day  = date('d',strtotime($params['end_time']));
+        $excelName = $nickname."-{$month}月日消耗-{$month}{$day}";
+    
+        $name = $excelName.'.xlsx';
+
+        if($total == 0) return true;
+
+        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+            $data = $query->limit($offset, $batchSize)->select()->toArray();
+            $accountIds = array_unique(array_column($data,'account_id'));
+            $accountNameList = $this->accountNameList($accountIds);
+            $dataList = [];
+            foreach($data as $v){
+                $serialName = $v['serial_name'];
+                if(isset($accountNameList[$v['account_id']]))
+                {
+                    $dd = $accountNameList[$v['account_id']];
+
+                    $openTime = $v['account_open_time']??'';
+                    if(!empty($openTime) && $v['report_date'] >= date("Y-m-d",$openTime))
+                    {
+                        $serialName = $v['serial_name'];
+                    }else{
+                        foreach($dd as $item2)
+                        {
+                            if($item2['strat_open_time'] <= $v['report_date'] &&  $item2['end_open_time'] >= $v['report_date']){
+                                $serialName = $item2['name'];
+                            }
+                        }
+                    }
+                }                
+
+                $dataList[]  = [
+                    "TK",
+                    $accountStatus[$v['account_status']]??'未找到状态',
+                    $serialName,
+                    $v['account_id'],
+                    $v['currency'],
+                    (float)$v['spend'],
+                    $v['report_date'],
+                    $v['report_date'],
+                ];
+                $processedCount++;
+            }
+            $filePath = $excel->fileName($excelName.'.xlsx', 'sheet1')
+            ->header($header)
+            ->data($dataList);        
+        }
+        return true;
+    }
+
     public function accountNameList($accountIds)
     {
         $where = [
