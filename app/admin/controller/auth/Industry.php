@@ -16,7 +16,7 @@ class Industry extends Backend
     // 排除字段
     protected string|array $preExcludeFields = ['update_time', 'create_time'];
     
-    protected array $noNeedPermission = [];
+    protected array $noNeedPermission = ['index'];
 
     protected string|array $quickSearchField = 'id';
 
