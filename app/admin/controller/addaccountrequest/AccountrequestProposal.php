@@ -1861,7 +1861,16 @@ class AccountrequestProposal extends Backend
             }
         }
     }
-
+    
+    public function getFbAccountTkConsumptionTaskCount()
+    {
+        $taskCount =  Cache::store('redis')->handler()->llen('{queues:TkFbAccountConsumption}');
+        $comment = '';
+        if($taskCount >0){
+            $comment = "消耗查询任务正在执行中！( $taskCount )";
+        }
+        $this->success('', ['comment' => $comment]);
+    }
 
     public function cardBindingImport(){
 
