@@ -20,10 +20,10 @@ class TkAccountUpdate
             $accountId = $data['account_id'];
             $map = [
                 // 异常
-                'STATUS_CONFIRM_FAIL' => 0,
-                'STATUS_CONFIRM_FAIL_END' => 0,
-                'STATUS_CONFIRM_MODIFY_FAIL' => 0,
-                'STATUS_LIMIT' => 0,
+                'STATUS_CONFIRM_FAIL' => 2,
+                'STATUS_CONFIRM_FAIL_END' => 2,
+                'STATUS_CONFIRM_MODIFY_FAIL' => 2,
+                'STATUS_LIMIT' => 2,
 
                 // 活跃
                 'STATUS_ENABLE' => 1,
@@ -32,13 +32,13 @@ class TkAccountUpdate
                 'STATUS_DISABLE' => 2,
 
                 // 待处理
-                'STATUS_PENDING_CONFIRM' => 3,
-                'STATUS_PENDING_VERIFIED' => 3,
-                'STATUS_PENDING_CONFIRM_MODIFY' => 3,
-                'STATUS_WAIT_FOR_BPM_AUDIT' => 3,
-                'STATUS_WAIT_FOR_PUBLIC_AUTH' => 3,
-                'STATUS_SELF_SERVICE_UNAUDITED' => 3,
-                'STATUS_CONTRACT_PENDING' => 3,
+                'STATUS_PENDING_CONFIRM' => 2,
+                'STATUS_PENDING_VERIFIED' => 2,
+                'STATUS_PENDING_CONFIRM_MODIFY' => 2,
+                'STATUS_WAIT_FOR_BPM_AUDIT' => 2,
+                'STATUS_WAIT_FOR_PUBLIC_AUTH' => 2,
+                'STATUS_SELF_SERVICE_UNAUDITED' => 2,
+                'STATUS_CONTRACT_PENDING' => 2,
             ];
 
              $appApi = (new TkService())->TikTokAccount([]);

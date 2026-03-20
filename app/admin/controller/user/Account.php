@@ -223,7 +223,7 @@ class Account extends Backend
 
                 $time = date('Y-m-d',time());
                 $account_count = count($data['list'])??0;
-                $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->whereDay('create_time',$time)->count();
+                $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->where('status','<>',2)->whereDay('create_time',$time)->count();
                 if(($openAccountNumber + $account_count) > $accountNumber) throw new \Exception("今.开户数量已经不足，不能再提交开户需求,请联系管理员！");
 
                 $list = $data['list'];
@@ -299,6 +299,10 @@ class Account extends Backend
                     $v['aoam_id']     = $v['aoam_id']??0;
                     $v['create_time']  = time();
                     $v['account_platform_id'] = $aoamPlatformId;
+
+                    if($aoamPlatformId != 1){
+                        unset($v['is_vo']);
+                    }
 
                     if($company['prepayment_type'] == 2){
                         $companyUsedMoney = $this->companyUsedMoney($v['money']);
@@ -646,11 +650,11 @@ class Account extends Backend
         try {
             $file = $this->request->file('file');
             $aoamId = $this->request->post('aoamId');
-            $nn = $file->getOriginalName();
+            // $nn = $file->getOriginalName();
 
-            if (str_contains($nn, '新账户申请') === false) {            
-                throw new \Exception("旧模版已失效，请下载最新模版重新上传");
-            }
+            // if (str_contains($nn, '新账户申请') === false) {            
+            //     throw new \Exception("旧模版已失效，请下载最新模版重新上传");
+            // }
             // dd($file->getOriginalName());
             
             //$path = '/www/wwwroot/workOrder.test/public/storage/excel';
@@ -662,201 +666,21 @@ class Account extends Backend
                 'path' => $path
             ];
 
-            if(empty($aoamPlatformId)) $aoamPlatformId = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->value('platform_id');
+            $aoamPlatformId = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->value('platform_id');
+            if(empty($aoamPlatformId)) throw new \Exception("媒体平台暂未开启！");
 
             $excel = new \Vtiful\Kernel\Excel($config);
 
             $fileObject = $excel->openFile($fineName)->openSheet()->getSheetData();
             // $accountType = config('basics.account_type');
             // $accountTypeList = array_flip($accountType);
-
-
-            $timeList = config('basics.TIME_ZONE');
-
-            unset($fileObject[0],$fileObject[1],$fileObject[2]);
-            $authAdminId = $this->auth->id;
-            if($this->auth->isSuperAdmin()){
-                // $adminId = 0;
-                throw new \Exception("管理员不可申请！");
+            
+            if($aoamPlatformId == 2)
+            {  
+                $this->tkImport($aoamId,$fileObject);
             }else{
-                $adminId = $this->auth->id;
+                $this->fbImport($aoamId,$fileObject);
             }
-
-            /**
-             * 1.计算总开户数量
-             * 2.计算总金额
-             * 
-             * 
-             * 
-             */
-            $column = '0';
-            $filteredArray = array_filter($fileObject, function($row) use ($column) {
-                return !empty($row[$column]);
-            });
-
-
-            $countNumber = count($filteredArray);
-            if($countNumber < 1) throw new \Exception("没有数据!");
-            
-
-            //dd($fileObject,$filteredArray);
-            // $countAmout = array_sum(array_column($fileObject, '4'));
-
-            $company = Db::table('ba_company')->where('id',$this->auth->company_id)->find();
-            $accountNumber = $company['account_number'];
-            $prepaymentType = $company['prepayment_type'];
-            $usedMoney = $company['used_money'];
-            // $isAccount = $admin['is_account'];
-            // $usableMoney = ($admin['money'] - $admin['used_money']);
-            // if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
-            // if($usableMoney <= 0 || $usableMoney < $countAmout) throw new \Exception("余额不足,请联系管理员！");
-
-            $time = date('Y-m-d',time());
-            $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->whereDay('create_time',$time)->count();
-            if($accountNumber < ($countNumber + $openAccountNumber) && $this->auth->id != 1) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
- 
-
-            $cardWhere = [
-                ['a.is_show_card','=',1],
-                ['a.is_open_card','=',1],
-                ['a.company_id','=',$this->auth->company_id],
-                ['a.card_id','=',$aoamId],
-
-            ];
-            $companyJoinAccountCard = DB::table('ba_company_join_account_card')->alias('a')->leftJoin('ba_account_opening_application_manage b','a.card_id=b.id')->where($cardWhere)->find();
-            if(empty($companyJoinAccountCard)) throw new \Exception("该卡片未开启！");
-
-            // $accountOpeningApplicationManage = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->field('id,industry_ids,currency_list')->find();
-            // if(!empty($accountOpeningApplicationManage['currency_list'])) $currencyList = explode(',',$accountOpeningApplicationManage['currency_list']);
-            
-            $industryList = [];
-            $timeZoneList = [];
-            $currencyList = [];
-            $industryResult = [];
-            if(!empty($companyJoinAccountCard['currency_list'])) $currencyList = explode(',',$companyJoinAccountCard['currency_list']);
-            if(!empty($companyJoinAccountCard['industry_ids'])) $industryResult = DB::table('ba_industry')->field('id,name,time_zone_list')->where('status',1)->whereIn('id',explode(',',$companyJoinAccountCard['industry_ids']))->select()->toArray();
-
-            $industryList = array_column($industryResult,'name');
-            $accountTypeList = array_column($industryResult,'id','name');
-
-            foreach($industryResult as &$v)
-            {
-                if(!empty($v['time_zone_list'])) $v['time_zone_list'] = explode(',',$v['time_zone_list']);
-                else $v['time_zone_list'] = [];
-
-                $timeZoneList[$v['name']] = $v['time_zone_list'];
-            }
-            
-            $companyIsKeep = DB::table('ba_company')->where('id',$this->auth->company_id)->value('is_keep');
-
-            $notMoneyAdminList = explode(',',env('CACHE.NOT_MONEY_admin',''));
-            $data = [];
-            $isKeepCount = 0;
-            foreach($filteredArray as $v){
-                $accountTypeId = $accountTypeList[$v[0]]??'';
-                $time = $timeList[(String)$v[1]]??'';
-                $name = $v[2];
-                $isKeep = 0;
-                $currency = empty($v[4])?"USD":$v[4];
-                // $adminId = empty($adminId)?($v[5]??0):$adminId;
-
-                if(in_array($adminId,$notMoneyAdminList) && !empty($v[3])) $money = $v[3];
-                else $money = 0;
-
-                // if(in_array($accountTypeId,[1,3]) && $v[5] == 1)
-                if($v[5] == 1 && $companyIsKeep != 1) throw new \Exception("导入失败：企业未开启‘养户模式’，请联系相关负责人开启或重新编辑导入文件！");
-                if($v[5] == 1)
-                {
-                    // throw new \Exception("暂不支持养户！");
-                    $isKeep = 1;//---养户充值
-                    $isKeepCount++;
-                } 
-                // if(!in_array($accountTypeId,[1,3]) && $v[5] == 1)
-                // {
-                //     throw new \Exception("养户只针对于【电商/游戏】类型  请修改账户名称为".$v[2]."的投放类型,或改成非养户类型后重新导入");
-                // } 
-                if(!in_array($v[0],$industryList)) throw new \Exception($v[2].":投放行业不支持！");
-                
-                // dd($time,$timeZoneList);
-                if(!in_array($time,$timeZoneList[$v[0]])) throw new \Exception($v[2].":该行业对应时区暂未开放！");
-                if(!in_array($currency,$currencyList)) throw new \Exception($v[2].":该币种暂未开放！");
-
-                // foreach()
-
-                // if(in_array($v[0],['游戏']) && !in_array($v[1],[5.5,7,8,-3,-7,-6]))
-                // {
-                //      throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7,-6】");
-                // }
-
-                // if(in_array($v[0],['短剧','工具']) && !in_array($v[1],[5.5,7,8,-3,-7]))
-                // {
-                //      throw new \Exception($v[2].":【'游戏','短剧','工具'】,只能选择对应时区【5.5,7,8,-3,-7】");
-                // }
-
-                // if(in_array($v[0],['电商']) && !in_array($v[1],[8,5.5,-3,-6,-7,-8,-9]))
-                // {
-                //      throw new \Exception($v[2].":【'电商'】,只能选择对应时区【8,5.5,-3,-6,7,-8,-9】");
-                // }
-
-                
-                // $isKeep = $v[5];
-                if($isKeep)$open_money =10;
-                else$open_money = 0;
-                
-                $bes = [];
-                $i=6;
-                if(!empty($v[$i])) $bes[] = $v[$i];
-                // while ($i <= 100) {
-                //     if(!empty($v[$i])){
-                //         if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)){
-                //             if(in_array($v[$i],$bes)) {$i++; continue;}
-                //             $bes[] = $v[$i];
-                //         } 
-                //         else throw new \Exception($v[$i]."邮箱格式错误,请填写正确的邮箱后重新导入！");
-                //         $i++;  
-                //     }else{ break; }
-                // }
-                if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) ) throw new \Exception($v[$i]."缺少参数[行业-时区-账户名称-绑定邮箱]！");
-
-                $d = [
-                    'name'=>$name,
-                    'time_zone'=>$time,
-                    // 'email'=>'',
-                    // 'bm'=>$bm,
-                    'bes'=>json_encode($bes??[]),
-                    'bm_type'=>2,
-                    'money'=>$open_money,
-                    // 'open_money'=>$open_money, //---养户充值10
-                    'admin_id'=>$adminId,
-                    'company_id'=>$this->auth->company_id,
-                    'status'=>$authAdminId==1?1:0,
-                    'currency'=>$currency,
-                    'type'=>$accountTypeId,
-                    'is_keep'=>$isKeep, 
-                    'aoam_id'=>$aoamId,
-                    'account_platform_id'=>$aoamPlatformId,
-                    'create_time'=>time()
-                ];
-                $data[] = $d;
-            }
-            if($isKeepCount>0)
-            {
-                $amount =  bcmul($isKeepCount, '10');//---养户充值*10
-
-                if($prepaymentType != 1)
-                {
-                    if($usedMoney < 0) throw new \Exception("养户所需余额不足请充值！");
-                    $where['id'] = $this->auth->company_id;
-                    $result =  DB::table('ba_company')
-                                ->whereRaw("money - used_money > $amount")
-                                ->where($where)
-                                ->inc('used_money', $amount)                   
-                                ->update();
-                    if(!$result) throw new \Exception("养户所需余额不足请充值！");
-                }
-                
-            }
-            DB::table('ba_account')->insertAll($data);
             $result = true;
             //$fileObject->closeSheet();  
             //code...
@@ -871,10 +695,263 @@ class Account extends Backend
         }
     }
 
+
+    public function fbImport($aoamId,$fileObject)
+    {
+        $aoamPlatformId = 1;
+        unset($fileObject[0],$fileObject[1],$fileObject[2]);
+        $column = '0';
+        $filteredArray = array_filter($fileObject, function($row) use ($column) {
+            return !empty($row[$column]);
+        });
+
+        $timeList = config('basics.TIME_ZONE');
+
+        
+        $authAdminId = $this->auth->id;
+        if($this->auth->isSuperAdmin()){
+            // $adminId = 0;
+            throw new \Exception("管理员不可申请！");
+        }else{
+            $adminId = $this->auth->id;
+        }
+
+        $countNumber = count($filteredArray);
+        if($countNumber < 1) throw new \Exception("没有数据!");        
+
+        $company = Db::table('ba_company')->where('id',$this->auth->company_id)->find();
+        $accountNumber = $company['account_number'];
+        $prepaymentType = $company['prepayment_type'];
+        $usedMoney = $company['used_money'];
+        // $isAccount = $admin['is_account'];
+        // $usableMoney = ($admin['money'] - $admin['used_money']);
+        // if($isAccount != 1) throw new \Exception("未调整可开户数量,请联系管理员添加！");
+        // if($usableMoney <= 0 || $usableMoney < $countAmout) throw new \Exception("余额不足,请联系管理员！");
+
+        $time = date('Y-m-d',time());
+        $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->where('status','<>',2)->whereDay('create_time',$time)->count();
+        if($accountNumber < ($countNumber + $openAccountNumber) && $this->auth->id != 1) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
+
+
+        $cardWhere = [
+            ['a.is_show_card','=',1],
+            ['a.is_open_card','=',1],
+            ['a.company_id','=',$this->auth->company_id],
+            ['a.card_id','=',$aoamId],
+
+        ];
+        $companyJoinAccountCard = DB::table('ba_company_join_account_card')->alias('a')->leftJoin('ba_account_opening_application_manage b','a.card_id=b.id')->where($cardWhere)->find();
+        if(empty($companyJoinAccountCard)) throw new \Exception("该卡片未开启！");
+
+        // $accountOpeningApplicationManage = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->field('id,industry_ids,currency_list')->find();
+        // if(!empty($accountOpeningApplicationManage['currency_list'])) $currencyList = explode(',',$accountOpeningApplicationManage['currency_list']);
+        
+        $industryList = [];
+        $timeZoneList = [];
+        $currencyList = [];
+        $industryResult = [];
+        if(!empty($companyJoinAccountCard['currency_list'])) $currencyList = explode(',',$companyJoinAccountCard['currency_list']);
+        if(!empty($companyJoinAccountCard['industry_ids'])) $industryResult = DB::table('ba_industry')->field('id,name,time_zone_list')->where('status',1)->whereIn('id',explode(',',$companyJoinAccountCard['industry_ids']))->select()->toArray();
+
+        $industryList = array_column($industryResult,'name');
+        $accountTypeList = array_column($industryResult,'id','name');
+
+        foreach($industryResult as &$v)
+        {
+            if(!empty($v['time_zone_list'])) $v['time_zone_list'] = explode(',',$v['time_zone_list']);
+            else $v['time_zone_list'] = [];
+
+            $timeZoneList[$v['name']] = $v['time_zone_list'];
+        }
+        
+        $companyIsKeep = DB::table('ba_company')->where('id',$this->auth->company_id)->value('is_keep');
+
+        $notMoneyAdminList = explode(',',env('CACHE.NOT_MONEY_admin',''));
+        $data = [];
+        $isKeepCount = 0;
+        
+        foreach($filteredArray as $v){
+            $accountTypeId = $accountTypeList[$v[0]]??'';
+            $time = $timeList[(String)$v[1]]??'';
+            $name = $v[2];
+            $isKeep = 0;
+            $currency = empty($v[4])?"USD":$v[4];
+            // $adminId = empty($adminId)?($v[5]??0):$adminId;
+
+            if(in_array($adminId,$notMoneyAdminList) && !empty($v[3])) $money = $v[3];
+            else $money = 0;
+
+            // if(in_array($accountTypeId,[1,3]) && $v[5] == 1)
+            if($v[5] == 1 && $companyIsKeep != 1) throw new \Exception("导入失败：企业未开启‘养户模式’，请联系相关负责人开启或重新编辑导入文件！");
+            if($v[5] == 1)
+            {
+                // throw new \Exception("暂不支持养户！");
+                $isKeep = 1;//---养户充值
+                $isKeepCount++;
+            } 
+            // if(!in_array($accountTypeId,[1,3]) && $v[5] == 1)
+            // {
+            //     throw new \Exception("养户只针对于【电商/游戏】类型  请修改账户名称为".$v[2]."的投放类型,或改成非养户类型后重新导入");
+            // } 
+            if(!in_array($v[0],$industryList)) throw new \Exception($v[2].":投放行业不支持！");
+            
+            // dd($time,$timeZoneList);
+            if(!in_array($time,$timeZoneList[$v[0]])) throw new \Exception($v[2].":该行业对应时区暂未开放！");
+            if(!in_array($currency,$currencyList)) throw new \Exception($v[2].":该币种暂未开放！");
+            
+            // $isKeep = $v[5];
+            if($isKeep)$open_money =10;
+            else$open_money = 0;
+            
+            $bes = [];
+            $i=6;
+            if(!empty($v[$i])) $bes[] = $v[$i];
+            // while ($i <= 100) {
+            //     if(!empty($v[$i])){
+            //         if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)){
+            //             if(in_array($v[$i],$bes)) {$i++; continue;}
+            //             $bes[] = $v[$i];
+            //         } 
+            //         else throw new \Exception($v[$i]."邮箱格式错误,请填写正确的邮箱后重新导入！");
+            //         $i++;  
+            //     }else{ break; }
+            // }
+            if(empty($accountTypeId) || empty($time) || empty($name) || empty($bes) ) throw new \Exception($v[$i]."缺少参数[行业-时区-账户名称-绑定邮箱]！");
+
+            $d = [
+                'name'=>$name,
+                'time_zone'=>$time,
+                // 'email'=>'',
+                // 'bm'=>$bm,
+                'bes'=>json_encode($bes??[]),
+                'bm_type'=>2,
+                'money'=>$open_money,
+                // 'open_money'=>$open_money, //---养户充值10
+                'admin_id'=>$adminId,
+                'company_id'=>$this->auth->company_id,
+                'status'=>$authAdminId==1?1:0,
+                'currency'=>$currency,
+                'type'=>$accountTypeId,
+                'is_keep'=>$isKeep, 
+                'aoam_id'=>$aoamId,
+                'account_platform_id'=>$aoamPlatformId,
+                'create_time'=>time()
+            ];
+            $data[] = $d;
+        }
+        if($isKeepCount>0)
+        {
+            $amount =  bcmul($isKeepCount, '10');//---养户充值*10
+
+            if($prepaymentType != 1)
+            {
+                if($usedMoney < 0) throw new \Exception("养户所需余额不足请充值！");
+                $where['id'] = $this->auth->company_id;
+                $result =  DB::table('ba_company')
+                            ->whereRaw("money - used_money > $amount")
+                            ->where($where)
+                            ->inc('used_money', $amount)                   
+                            ->update();
+                if(!$result) throw new \Exception("养户所需余额不足请充值！");
+            }
+            
+        }
+        DB::table('ba_account')->insertAll($data);
+    }
+
+    public function tkImport($aoamId,$fileObject)
+    {
+        $aoamPlatformId = 2;
+        unset($fileObject[0],$fileObject[1]);
+        $column = '0';
+        $filteredArray = array_filter($fileObject, function($row) use ($column) {
+            return !empty($row[$column]);
+        });
+
+        $countNumber = count($filteredArray);
+        if($countNumber < 1) throw new \Exception("没有数据!");    
+
+        $company = Db::table('ba_company')->where('id',$this->auth->company_id)->find();
+        $accountNumber = $company['account_number'];
+        $prepaymentType = $company['prepayment_type'];
+        $usedMoney = $company['used_money'];
+
+        $time = date('Y-m-d',time());
+        $openAccountNumber = Db::table('ba_account')->where('company_id',$this->auth->company_id)->where('status','<>',2)->whereDay('create_time',$time)->count();
+        if($accountNumber < ($countNumber + $openAccountNumber) && $this->auth->id != 1) throw new \Exception("今.开户数量已经不足，不足你提交表格里面申请的开户需求,请联系管理员或减少申请数量！");
+
+
+        $cardWhere = [
+            ['a.is_show_card','=',1],
+            ['a.is_open_card','=',1],
+            ['a.company_id','=',$this->auth->company_id],
+            ['a.card_id','=',$aoamId],
+
+        ];
+        $companyJoinAccountCard = DB::table('ba_company_join_account_card')->alias('a')->leftJoin('ba_account_opening_application_manage b','a.card_id=b.id')->where($cardWhere)->find();
+        if(empty($companyJoinAccountCard)) throw new \Exception("该卡片未开启！");
+
+        $data = [];
+        $industryList = [];
+        $industryResult = [];
+        if(!empty($companyJoinAccountCard['industry_ids'])) $industryResult = DB::table('ba_industry')->field('id,name,time_zone_list')->where('status',1)->whereIn('id',explode(',',$companyJoinAccountCard['industry_ids']))->select()->toArray();
+        
+        $industryList = array_column($industryResult,'name');
+        $accountTypeList = array_column($industryResult,'id','name');
+
+        $jiabaiRegionList = DB::table('ba_jiabai_region')->field('name,time_zone')->select()->toArray();
+        $jiabaiRegionList = array_column($jiabaiRegionList,'time_zone','name');
+
+        foreach($filteredArray as $v)
+        {
+            $name = $v[2]??'';
+            $jiabaiRegion = $v[1]??'';
+            $bc = $v[5]??'';
+
+            $time = $jiabaiRegionList[$jiabaiRegion]??'';
+
+            if(empty($v[0]) || empty($v[1]) || empty($name) || empty($v[5]) ) throw new \Exception("缺少参数[行业-加白地区-账户名称-绑定BC]！");
+            if(empty($time)) throw new \Exception("未找到对应的加白地区");
+            if(!in_array($v[0],$industryList)) throw new \Exception($v[2].":投放行业不支持！");
+
+            
+            $adminId = $this->auth->id;
+
+            $accountTypeId = $accountTypeList[$v[0]]??'';
+
+            $data[] = [
+                'name'=>$name,
+                'time_zone'=>$time,
+                'jiabai_region'=>$jiabaiRegion,
+                // 'email'=>'',
+                // 'bm'=>$bm,
+                'bes'=>json_encode(["$bc"]),
+                'bm_type'=>2,
+                'money'=>0,
+                // 'open_money'=>$open_money, //---养户充值10
+                'admin_id'=>$adminId,
+                'company_id'=>$this->auth->company_id,
+                'status'=>0,
+                'currency'=>'USD',
+                'type'=>$accountTypeId,
+                'aoam_id'=>$aoamId,
+                'account_platform_id'=>$aoamPlatformId,
+                'create_time'=>time()
+            ];        
+        }
+        DB::table('ba_account')->insertAll($data);    
+    }
+
     //模版下载
     public function importTemplate()
     {
-        $this->success('',['row'=>['path'=>'/storage/default/新账户申请模板.xlsx']]);
+        $aoamId = $this->request->get('aoam_id');
+        $aoamPlatformId = 1;
+        if(!empty($aoamId)) $aoamPlatformId = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->value('platform_id');
+
+        if($aoamPlatformId == 2) $this->success('',['row'=>['path'=>'/storage/default/TK申请模板.xlsx']]);
+        else $this->success('',['row'=>['path'=>'/storage/default/新账户申请模板.xlsx']]);
+        
     }
 
     //下载数据

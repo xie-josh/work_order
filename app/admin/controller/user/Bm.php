@@ -376,6 +376,9 @@ class Bm extends Backend
 
                 $canBmCount = DB::table('ba_company')->where('id',$this->auth->company_id)->value('binding_bm_number');
 
+                $accountListd = array_column($accountListC,'type','account_id');
+
+
                 foreach($accountListC as $k => $v){
                     if(in_array($v['status'],$nOTConsumptionStatus))
                     {
@@ -399,16 +402,23 @@ class Bm extends Backend
                             })
                         ->count();
 
+                    $isApplyType = $accountListd[$v['account_id']]??1;
+
+                    if($isApplyType == 2)
+                    {
+                        $bmListCount-=1;
+                    }
+
+
                     $c = $bmCount + $bmListCount;
                     if($c > $canBmCount) {
                         $errorList[] = ['bm'=>'(账户ID)'.$v['account_id'],'msg'=>"广告账户最多绑定{$canBmCount}个邮箱/BM，请先解绑部分邮箱/ BM后再试"];
                         unset($accountListC[$k]);
                     }
                 }
-
-                $accountListd = $accountListC;
+                
                 $accountListC = array_column($accountListC,'account_id');
-                $accountListd = array_column($accountListd,'type','account_id');
+                
 
                 $bmListC = [];
                 foreach($bmList as $v => $vv){
