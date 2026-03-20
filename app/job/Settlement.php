@@ -123,7 +123,7 @@ class Settlement
                 }                
 
                 $dataList[]  = [
-                    'FB',
+                    'Facebook',
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,
                     $v['account_id'],
@@ -209,7 +209,7 @@ class Settlement
 
         $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
         $header = [
-            '媒体类型',
+            '媒体平台',
             '账户状态',
             '账户名称',
             '账户ID',
@@ -258,7 +258,7 @@ class Settlement
                 }                
 
                 $dataList[]  = [
-                    "TK",
+                    "TikTok",
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,
                     $v['account_id'],
