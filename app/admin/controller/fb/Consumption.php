@@ -1052,6 +1052,7 @@ class Consumption extends Backend
 
         $name = $folders['name'].'.xlsx';
         
+  
         $accountStatus = [0=>'不可用',1=>'活跃',2=>'封户',3=>'待支付'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
@@ -1151,7 +1152,19 @@ class Consumption extends Backend
             $progress = min(100, ceil($processedCount / $total * 100));
             Cache::store('redis')->set($redisKey, $progress, 300);
         }
-
+        $filePath->setColumn('A:A', 20)
+        ->setColumn('B:B', 50)
+        ->setColumn('C:C', 50)
+        ->setColumn('D:D', 15)
+        ->setColumn('E:E', 15)
+        ->setColumn('F:F', 15)
+        ->setColumn('G:G', 15)
+        ->setColumn('H:H', 15)
+        ->setColumn('I:I', 15)
+        ->setColumn('J:J', 15)
+        ->setColumn('K:K', 15)
+        ->setColumn('L:L', 20)
+        ->setColumn('M:M', 20);
         $excel->output();
         Cache::store('redis')->delete($redisKey);
     } catch (\Throwable $th) {
