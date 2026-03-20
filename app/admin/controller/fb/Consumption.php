@@ -1052,7 +1052,7 @@ class Consumption extends Backend
 
         $name = $folders['name'].'.xlsx';
         
-        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
+        $accountStatus = [0=>'不可用',1=>'活跃',2=>'封户',3=>'待支付'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
             $dataList=[];
