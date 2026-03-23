@@ -1146,8 +1146,8 @@ class Consumption extends Backend
                     $v['affiliation_bm'],
                     $adminChannel,
                     $v['time_zone'],
-                    $openTime,
-                    $isKeep
+                    // $openTime,
+                    // $isKeep
                 ];
                 $processedCount++;
             }
