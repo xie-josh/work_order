@@ -26,6 +26,7 @@ class AccountPendingRecycleTask extends Command
             ['accountrequest_proposal.status','IN',[1,94]],
             // ['accountrequest_proposal.admin_id','IN',["165","171","194","220","221","225","233","256","257","268","278","292","368","374","364","403"]],
             ['accountrequest_proposal.account_status','IN',[1,3]],
+            ['accountrequest_proposal.type','=',1],
         ];
 
         $accountList = DB::table('ba_account')
