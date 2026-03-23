@@ -1133,7 +1133,7 @@ class Consumption extends Backend
                 // dd($accountIskeepList['411380995335659']);
                 // if($v['account_id'] == '614862981209237') dd($accountNameList[$v['account_id']],$serialName,$data);
                 $dataList[] = [
-                    'Facebook',
+                    'TikTok',
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,                    
                     $v['account_id'],
@@ -1356,7 +1356,7 @@ class Consumption extends Backend
                 // dd($accountIskeepList['411380995335659']);
                 // if($v['account_id'] == '614862981209237') dd($accountNameList[$v['account_id']],$serialName,$data);
                 $dataList[] = [
-                    'TikTok',
+                    'Facebook',
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,                    
                     $v['account_id'],
