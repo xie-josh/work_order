@@ -74,7 +74,7 @@ class Settlement
 
         $folders = (new \app\common\service\Utils)->getExcelFolders($resultPath,0);
         $header = [
-            '媒体类型',
+            '媒体平台',
             '账户状态',
             '账户名称',
             '账户ID',
@@ -95,9 +95,9 @@ class Settlement
 
         $name = $excelName.'.xlsx';
 
-        if($total == 0) return true;
+        // if($total == 0) return true;
 
-        for ($offset = 0; $offset < $total; $offset += $batchSize) {
+        if($total > 0)for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
             $accountIds = array_unique(array_column($data,'account_id'));
             $accountNameList = $this->accountNameList($accountIds);
@@ -138,7 +138,10 @@ class Settlement
             ->header($header)
             ->data($dataList);        
         }
-        $this->exportk($params,$excel);
+        $tkResult = $this->exportk($params,$excel);
+        if($tkResult){
+            $filePath = $tkResult;
+        }
         $filePath->setColumn('A:A', 13)
                     ->setColumn('B:B', 55)
                     ->setColumn('C:C', 20)
@@ -230,7 +233,7 @@ class Settlement
     
         $name = $excelName.'.xlsx';
 
-        if($total == 0) return true;
+        if($total == 0) return false;
 
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->toArray();
@@ -273,7 +276,7 @@ class Settlement
             ->header($header)
             ->data($dataList);        
         }
-        return true;
+        return $filePath;
     }
 
     public function accountNameList($accountIds)
