@@ -143,12 +143,13 @@ class Settlement
             $filePath = $tkResult;
         }
         $filePath->setColumn('A:A', 13)
-                    ->setColumn('B:B', 55)
-                    ->setColumn('C:C', 20)
-                    ->setColumn('D:D', 5)
-                    ->setColumn('E:E', 10)
-                    ->setColumn('F:F', 12)
-                    ->setColumn('G:G', 12);
+                    ->setColumn('B:B', 13)
+                    ->setColumn('C:C', 55)
+                    ->setColumn('D:D', 22)
+                    ->setColumn('E:E', 5)
+                    ->setColumn('F:F', 10)
+                    ->setColumn('G:G', 12)
+                    ->setColumn('H:H', 12);
 
         $excel->output();
 
