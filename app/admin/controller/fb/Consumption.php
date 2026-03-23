@@ -862,6 +862,8 @@ class Consumption extends Backend
                     $v['atLeast_money']    = 0;
                     $v['suggestzui_money'] = 5000;
                 } 
+             }else{
+                if($v['money'] == 0) $v['money'] = '';
              }
             //  $v['money1'] = round($res[$k]['money']??0, 2);
             //  $v['raw_money'] = round($res[$k]['raw_money']??0, 2);
