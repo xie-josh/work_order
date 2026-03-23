@@ -830,7 +830,7 @@ class Consumption extends Backend
         {
              if(!isset($dataList[$k]['money'])) $dataList[$k]['money'] = 0;
              $v['money'] = round($dataList[$k]['money']??0, 2);
-             if($v['money'] == 0) $v['money'] = '';
+             if($v['money'] == 0) $v['money'] = 0;
             //  $v['month_total_dollar'] = $list['month'][$k]['total_dollar']??"";
             //  $v['month_date_start'] = $list['month'][$k]['date_start']??'';
             //  $v['remaining_amount'] = $dataList[$k]['remaining_amount']??'';       //可用金额
