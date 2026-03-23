@@ -1146,7 +1146,7 @@ class Account extends Backend
                             if(filter_var($be, FILTER_VALIDATE_EMAIL) !== false) $bmType = 2;
 
                             $bmData = [
-                                'account_id'=>$resultAccount['account_id'],
+                                'account_id'=>$v['account_id'],
                                 'bm'=> $be,
                                 'demand_type'=>4,
                                 'bm_type'=>$bmType,
