@@ -1029,6 +1029,7 @@ class Consumption extends Backend
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
+            '媒体平台',
             '账户状态',
             '账户名称',
             '账户ID',
@@ -1132,6 +1133,7 @@ class Consumption extends Backend
                 // dd($accountIskeepList['411380995335659']);
                 // if($v['account_id'] == '614862981209237') dd($accountNameList[$v['account_id']],$serialName,$data);
                 $dataList[] = [
+                    'Facebook',
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,                    
                     $v['account_id'],
@@ -1156,18 +1158,19 @@ class Consumption extends Backend
             Cache::store('redis')->set($redisKey, $progress, 300);
         }
         $filePath->setColumn('A:A', 10)
-        ->setColumn('B:B', 35)
+        ->setColumn('B:B', 10)
         ->setColumn('C:C', 35)
-        ->setColumn('D:D', 10)
-        ->setColumn('E:E', 15)
+        ->setColumn('D:D', 35)
+        ->setColumn('E:E', 10)
         ->setColumn('F:F', 15)
         ->setColumn('G:G', 15)
-        ->setColumn('H:H', 10)
+        ->setColumn('H:H', 15)
         ->setColumn('I:I', 10)
-        ->setColumn('J:J', 15)
+        ->setColumn('J:J', 10)
         ->setColumn('K:K', 15)
         ->setColumn('L:L', 15)
-        ->setColumn('M:M', 15);
+        ->setColumn('M:M', 15)
+        ->setColumn('N:N', 15);
         $excel->output();
         Cache::store('redis')->delete($redisKey);
     } catch (\Throwable $th) {
@@ -1248,6 +1251,7 @@ class Consumption extends Backend
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
+            '媒体平台',
             '账户状态',
             '账户名称',
             '账户ID',
@@ -1276,7 +1280,7 @@ class Consumption extends Backend
 
         $name = $folders['name'].'.xlsx';
         
-        $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
+        $accountStatus = [0=>'不可用',1=>'活跃',2=>'封户',3=>'待支付'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
             $data = $query->limit($offset, $batchSize)->select()->append([])->toArray();
             $dataList=[];
@@ -1352,6 +1356,7 @@ class Consumption extends Backend
                 // dd($accountIskeepList['411380995335659']);
                 // if($v['account_id'] == '614862981209237') dd($accountNameList[$v['account_id']],$serialName,$data);
                 $dataList[] = [
+                    'TikTok',
                     $accountStatus[$v['account_status']]??'未找到状态',
                     $serialName,                    
                     $v['account_id'],
