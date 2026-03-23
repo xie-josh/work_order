@@ -40,7 +40,7 @@ class AccountReport extends Backend
         if ($this->request->param('select')) {
             $this->select();
         }
-        DB::table('ba_account_report')->where('create_time', '<', date('Y-m-d H:i:s', strtotime('-24 hours')))->select()->toArray()->delete();
+        DB::table('ba_account_report')->where('create_time', '<', date('Y-m-d H:i:s', strtotime('-24 hours')))->delete();
         /**
          * 1. withJoin 不可使用 alias 方法设置表别名，别名将自动使用关联模型名称（小写下划线命名规则）
          * 2. 以下的别名设置了主表别名，同时便于拼接查询参数等
