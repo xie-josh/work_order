@@ -7,6 +7,7 @@ use app\common\controller\Backend;
 use think\facade\Db;
 use think\facade\Cache;
 use think\facade\Queue;
+use app\admin\services\TkService;
 
 /**
  * 账户列管理
@@ -80,6 +81,8 @@ class AccountrequestProposal extends Backend
         if($status === "0") array_push($where,['accountrequest_proposal.status','in',config('basics.FH_status')]);
         if($limit == 999) $limit = 2500;
 
+        $wherecc = [];
+
         foreach($where as $k => &$v)
         {
             if($v[0] == 'channel.nickname'){
@@ -94,7 +97,16 @@ class AccountrequestProposal extends Backend
                 unset($where[$k]);
                 continue;
             }
+            if($v[0] == 'accountrequest_proposal.jiabai_region'){
+                foreach($v[2] as $j)
+                {
+                    array_push($wherecc,['accountrequest_proposal.jiabai_region','like',"%$j%"]); 
+                }
+                unset($where[$k]);
+                continue;
+            }
         }
+        if(!empty($wherecc)) $where = array_merge($where,$wherecc);
         
         $res = $this->model
             ->distinct(true)
@@ -581,6 +593,7 @@ class AccountrequestProposal extends Backend
                     $labelIds = $data['label_ids']??[];
                     $currency = $data['currency']??'';
                     $nameList = $data['name_list']??[];
+                    $isVo = $data['is_vo']??2;
                     $affiliationBm = $this->request->param(false)['affiliationBm'];
                     $dataList = [];
 
@@ -615,6 +628,7 @@ class AccountrequestProposal extends Backend
                             'serial_number'=>$accountCount,
                             'bm_token_id'=>$bmTokenResult['id'],
                             'account_status'=>1,
+                            'is_vo'=>$isVo,
                             'create_time'=>time()
                         ];
                         $usersJobParam = [
@@ -629,7 +643,15 @@ class AccountrequestProposal extends Backend
                     $adminId = $data['adminId'];
                     $jiabaiRegion = $data['jiabai_region']??'';
                     $labelIds = $data['label_ids']??[];
-                    
+
+                    $idscc = explode(',',$jiabaiRegion);
+                    $jiabaiRegionGroup = DB::table('ba_jiabai_region')->field('time_zone')->whereIn('id',$idscc)->group('time_zone')->select()->toArray();
+                    if(empty($jiabaiRegionGroup)) throw new \Exception("未找到对应的加白地区");
+                    if(count($jiabaiRegionGroup) > 1) throw new \Exception("所选加白地区的时区必须一致");
+
+                    $jiabaiRegionGroup = DB::table('ba_jiabai_region')->whereIn('id',$idscc)->column('name');
+                    $jiabaiRegion = implode(',',$jiabaiRegionGroup);
+
                     foreach($ids as $v){
                        $dataList[] = [    
                             'admin_id'=>$adminId,
@@ -911,27 +933,45 @@ class AccountrequestProposal extends Backend
 
             $accountrequestProposal = DB::table('ba_accountrequest_proposal')
             ->alias('accountrequest_proposal')
-            ->field('accountrequest_proposal.account_id,fb_bm_token.pull_status,accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
+            ->field('accountrequest_proposal.type proposal_type,accountrequest_proposal.account_id,fb_bm_token.pull_status,accountrequest_proposal.id,accountrequest_proposal.currency,accountrequest_proposal.cards_id,accountrequest_proposal.is_cards,accountrequest_proposal.account_id,fb_bm_token.business_id,fb_bm_token.token,fb_bm_token.type,fb_bm_token.personalbm_token_ids')
             ->leftJoin('ba_fb_bm_token fb_bm_token','fb_bm_token.id=accountrequest_proposal.bm_token_id')
-            ->where('fb_bm_token.pull_status',1)
+            // ->where('fb_bm_token.pull_status',1)
             ->whereNotIn('accountrequest_proposal.status',$FHStatus2)
             // ->whereNotNull('fb_bm_token.token')
             ->where('accountrequest_proposal.account_id',$accountId)
             ->find();
             if(empty($accountrequestProposal['account_id'])) throw new \Exception("无法查询该账户，请联系管理员1-1!");
-            
-            if($type == 1){
-                $accountStatus = $this->refreshStatus($accountrequestProposal);
-                $resultData = [
-                    'account_status'=>$accountStatus
-                ];
-            }else if($type == 2){
-                $accountStatus = $this->refreshConsumption($accountrequestProposal);
-                $resultData = [
-                    'fb_balance'=>$accountStatus['fb_balance'],
-                    'fb_spand'=>bcadd((string)$accountStatus['fb_spand'],'0',2)
-                ];
+            if($accountrequestProposal['proposal_type'] == 2)
+            {
+                if($type == 1){
+                    $accountStatus = $this->tkRefreshStatus($accountrequestProposal);
+                    $resultData = [
+                        'account_status'=>$accountStatus
+                    ];
+                }else if($type == 2){
+                    $accountStatus = $this->tkRefreshConsumption($accountrequestProposal);
+                    $resultData = [
+                        'fb_balance'=>$accountStatus['fb_balance'],
+                        'fb_spand'=>bcadd((string)$accountStatus['fb_spand'],'0',2)
+                    ];
+                }
+            }else{
+                if($type == 1){
+                    $accountStatus = $this->refreshStatus($accountrequestProposal);
+                    $resultData = [
+                        'account_status'=>$accountStatus
+                    ];
+                }else if($type == 2){
+                    $accountStatus = $this->refreshConsumption($accountrequestProposal);
+                    $resultData = [
+                        'fb_balance'=>$accountStatus['fb_balance'],
+                        'fb_spand'=>bcadd((string)$accountStatus['fb_spand'],'0',2)
+                    ];
+                }
             }
+            
+            
+            
 
             $result = true;
         } catch (Throwable $th) {
@@ -944,6 +984,91 @@ class AccountrequestProposal extends Backend
             $this->error(__('No rows updated'));
         }
     }
+
+    public function tkRefreshStatus($accountrequestProposal)
+    {
+        $accountId = $accountrequestProposal['account_id'];
+        $map = [
+            // 异常
+            'STATUS_CONFIRM_FAIL' => 2,
+            'STATUS_CONFIRM_FAIL_END' => 2,
+            'STATUS_CONFIRM_MODIFY_FAIL' => 2,
+            'STATUS_LIMIT' => 2,
+
+            // 活跃
+            'STATUS_ENABLE' => 1,
+
+            // 封户
+            'STATUS_DISABLE' => 2,
+
+            // 待处理
+            'STATUS_PENDING_CONFIRM' => 2,
+            'STATUS_PENDING_VERIFIED' => 2,
+            'STATUS_PENDING_CONFIRM_MODIFY' => 2,
+            'STATUS_WAIT_FOR_BPM_AUDIT' => 2,
+            'STATUS_WAIT_FOR_PUBLIC_AUTH' => 2,
+            'STATUS_SELF_SERVICE_UNAUDITED' => 2,
+            'STATUS_CONTRACT_PENDING' => 2,
+        ];
+
+        $appApi = (new TkService())->TikTokAccount([]);
+
+        $result = $appApi->getAdvertiser($accountId);
+
+        $status = $map[$result['status']??'STATUS_CONFIRM_FAIL']??'STATUS_CONFIRM_FAIL';
+        return $status;
+    }
+
+    public function tkRefreshConsumption($accountrequestProposal)
+    {
+        $accountId = $accountrequestProposal['account_id'];
+        $map = [
+            // 异常
+            'STATUS_CONFIRM_FAIL' => 2,
+            'STATUS_CONFIRM_FAIL_END' => 2,
+            'STATUS_CONFIRM_MODIFY_FAIL' => 2,
+            'STATUS_LIMIT' => 2,
+
+            // 活跃
+            'STATUS_ENABLE' => 1,
+
+            // 封户
+            'STATUS_DISABLE' => 2,
+
+            // 待处理
+            'STATUS_PENDING_CONFIRM' => 2,
+            'STATUS_PENDING_VERIFIED' => 2,
+            'STATUS_PENDING_CONFIRM_MODIFY' => 2,
+            'STATUS_WAIT_FOR_BPM_AUDIT' => 2,
+            'STATUS_WAIT_FOR_PUBLIC_AUTH' => 2,
+            'STATUS_SELF_SERVICE_UNAUDITED' => 2,
+            'STATUS_CONTRACT_PENDING' => 2,
+        ];
+
+        $appApi = (new TkService())->TikTokAccount([]);
+
+        $result = $appApi->getAdvertiser($accountId);
+
+        $status = $map[$result['status']??'STATUS_CONFIRM_FAIL']??'STATUS_CONFIRM_FAIL';
+        $balance = $result['balance']??0;
+
+        $spendCap = 1000000;
+        $amountSpent = bcsub((string)$spendCap,(string)$balance,'2');
+
+        DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->update([
+            'spend_cap'=>$spendCap,
+            'amount_spent'=>$amountSpent,
+            'account_status'=>$status
+        ]);
+
+        $resultData = [
+            'fb_balance'=>$balance,
+            'fb_spand'=>0
+        ];
+        return $resultData;
+    }
+
+
 
     public function refreshStatus($accountrequestProposal)
     {

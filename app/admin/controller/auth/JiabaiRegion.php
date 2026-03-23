@@ -55,7 +55,7 @@ class JiabaiRegion extends Backend
                     }
                 }
                 
-                $info = $this->model->where('name',$data['name'])->value('name');
+                $info = $this->model->where('name',$data['name'])->where('time_zone',$data['time_zone'])->value('name');
                 if(!empty($info)) throw new \Exception("已经有这个加白地区！");
                 
                 $result = $this->model->save($data);
@@ -112,7 +112,7 @@ class JiabaiRegion extends Backend
                         $validate->check($data);
                     }
                 }
-                $info = $this->model->where('name',$data['name'])->where('id','<>',$id)->value('name');
+                $info = $this->model->where('name',$data['name'])->where('time_zone',$data['time_zone'])->where('id','<>',$id)->value('name');
                 if(!empty($info)) throw new \Exception("已经有这个加白地区！");
 
                 $result = $row->save($data);

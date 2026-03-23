@@ -531,6 +531,8 @@ class Account extends Backend
                         $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->whereIn('status',config('basics.FH_status'))->find();
                         if(empty($accountrequestProposal)) throw new \Exception("请选择分配的账户！");
 
+                        if($v['is_vo'] != $accountrequestProposal['is_vo']) throw new \Exception("vo不匹配！");
+
                         if(!empty($v['type'])){
                             $lableIds = explode(',',$accountrequestProposal['label_ids']??'');
                             if(!empty($lableIds) && !in_array($v['type'],$lableIds)) throw new \Exception("标签映射错误，请调整！");
@@ -1031,6 +1033,7 @@ class Account extends Backend
          if ($this->request->isPost()) {
             $data = $this->request->post();
             $result = false;
+            $errorList = [];
             Db::startTrans();
             try {                                
                 $ids = $data['ids'];
@@ -1061,15 +1064,29 @@ class Account extends Backend
                 foreach($accountIds as $k => $v)
                 {
                     $resultAccount = $resultAccountList[$k]??[];
-                    if(empty($resultAccount)) continue;
+                    if(empty($resultAccount)) {
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'未找到可以分配的申请！'];
+                        continue;
+                    }
 
                     $accountPlatformId = $resultAccount['account_platform_id'];
 
-                    if($accountPlatformId != $v['type']) continue;
+                    if($accountPlatformId != $v['type']){
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'媒体平台不匹配！'];
+                        continue;
+                    }
+
+                    if($v['is_vo'] != $resultAccount['is_vo']) {
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'vo不匹配！'];
+                        continue;
+                    }
                     
                     $lableIds = explode(',',$v['label_ids']??'');
-                    if(!empty($lableIds) && !empty($resultAccount['type']) && !in_array($resultAccount['type'],$lableIds)) continue;
-                   
+                    if(!empty($lableIds) && !empty($resultAccount['type']) && !in_array($resultAccount['type'],$lableIds))
+                    {
+                        $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'标签不匹配！'];
+                        continue;  
+                    }                  
 
                     $data = [
                         'account_admin_id'=>$v['admin_id'],
@@ -1183,9 +1200,9 @@ class Account extends Backend
                 $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Update successful'));
+                $this->success(__('Update successful'),['error_list'=>$errorList]);
             } else {
-                $this->error(__('No rows updated'));
+                $this->error(__('No rows updated'),['error_list'=>$errorList]);
             }
         }
 
