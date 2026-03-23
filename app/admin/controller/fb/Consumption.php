@@ -1044,10 +1044,10 @@ class Consumption extends Backend
             '时区',
         ];
 
-        if($isCount != 1){
-            $header[] = '开户时间';
-            $header[] = '养户消耗(是)';
-        }
+        // if($isCount != 1){
+        //     $header[] = '开户时间';
+        //     $header[] = '养户消耗(是)';
+        // }
 
         $config = [
             'path' => $folders['path']
@@ -1146,8 +1146,8 @@ class Consumption extends Backend
                     $v['affiliation_bm'],
                     $adminChannel,
                     $v['time_zone'],
-                    $openTime,
-                    $isKeep
+                    // $openTime,
+                    // $isKeep
                 ];
                 $processedCount++;
             }
@@ -1162,7 +1162,7 @@ class Consumption extends Backend
         ->setColumn('C:C', 35)
         ->setColumn('D:D', 35)
         ->setColumn('E:E', 10)
-        ->setColumn('F:F', 15)
+        ->setColumn('F:F', 10)
         ->setColumn('G:G', 15)
         ->setColumn('H:H', 15)
         ->setColumn('I:I', 10)
@@ -1382,7 +1382,22 @@ class Consumption extends Backend
             $progress = min(100, ceil($processedCount / $total * 100));
             Cache::store('redis')->set($redisKey, $progress, 300);
         }
-
+        $filePath->setColumn('A:A', 10)
+        ->setColumn('B:B', 10)
+        ->setColumn('C:C', 35)
+        ->setColumn('D:D', 35)
+        ->setColumn('E:E', 10)
+        ->setColumn('F:F', 10)
+        ->setColumn('G:G', 15)
+        ->setColumn('H:H', 15)
+        ->setColumn('I:I', 10)
+        ->setColumn('J:J', 10)
+        ->setColumn('K:K', 15)
+        ->setColumn('L:L', 15)
+        ->setColumn('M:M', 15)
+        ->setColumn('N:N', 15)
+        ->setColumn('O:O', 15)
+        ->setColumn('P:P', 15);
         $excel->output();
         Cache::store('redis')->delete($redisKey);
 
