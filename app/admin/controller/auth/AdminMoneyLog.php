@@ -368,6 +368,8 @@ class AdminMoneyLog extends Backend
     
         if ($this->request->isPost()) {
             $data = $this->request->post();
+            unset($data['bill_rate']);
+            unset($data['rate']);
             if (!$data) {
                 $this->error(__('Parameter %s can not be empty', ['']));
             }
