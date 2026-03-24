@@ -531,7 +531,9 @@ class Account extends Backend
                         $accountrequestProposal = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->whereIn('status',config('basics.FH_status'))->find();
                         if(empty($accountrequestProposal)) throw new \Exception("请选择分配的账户！");
 
-                        if($v['is_vo'] != $accountrequestProposal['is_vo']) throw new \Exception("vo不匹配！");
+                        if($v['is_vo'] == 1 && $v['is_vo'] != $accountrequestProposal['is_vo']) {
+                            throw new \Exception("vo不匹配！");
+                        } 
 
                         if(!empty($v['type'])){
                             $lableIds = explode(',',$accountrequestProposal['label_ids']??'');
@@ -1076,10 +1078,10 @@ class Account extends Backend
                         continue;
                     }
 
-                    if($v['is_vo'] != $resultAccount['is_vo']) {
+                    if($resultAccount['is_vo'] == 1 && $v['is_vo'] != $resultAccount['is_vo']) {
                         $errorList[] = ['account_id'=>$v['account_id'],'msg'=>'vo不匹配！'];
                         continue;
-                    }
+                    }                    
                     
                     $lableIds = explode(',',$v['label_ids']??'');
                     if(!empty($lableIds) && !empty($resultAccount['type']) && !in_array($resultAccount['type'],$lableIds))

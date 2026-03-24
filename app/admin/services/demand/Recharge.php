@@ -130,6 +130,7 @@ class Recharge
             DB::table('ba_account')->where('account_id',$result['account_id'])->inc('money',$result['number'])->update(['update_time'=>time(),'is_'=>1]);
             $data = [
                 'status'=>1,
+                'update_time'=>time()
             ];
             $this->model->where('id',$result['id'])->update($data);
 
@@ -424,6 +425,7 @@ class Recharge
 
             $data = [
                 'status'=>1,
+                'update_time'=>time()
             ];
             $this->model->where('id',$result['id'])->update($data);
             Cache::store('redis')->delete($key);

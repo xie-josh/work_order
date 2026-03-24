@@ -61,28 +61,35 @@ class AccountReturn extends Backend
 
         $dataList = $res->toArray()['data'];
         if($dataList){
-            $admin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
-            $adminList = array_column($admin, 'nickname', 'id');
+            // $admin = DB::table('ba_admin')->field('id,nickname')->select()->toArray();
+            // $adminList = array_column($admin, 'nickname', 'id');
+
+            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
+            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
+
+
             foreach ($dataList as $key => &$value) {
+                $companyId = $value['account']['company_id'];
+                $nicknameB = '';
+                if(!empty($companyId)) $nicknameB = $companyAdminNameArr[$companyId]['nickname'];
+
                 $value['account']['nickname'] = '';
                 $accountStatus = $value['account']['status']??'';
-                if(isset($adminList[$value['account']['admin_id']??0])) {
-                    $nickname = $adminList[$value['account']['admin_id']];
-                    $bm = $value['accountrequestProposal']['bm'];
-                    $status = $value['accountrequestProposal']['status'];
-                    $spendCap = $value['accountrequestProposal']['spend_cap'] == 0.01?0:$value['accountrequestProposal']['spend_cap'];  
-                    $amountSpent = $value['accountrequestProposal']['amount_spent'];
-                    $balance2 = $value['accountrequestProposal']['balance'];
-                    $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');  
-                    unset($dataList[$key]['account']);
-                    unset($dataList[$key]['accountrequestProposal']);
-                    $value['account']['nickname'] = $nickname;
-                    $value['account']['status'] = $accountStatus;
-                    $value['accountrequestProposal']['bm'] = $bm;
-                    $value['accountrequestProposal']['status'] = $status;
-                    $value['accountrequestProposal']['balance'] = $balance??0;
-                    $value['accountrequestProposal']['balance2'] = $balance2;
-                }
+                $nickname = $nicknameB;
+                $bm = $value['accountrequestProposal']['bm'];
+                $status = $value['accountrequestProposal']['status'];
+                $spendCap = $value['accountrequestProposal']['spend_cap'] == 0.01?0:$value['accountrequestProposal']['spend_cap'];  
+                $amountSpent = $value['accountrequestProposal']['amount_spent'];
+                $balance2 = $value['accountrequestProposal']['balance'];
+                $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');  
+                unset($dataList[$key]['account']);
+                unset($dataList[$key]['accountrequestProposal']);
+                $value['account']['nickname'] = $nickname;
+                $value['account']['status'] = $accountStatus;
+                $value['accountrequestProposal']['bm'] = $bm;
+                $value['accountrequestProposal']['status'] = $status;
+                $value['accountrequestProposal']['balance'] = $balance??0;
+                $value['accountrequestProposal']['balance2'] = $balance2;
             }
         }
 

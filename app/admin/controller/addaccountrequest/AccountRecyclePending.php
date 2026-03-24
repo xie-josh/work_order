@@ -50,28 +50,39 @@ class AccountRecyclePending extends Backend
         foreach($where as $k => &$v){
             if($v[0] == 'account.idle_time'){                
                 $v[2] = floor((int)$v[2] * 86400);
+                continue;
+            }
+            if($v[0] == 'account.p_idle_time'){                
+                $v[2] = floor((int)$v[2] * 86400);
+                continue;
             }
             if($v[0] == 'account_recycle_pending.account_id' && $v[1] == 'LIKE'){                
                 $v[0] = 'account.account_id';
+                continue;
             }
             if($v[0] == 'account_recycle_pending.status'){                
                 $v[0] = 'accountrequest_proposal.status';
+                continue;
             }
             if($v[0] == 'account_recycle_pending.account_status'){                
                 $v[0] = 'accountrequest_proposal.account_status';
+                continue;
             }
             if($v[0] == 'accountrequest_proposal.total_consumption'){                
                 // $v[2] = 1000;
                 $totalConsumption = floor($v[2]);
+                continue;
             }
             if($v[0] == 'account_recycle_pending.admin_a_nickname'){      
                 $adminIds = Db::table('ba_admin')->where('nickname','like','%'.$v[2].'%')->column('id');          
                 array_push($where,['accountrequest_proposal.admin_id','IN',$adminIds]);
                 unset($where[$k]);
+                continue;
             }
             if($v[0] == 'account_recycle_pending.account_id' && $v[1] == 'IN'){      
                 array_push($where,['account.account_id','IN',$v[2]]);
                 unset($where[$k]);
+                continue;
             }
             if($v[0] == 'account_recycle_pending.requeire')
             {      
@@ -91,6 +102,7 @@ class AccountRecyclePending extends Backend
                 // dd($where,$whereOr);
                 // array_push($where,['account.account_id','IN',$v[2]]);
                 unset($where[$k]);
+                continue;
             }
         }
         $res = DB::table('ba_account')
