@@ -674,27 +674,27 @@ class Recharge
            ];
            $appApi = (new TkService())->ApplicationApi([]);
 
-           $tkresult = $appApi->tiktokAccounts([
-            'account_id' => $result['account_id'],
-            // "apply_id"=>13837619,
-            "current_page"=>1,
-            "page_size"=>1000]);
+        //    $tkresult = $appApi->tiktokAccounts([
+        //     'account_id' => $result['account_id'],
+        //     // "apply_id"=>13837619,
+        //     "current_page"=>1,
+        //     "page_size"=>1000]);
 
-           $balance   =  $tkresult['data']['list'][0]['balance']??0;
-           $tkCurrency = $tkresult['data']['list'][0]['currency'];
+        //    $balance   =  $tkresult['data']['list'][0]['balance']??0;
+        //    $tkCurrency = $tkresult['data']['list'][0]['currency'];
 
-           if($tkCurrency != 0)
-           {
-                $currencyRate = ['HKD'=>"0.13",'CNY'=>"0.145"];
-                if(!empty($currencyRate['HKD']) && $tkCurrency ==1)
-                {
-                    $balance = bcmul((string)$balance, $currencyRate['HKD'],2);
-                }   
-                if(!empty($currencyRate['CNY']) && $tkCurrency ==2)
-                {
-                    $balance = bcmul((string)$balance, $currencyRate['CNY'],2);
-                }         
-           }
+        //    if($tkCurrency != 0)
+        //    {
+        //         $currencyRate = ['HKD'=>"0.13",'CNY'=>"0.145"];
+        //         if(!empty($currencyRate['HKD']) && $tkCurrency ==1)
+        //         {
+        //             $balance = bcmul((string)$balance, $currencyRate['HKD'],2);
+        //         }   
+        //         if(!empty($currencyRate['CNY']) && $tkCurrency ==2)
+        //         {
+        //             $balance = bcmul((string)$balance, $currencyRate['CNY'],2);
+        //         }         
+        //    }
 
 
             
@@ -719,7 +719,7 @@ class Recharge
                 // 'status'=>1,
                 'apply_id'=>$apply_id,
                 'is_apply'=>2,
-                'number'  =>$balance,
+                // 'number'  =>$balance,
             ];
             $this->model->where('id',$result['id'])->update($data);
             Cache::store('redis')->delete($key);

@@ -20,6 +20,7 @@ class TkRecharge
             $apply_id = $data['apply_id'];
             $number = $data['number'];//清零专用
             $appApi = (new TkService())->ApplicationApi([]);
+            $TikTokApi = (new TkService())->TikTokAccount([]);
             // 1 额度管理category
             // 2 更名
             // 3 绑定bm
@@ -49,9 +50,22 @@ class TkRecharge
                   {
                       DB::table('ba_account')->where('account_id',$account_id)->dec('money',$number)->update(['update_time'=>time()]);
                       $this->teamUsedMoney($number,$account_id);
-                  }else{ //清零
+                  }elseif($v['type'] ==3){ //清零
+                    $result = $TikTokApi->getCampaign($account_id);
+                    if(isset($result['data']['list'])){
+                        $campaignIds = array_column($result['data']['list'],'campaign_id');   
+                        $advertiserId = $account_id;   
+                        $operationStatus = 'DISABLE';   
+                        // $operationStatus = 'ENABLE';   
+                        $param = [
+                            'advertiser_id'=>$account_id,
+                            'campaign_ids'=>$campaignIds,
+                            'operation_status'=>$operationStatus,
+                        ];
+                        $result = $TikTokApi->updateCampaignStatus($param);
+                     }
                       DB::table('ba_account')->where('account_id',$account_id)->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
-                      $this->teamUsedMoney($number,$account_id);
+                      $this->teamUsedMoney($v['change_amount'],$account_id);
                   }
                   Db::table('ba_recharge')->where('id',$id)->update(['status'=>1,'apply_id'=>1]);
                }elseif($v['operate_status'] ==3)
