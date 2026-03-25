@@ -107,7 +107,7 @@ class AccountRecyclePending extends Backend
         }
         $res = DB::table('ba_account')
         ->alias('account')
-        ->field('account.admin_id account_admin_id,account.company_id,accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.comment,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,account.p_idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time,accountrequest_proposal.recycle_type')
+        ->field('account.admin_id account_admin_id,account.company_id,accountrequest_proposal.recycle_date,accountrequest_proposal.status,account.comment,account.account_id,accountrequest_proposal.serial_name,accountrequest_proposal.bm,admin_a.nickname admin_a_nickname,account.idle_time,account.p_idle_time,accountrequest_proposal.total_consumption,admin_b.nickname admin_b_nickname,accountrequest_proposal.account_status,accountrequest_proposal.time_zone,account.open_time,accountrequest_proposal.recycle_type,accountrequest_proposal.type')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->leftJoin('ba_admin admin_a','admin_a.id=accountrequest_proposal.admin_id')
         ->leftJoin('ba_admin admin_b','admin_b.id=account.admin_id')
@@ -158,6 +158,7 @@ class AccountRecyclePending extends Backend
                     'account_status'=>$v['account_status'],
                     'time_zone'=>$v['time_zone'],
                     'recycle_type'=>$v['recycle_type'],
+                    'type'=>$v['type'],
                 ];
                 $v['recharge_num'] = $rechargeList[$v['account_id']]??0;
                 $v['bm_num'] = $bmList[$v['account_id']]??0;
