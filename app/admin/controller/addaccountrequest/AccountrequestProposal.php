@@ -791,21 +791,21 @@ class AccountrequestProposal extends Backend
 
         $folders = (new \app\common\service\Utils)->getExcelFolders();
         $header = [
-            'account_id',
-            'bm',
-            'time_zone',
-            'account_name',
-            'affiliation_bm',
-            'affiliation_admin_name',
-            'account_bm',
-            'status',
-            'open_account_status',
-            'nickname',
-            'FB_account_status',
-            'currency',
-            'country_code',
-            'country_name',
-            'close_time',
+            '账户ID',
+            'BM',
+            '时区',
+            '账户名称',
+            '归属BM',
+            '归属用户',
+            // 'account_bm',
+            '系统状态',
+            '开户状态',
+            '渠道',
+            '平台状态(tk/fb/gg)',
+            '币种',
+            '国家代码',
+            '国家名称',
+            '封户时间',
             'card_no',
         ];
 
@@ -819,8 +819,6 @@ class AccountrequestProposal extends Backend
         $excel  = new \Vtiful\Kernel\Excel($config);
 
         $name = $folders['name'].'.xlsx';
-
-        
         
         $accountStatus = [0=>'0',1=>'Active',2=>'Disabled',3=>'Need to pay'];
         for ($offset = 0; $offset < $total; $offset += $batchSize) {
@@ -852,7 +850,7 @@ class AccountrequestProposal extends Backend
                     'account_name'=>$v['serial_name'],
                     'affiliation_bm'=>$v['affiliation_bm'],
                     'affiliation_admin_name'=> $affiliationAdminName,
-                    'account_bm'=> $v['account_bm'],
+                    // 'account_bm'=> $v['account_bm'],
                     'status'=> $statusValue[$v['status']]??'未知的状态',
                     'open_account_status'=> $openAccountStatusValue[$v['open_account_status']]??'未知的状态',
                     'nickname'=>$v['nickname'],
@@ -881,6 +879,21 @@ class AccountrequestProposal extends Backend
             //ob_flush();
             //flush();
         }   
+        $filePath->setColumn('A:A', 21)
+            ->setColumn('B:B', 33)
+            ->setColumn('C:C', 11.5)
+            ->setColumn('D:D', 56)
+            ->setColumn('E:E', 33.5)
+            ->setColumn('F:F', 15)
+            ->setColumn('G:G', 13)
+            ->setColumn('H:H', 14)
+            ->setColumn('I:I', 10)
+            ->setColumn('J:J', 20)
+            ->setColumn('K:K', 9)
+            ->setColumn('L:L', 9)
+            ->setColumn('M:M', 9)
+            ->setColumn('N:N', 12);
+
         $excel->output();
         Cache::store('redis')->delete('export_progress');
 

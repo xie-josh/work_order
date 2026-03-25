@@ -60,7 +60,7 @@ class Recycle extends Backend
         ]);
         array_push($where,['company_id','=',$this->auth->company_id]);
         $res = DB::table('ba_account_recycle')
-            ->field('name,account_id,currency,total_consumption,account_recycle_time,total_up,total_delete,total_deductions')
+            ->field('name,account_id,currency,total_consumption,account_recycle_time,total_up,total_delete,total_deductions,end_delete')
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)

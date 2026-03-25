@@ -136,9 +136,6 @@ class AccountRecyclePending extends Backend
             $adminNameArr = DB::table('ba_admin')->field('nickname,id')->select()->toArray();
             $adminNameArr = array_column($adminNameArr,'nickname','id');
 
-            $companyAdminNameArr = DB::table('ba_admin')->field('company_id,nickname,id')->where('type',2)->select()->toArray();
-            $companyAdminNameArr = array_column($companyAdminNameArr,null,'company_id');
-
             foreach($dataList as &$v){
                 $companyId = $v['company_id'];
                 // if($v['account_admin_id'] == $companyAdminNameArr[$companyId]['id']) $nickname_b = $companyAdminNameArr[$companyId]['nickname'];

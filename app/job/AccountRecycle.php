@@ -68,10 +68,14 @@ class AccountRecycle
                 $totalUp = DB::table('ba_recharge')->where('account_id',$accountId)->where('type',1)->where('status',1)->sum('number');
                 $totalDelete = DB::table('ba_recharge')->where('account_id',$accountId)->where('type','IN',[3,4])->where('status',1)->sum('number');
                 $totalDeductions = DB::table('ba_recharge')->where('account_id',$accountId)->where('type',2)->where('status',1)->sum('number');
-                $v['total_up'] = bcadd((string)$totalUp,"0",2);
+                $endDelete = DB::table('ba_recharge')->where('account_id',$accountId)->where('type','IN',[3,4])->where('status',1)->order('id','desc')->value('number');
+                if(empty($endDelete)) $endDelete = "0";
+                
+                $v['total_up'] = bcadd((string)$totalUp,(string)$v['open_money'],2);
                 $v['total_delete'] = bcadd((string)$totalDelete,"0",2);
                 $v['total_deductions'] = bcadd((string)$totalDeductions,"0",2);
                 $v['total_consumption'] = bcadd((string)$totalConsumption,"0",2);
+                $v['end_delete'] = bcadd((string)$endDelete,"0",2);
                 $v['name'] = $serialName;
                 $v['recycle_type'] = $recycleType;
 

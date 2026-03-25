@@ -232,6 +232,12 @@ class Account extends Backend
                 if(empty($list)) throw new \Exception("请提交数据！");
                 foreach($list as $v)
                 {            
+                    if(preg_match('/[\p{Han}]/u', $v['name']))
+                    {
+                        $errorList[] = ['name'=>$v['name'],'msg'=>'名称中不能有中文!'];
+                        continue;
+                    }                    
+
                     $money = $v['money']??0;
                     if(empty($v['time_zone']) || empty($v['type'])){
                         $errorList[] = ['name'=>$v['name'],'msg'=>'时区与投放类型不能为空!'];
@@ -650,9 +656,9 @@ class Account extends Backend
         try {
             $file = $this->request->file('file');
             $aoamId = $this->request->post('aoamId');
-            // $nn = $file->getOriginalName();
+            $nn = $file->getOriginalName();
 
-            // if (str_contains($nn, '新账户申请') === false) {            
+            // if (str_contains($nn, '0324') === false) {            
             //     throw new \Exception("旧模版已失效，请下载最新模版重新上传");
             // }
             // dd($file->getOriginalName());
@@ -668,6 +674,10 @@ class Account extends Backend
 
             $aoamPlatformId = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->value('platform_id');
             if(empty($aoamPlatformId)) throw new \Exception("媒体平台暂未开启！");
+
+            if (str_contains($nn, '0324') === false && $aoamPlatformId == 2) {            
+                throw new \Exception("旧模版已失效，请下载最新模版重新上传");
+            }
 
             $excel = new \Vtiful\Kernel\Excel($config);
 
@@ -806,6 +816,9 @@ class Account extends Backend
             $bes = [];
             $i=6;
             if(!empty($v[$i])) $bes[] = $v[$i];
+            
+            if(filter_var($v[$i], FILTER_VALIDATE_EMAIL) === false) throw new \Exception($v[$i].":邮箱错误请检查是否存在特殊符号与空格！");
+
             // while ($i <= 100) {
             //     if(!empty($v[$i])){
             //         if(filter_var($v[$i], FILTER_VALIDATE_EMAIL)){
@@ -894,24 +907,27 @@ class Account extends Backend
         $data = [];
         $industryList = [];
         $industryResult = [];
+        $timeList = config('basics.TIME_ZONE');
         if(!empty($companyJoinAccountCard['industry_ids'])) $industryResult = DB::table('ba_industry')->field('id,name,time_zone_list')->where('status',1)->whereIn('id',explode(',',$companyJoinAccountCard['industry_ids']))->select()->toArray();
         
         $industryList = array_column($industryResult,'name');
         $accountTypeList = array_column($industryResult,'id','name');
 
-        $jiabaiRegionList = DB::table('ba_jiabai_region')->field('name,time_zone')->select()->toArray();
-        $jiabaiRegionList = array_column($jiabaiRegionList,'time_zone','name');
-
+        $jiabaiRegionList = DB::table('ba_jiabai_region')->where('status',1)->field('name,time_zone')->select()->toArray();
+        $jiabaiRegionValueList = [];
+        foreach($jiabaiRegionList as $v2)
+        {
+            $jiabaiRegionValueList[$v2['name'].$v2['time_zone']] = $v2;
+        }
         foreach($filteredArray as $v)
         {
-            $name = $v[2]??'';
+            $name = $v[3]??'';
             $jiabaiRegion = $v[1]??'';
             $bc = $v[5]??'';
-
-            $time = $jiabaiRegionList[$jiabaiRegion]??'';
+            $time = $timeList[(String)$v[2]]??'';
 
             if(empty($v[0]) || empty($v[1]) || empty($name) || empty($v[5]) ) throw new \Exception("缺少参数[行业-加白地区-账户名称-绑定BC]！");
-            if(empty($time)) throw new \Exception("未找到对应的加白地区");
+            if(empty($jiabaiRegionValueList[$jiabaiRegion.$time])) throw new \Exception("未找到对应的加白地区或该白地区不支持该时区！");
             if(!in_array($v[0],$industryList)) throw new \Exception($v[2].":投放行业不支持！");
 
             
@@ -949,7 +965,7 @@ class Account extends Backend
         $aoamPlatformId = 1;
         if(!empty($aoamId)) $aoamPlatformId = DB::table('ba_account_opening_application_manage')->where('id',$aoamId)->value('platform_id');
 
-        if($aoamPlatformId == 2) $this->success('',['row'=>['path'=>'/storage/default/TK申请模板.xlsx']]);
+        if($aoamPlatformId == 2) $this->success('',['row'=>['path'=>'/storage/default/TK申请模板0324.xlsx']]);
         else $this->success('',['row'=>['path'=>'/storage/default/新账户申请模板.xlsx']]);
         
     }
