@@ -1460,6 +1460,38 @@ class Account extends Backend
         }
     }
 
+    public function errAccount3()
+    {
+        if ($this->request->isPost()) {
+            $data = $this->request->post();
+            $result = false;
+            try {             
+                $accountList = $data['account_list'];
+                $accountStatus = $data['account_status']??0;
+
+                $accountList = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountList)->where('type',2)->select()->toArray();
+                if(empty($accountList)) throw new \Exception("未找到数据！");
+                DB::table('ba_bm')->where('is_hs',1)->whereIn('account_id',$accountList)->update(['is_apply'=>3]);
+                $list = DB::table('ba_recharge')->where('is_hs',1)->whereIn('account_id',$accountList)->field('id')->select()->toArray();
+
+                foreach($list as $v)
+                {
+                    $jobHandlerClassName = 'app\job\AccountSpendDelete';
+                    $jobQueueName = 'AccountSpendDelete';
+                    Queue::later(300, $jobHandlerClassName, ['id'=>$v['id']], $jobQueueName);
+                }
+                $result = true;
+                // if(!empty($diffData)) throw new \Exception(implode(',',$diffData)."账户ID回收失败！");
+            } catch (Throwable $e) {
+                $this->error($e->getMessage());
+            }
+            if ($result !== false) {
+                $this->success(__('Update successful'));
+            } else {
+                $this->error(__('No rows updated'));
+            }
+        }
+    }
 
     public function errAccount2()
     {

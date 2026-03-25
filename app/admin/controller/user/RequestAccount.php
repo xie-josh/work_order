@@ -919,7 +919,7 @@ class RequestAccount extends Backend
     {
         $accountListResult = DB::table('ba_account')
         ->alias('account')
-        ->field('accountrequest_proposal.account_id,accountrequest_proposal.serial_name,account.admin_id,account.money,account.team_id')
+        ->field('accountrequest_proposal.type,accountrequest_proposal.account_id,accountrequest_proposal.serial_name,account.admin_id,account.money,account.team_id')
         ->leftJoin('ba_accountrequest_proposal accountrequest_proposal','accountrequest_proposal.account_id=account.account_id')
         ->where('account.status',4)
         ->whereIn('accountrequest_proposal.account_id',$accountIds)->select()->toArray();
@@ -933,6 +933,23 @@ class RequestAccount extends Backend
         $data = [];
         foreach($accountListResult as $v)
         {
+            if($v['type'] == 2)
+            {
+                $data = [
+                    "type" => "3",
+                    "number" => 0,
+                    "account_id" => $v['account_id'],
+                    "admin_id" => $v['admin_id'],
+                    "account_name" => $v['serial_name'],
+                    'add_operate_user'=>$this->auth->id,
+                    'team_id'=>$v['team_id'],
+                    'is_hs'=>1,
+                    'create_time'=>time()
+                ];
+                $id = DB::table('ba_recharge')->insertGetId($data);
+                continue;
+            }
+
             if(in_array($v['account_id'],$rechargeList) || $v['money'] < 1) continue;
             
             $data = [
@@ -975,9 +992,15 @@ class RequestAccount extends Backend
                 ->where('n.dispose_type', '<>', 2);
         })->select()->toArray();
         
+        $accountIds = array_column($bmList,'account_id');
+        $accountList = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->field('account_id,type')->select()->toArray();
+        $accountListValue = array_column($accountList,'type','account_id');
+        
         $dataList = [];
+        $data = [];
         foreach($bmList as $item){
-            $dataList[] = [
+
+            $data = [
                 'demand_type'=>2,
                 'account_id'=>$item['account_id'],
                 'bm'=>$item['bm'],
@@ -989,6 +1012,8 @@ class RequestAccount extends Backend
                 'team_id'=>$item['team_id'],
                 'create_time'=>time()
             ];
+            if(!empty($accountListValue[$item['account_id']]) && $accountListValue[$item['account_id']] == 2) $data['is_hs'] = 1;
+            $dataList[] = $data;
         }
         DB::table('ba_bm')->insertAll($dataList);
 
@@ -998,8 +1023,13 @@ class RequestAccount extends Backend
     public function pausedAdsCampaigns($accountIds)
     {
 
+        $accountList = DB::table('ba_accountrequest_proposal')->whereIn('account_id',$accountIds)->field('account_id,type')->select()->toArray();
+        $accountListValue = array_column($accountList,'type','account_id');
+
         foreach($accountIds as $v)
         {            
+            if(!empty($accountListValue[$v]) && $accountListValue[$v] == 2) continue;
+
             $jobHandlerClassName = 'app\job\FBAccountAdv';
             $jobQueueName = 'FBAccountAdv';
             Queue::later(60, $jobHandlerClassName, ['account_id'=>$v,'type'=>1], $jobQueueName);

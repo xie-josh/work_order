@@ -29,5 +29,7 @@ return [
         'AccountOpenTask' => 'app\command\AccountOpenTask',
         'TkAccountUpdateTest' => 'app\command\TkAccountUpdateTest',
         'TkFbAccountConsumptionTask' => 'app\command\TkFbAccountConsumptionTask',
+        'TkSettlementTask' => 'app\command\TkSettlementTask',
+        'TkRechargeHSTask' => 'app\command\TkRechargeHSTask',
     ],
 ];

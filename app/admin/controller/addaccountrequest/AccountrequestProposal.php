@@ -578,11 +578,18 @@ class AccountrequestProposal extends Backend
         if ($this->request->isPost()) {
             $data = $this->request->post();
             $result = false;
+            $number = 0;
             $this->model->startTrans();
             try {
                 $ids = $data['ids'];
                 $type = $data['type']??1;
+                if(empty($ids)) throw new \Exception("账户为空！");
 
+                $ids = array_unique($ids);
+
+                $accountList = $this->model->whereIn('account_id',$ids)->column('account_id');
+
+                $errorList = [];
                 if($type == 1)
                 {
                     $bm = $data['bm'];
@@ -597,11 +604,7 @@ class AccountrequestProposal extends Backend
                     $affiliationBm = $this->request->param(false)['affiliationBm'];
                     $dataList = [];
 
-                    if(empty($ids)) throw new \Exception("账户为空！");
-
                     $accountCount = $this->model->where('admin_id',$adminId)->count();
-
-                    $accountList = $this->model->whereIn('account_id',$ids)->column('account_id');
 
                     $bmTokenResult = DB::table('ba_fb_bm_token')->where('id',$bm)->find();
                     if(empty($bmTokenResult)) throw new \Exception("管理BM必选！");
@@ -610,7 +613,10 @@ class AccountrequestProposal extends Backend
                     $bmTokenId = $bmTokenResult['id'];
 
                     foreach($ids as $k =>$v){
-                        if(in_array($v,$accountList)) continue;
+                        if(in_array($v,$accountList)) {
+                            $errorList[] = ['account_id'=>$v,'msg'=>'该账户已经存在！'];
+                            continue;
+                        }
                         $v = filter_var($v, FILTER_SANITIZE_NUMBER_INT);
                         $accountCount++;
                         $dataList[] = [
@@ -653,6 +659,11 @@ class AccountrequestProposal extends Backend
                     $jiabaiRegion = implode(',',$jiabaiRegionGroup);
 
                     foreach($ids as $v){
+                        if(in_array($v,$accountList)) {
+                            $errorList[] = ['account_id'=>$v,'msg'=>'该账户已经存在！'];
+                            continue;
+                        }
+
                        $dataList[] = [    
                             'admin_id'=>$adminId,
                             'status'=>0,
@@ -671,7 +682,7 @@ class AccountrequestProposal extends Backend
                         $this->assignedUsersJob($usersJobParam);
                     }
                 }
-                
+                $number = count($dataList);
                 Db::table('ba_accountrequest_proposal')->insertAll($dataList);
 
                 $result = true;
@@ -681,9 +692,9 @@ class AccountrequestProposal extends Backend
                 $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Update successful'));
+                $this->success("成功导入 $number 条数据",['error_list'=>$errorList]);
             } else {
-                $this->error(__('No rows updated'));
+                $this->error(__('No rows updated'),['error_list'=>$errorList]);
             }
         }
     }
