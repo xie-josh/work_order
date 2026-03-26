@@ -24,7 +24,7 @@ class AccountRecyclePending extends Backend
     protected string|array $preExcludeFields = [];
 
     protected string|array $quickSearchField = ['id'];
-    protected array $noNeedPermission = ['index','getExportProgress','export','batchTurnDownRecycle','idleExport','getIdleExportProgress'];
+    protected array $noNeedPermission = ['index','getExportProgress','export','batchTurnDownRecycle','idleExport','getIdleExportProgress','tkBatchRecycle'];
 
     public function initialize(): void
     {
