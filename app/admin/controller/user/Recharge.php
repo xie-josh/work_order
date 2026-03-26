@@ -204,7 +204,7 @@ class Recharge extends Backend
                             ->leftJoin('ba_cards_info cards_info','cards_info.cards_id=accountrequest_proposal.cards_id')
                             ->where('accountrequest_proposal.account_id',$accountId)
                             ->find();
-                            if($cards['type'] == 2) throw new \Exception("该功能暂未开放！");
+                            // if($cards['type'] == 2) throw new \Exception("该功能暂未开放！");
 
                             if(!empty($cards) && $cards['is_cards'] != 2 && $cards['card_status'] == 'normal') {
                                 $resultCards = (new CardService($cards['account_id']))->cardFreeze(['card_id'=>$cards['card_id']]);
