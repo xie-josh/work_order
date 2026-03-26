@@ -729,7 +729,7 @@ class AccountRecyclePending extends Backend
         $dataList = [];
         $data = [];
         foreach($bmList as $item){
-
+            if($item['bm'] == '7504233300559872017') continue;
             $data = [
                 'demand_type'=>2,
                 'account_id'=>$item['account_id'],
