@@ -535,8 +535,14 @@ class Recharge extends Backend
             //DB::startTrans();
             try {
                 $id = $data['id'];
-
-                $result = (new \app\admin\services\demand\Recharge())->spendDelete(['id'=>$id]);
+                $account_id = DB::table('ba_recharge')->where('id',$data['id'])->value('account_id');
+                $type = DB::table('ba_accountrequest_proposal')->where('account_id',$account_id)->value('type');
+                if($type == 1)
+                {
+                    $result = (new \app\admin\services\demand\Recharge())->spendDelete(['id'=>$id]);
+                }else{
+                    $result = (new \app\admin\services\demand\Recharge())->tkspendDelete(['id'=>$id]);
+                }
                 if($result['code'] != 1) throw new \Exception($result['msg']);
 
                 $result = true;
