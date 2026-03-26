@@ -64,6 +64,9 @@ class TkRecharge
                         ];
                         $result = $TikTokApi->updateCampaignStatus($param);
                      }
+                     $money = DB::table('ba_account')->where('account_id',$account_id)->value('money');
+                     if($money <= 0) Db::table('ba_recharge')->where('id',$id)->update(['status'=>1]);
+
                       DB::table('ba_account')->where('account_id',$account_id)->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
                       $this->teamUsedMoney($v['change_amount'],$account_id);
                   }
