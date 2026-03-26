@@ -67,10 +67,10 @@ class TkRecharge
                       DB::table('ba_account')->where('account_id',$account_id)->update(['money'=>0,'is_'=>2,'update_time'=>time()]);
                       $this->teamUsedMoney($v['change_amount'],$account_id);
                   }
-                  Db::table('ba_recharge')->where('id',$id)->update(['status'=>1,'apply_id'=>1]);
+                  Db::table('ba_recharge')->where('id',$id)->update(['status'=>1,'is_apply'=>1]);
                }elseif($v['operate_status'] ==3)
                {
-                   Db::table('ba_recharge')->where('id',$id)->update(['apply_id'=>1,'comment'=>"操作失败！"]);
+                   Db::table('ba_recharge')->where('id',$id)->update(['is_apply'=>1,'comment'=>"操作失败！"]);
                }
             }
             $job->delete();
