@@ -192,7 +192,7 @@ class BmBinding
 
             if(!empty($applyId)) DB::table('ba_account')->where('account_id',$accountId)->update(['apply_id'=>$applyId,'is_apply'=>2,'comment'=>""]);
         }else{
-            DB::table('ba_account')->where('account_id',$accountId)->update(['status'=>4,'is_apply'=>1,'comment'=>""]);
+            DB::table('ba_account')->where('account_id',$accountId)->update(['status'=>4,'is_apply'=>1,'comment'=>"",'open_time'=>time()]);
 
             $serialName = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->value('serial_name');
             (new TkService())->ApplicationApi([])->tiktokRename([
