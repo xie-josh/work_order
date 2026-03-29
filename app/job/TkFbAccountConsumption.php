@@ -50,11 +50,40 @@ class TkFbAccountConsumption
             //     // );                
             //     return true;
             // }
+
+
+            $accountList = DB::table('ba_account')->where('account_id',$accountId)->field('account_id,open_time,admin_id,is_keep,keep_succeed,company_id')->where('status',4)->select()->toArray();
+            $accountRecycleList = DB::table('ba_account_recycle')->where('account_id',$accountId)->field('account_id,open_time,admin_id,company_id')->where('status',4)->order('open_time','asc')->select()->toArray();
+
+            $accountInfo = $accountList[0]??[];
+
+            $accountList = array_merge($accountRecycleList,$accountList);
+
+            $accountTimeList = [];
+            foreach($accountList as $k => &$item)
+            {                    
+                $item['strat_open_time'] = date('Y-m-d',$item['open_time']);
+                $item['end_open_time'] = '';
+                if(isset($accountList[$k+1])) $item['end_open_time'] = date('Y-m-d',$accountList[$k+1]['open_time']);
+                else $item['end_open_time'] = date('Y-m-d',strtotime('+1 day',time()));
+                $accountTimeList[] = $item;
+            }
+            $accountTimeList = array_reverse($accountList);    
+
             
             DB::table('ba_account_consumption_tk')->where('account_id',$accountId)->whereIn('report_date',$sSTimeList)->delete();
             $company_account_column =  DB::table('ba_account')->where('account_id',$accountId)->column('company_id','account_id');
             $data = [];
             foreach($sSTimeList as $v){
+                $companyId = '';
+                foreach($accountTimeList as $v1)
+                {
+                    if($v >= $v1['strat_open_time'] && $v <= $v1['end_open_time']){
+                        $companyId = $v1['company_id'];
+                        break;
+                    }
+                }
+
                 $consumption = $items[$v]??[];
                 if(empty($consumption)){
                     $data[] = [
@@ -63,7 +92,7 @@ class TkFbAccountConsumption
                         'impressions'=>$consumption['impressions']??0,
                         'clicks'=>$consumption['clicks']??0,
                         'report_date'=>$v,
-                        'company_id'=>$company_account_column[$accountId]??0,
+                        'company_id'=>$companyId,
                         'create_time'=>time(),
                     ];
                 }else{
@@ -73,7 +102,7 @@ class TkFbAccountConsumption
                         'impressions'=>$consumption['impressions']??0,
                         'clicks'=>$consumption['clicks']??0,
                         'report_date'=>$v,
-                        'company_id'=>$company_account_column[$accountId]??0,
+                        'company_id'=>$companyId,
                         'create_time'=>time(),
                     ];
                 }
