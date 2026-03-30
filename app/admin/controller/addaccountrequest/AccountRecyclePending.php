@@ -527,7 +527,7 @@ class AccountRecyclePending extends Backend
             }
 
             $filePath->setColumn('A:A', 20)
-                    ->setColumn('B:B', 20)
+                    ->setColumn('B:B', 55)
                     ->setColumn('C:C', 25)
                     ->setColumn('D:D', 10)
                     ->setColumn('E:E', 12)
