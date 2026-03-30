@@ -469,7 +469,6 @@ class AccountRecyclePending extends Backend
             "账户名称",
             "管理BM",
             "闲置天数",
-            "有效闲置天数",
             "历史总消耗",
             "时区",
             "开户时间"
@@ -509,7 +508,7 @@ class AccountRecyclePending extends Backend
                         $v['serial_name'],
                         $v['bm'],
                         floor($v['idle_time'] / 86400),
-                        floor($v['p_idle_time'] / 86400),
+                        // floor($v['p_idle_time'] / 86400),
                         $v['total_consumption'],
                         $v['time_zone'],
                         $v['open_time']?date('Y-m-d H:i',$v['open_time']):''
@@ -528,12 +527,12 @@ class AccountRecyclePending extends Backend
             }
 
             $filePath->setColumn('A:A', 20)
-                    ->setColumn('B:B', 55)
+                    ->setColumn('B:B', 20)
                     ->setColumn('C:C', 25)
-                    ->setColumn('D:D', 5)
-                    ->setColumn('E:E', 10)
+                    ->setColumn('D:D', 10)
+                    ->setColumn('E:E', 12)
                     ->setColumn('F:F', 12)
-                    ->setColumn('G:G', 18);
+                    ->setColumn('G:G', 25);
                 
             $excel->output();
             // 进度
