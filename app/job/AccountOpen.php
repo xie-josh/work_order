@@ -43,7 +43,7 @@ class AccountOpen
                     //1:处理中、2:成功、3:失败
                     if($status == 2)
                     {
-                        DB::table('ba_account')->where('id',$id)->update(['status'=>4,'is_apply'=>1,'open_money'=>$account['money'],'money'=>0,'comment'=>'','open_time'=>time()]);
+                        DB::table('ba_account')->where('id',$id)->update(['status'=>4,'is_apply'=>1,'open_money'=>$account['money'],'comment'=>'','open_time'=>time()]);
                         $serialName = DB::table('ba_accountrequest_proposal')->where('account_id',$accountId)->value('serial_name');
                         $appApi->tiktokRename([
                             'applications' => [
