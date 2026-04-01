@@ -162,7 +162,7 @@ class ConsumptionTow extends Backend
                     $accountStatus[$v['account_status']]??'未找到状态',
                     // $v['bm']??'',                    
                     $v['account_id'],
-                    $v['currency'],
+                    $v['currency']??'USD',
                     (float)$v['spend']??0,
                     $v['date_start'],
                     $v['date_stop']
