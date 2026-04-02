@@ -116,18 +116,18 @@ class TkFbAccountConsumption
             );
             //DB::table('ba_fb_bm_token')->where('business_id',$businessId)->update(['log'=>$logs]);
         }finally{
-            if(!empty($accountTimeList) && isset($accountTimeList[0]))
-            {
-                $first = $accountTimeList[0];
-                $spend = DB::table('ba_account_consumption_tk')->where('account_id',$accountId)
-                ->whereBetween('report_date', [$first['strat_open_time'], $first['end_open_time']])->sum('spend');
+            // if(!empty($accountTimeList) && isset($accountTimeList[0]))
+            // {
+            //     $first = $accountTimeList[0];
+                $spend = DB::table('ba_account_consumption_tk')->where('account_id',$accountId)->sum('spend');
+                // ->whereBetween('report_date', [$first['strat_open_time'], $first['end_open_time']])
                 DB::table('ba_accountrequest_proposal')->where('account_id', $accountId)->update(
                     [
                         'total_consumption'=>$spend,
                         'pull_spend_time'=>date('Y-m-d H:i:s',time())
                     ]
                 );
-            }
+            // }
         }
         return true;        
     }
