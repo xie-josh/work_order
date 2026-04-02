@@ -188,17 +188,30 @@ class RequestAccount extends Backend
                 
                 $openAccountTime = date('Y-m-d',$v['open_time']);
                 
-                $consumptionWhere = [
-                    ['account_id','=',$v['account_id']],
-                    ['date_start','>=',$openAccountTime]
-                ];
+             
 
-                if(!empty($openTime) && !empty($endTime)){
-                    array_push($consumptionWhere,['date_start','>=',$openTime]);
-                    array_push($consumptionWhere,['date_start','<=',$endTime]);
+                if($v['type']==1){
+                    $consumptionWhere = [
+                        ['account_id','=',$v['account_id']],
+                        ['date_start','>=',$openAccountTime]
+                    ];
+                    if(!empty($openTime) && !empty($endTime)){
+                        array_push($consumptionWhere,['date_start','>=',$openTime]);
+                        array_push($consumptionWhere,['date_start','<=',$endTime]);
+                    }
+                    $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+                }else{
+                    $consumptionWhere = [
+                        ['account_id','=',$v['account_id']],
+                        ['report_date','>=',$openAccountTime]
+                    ];
+                    if(!empty($openTime) && !empty($endTime)){
+                        array_push($consumptionWhere,['report_date','>=',$openTime]);
+                        array_push($consumptionWhere,['report_date','<=',$endTime]);
+                    }
+                    $accountSpent2 = DB::table('ba_account_consumption_tk')->where($consumptionWhere)->sum('spend');
                 }
-                $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
-                
+              
                 $v['fb_balance'] = $balance;
                 $v['fb_spand'] = bcadd( (string)$accountSpent2,'0',2);
                 $v['consumption_date'] = [
