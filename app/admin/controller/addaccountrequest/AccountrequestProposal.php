@@ -149,7 +149,7 @@ class AccountrequestProposal extends Backend
                 ->toArray();
                 $accountRecycleList = array_column($accountRecycleList,'account_recycle_time','account_id');
             }
-
+           
             foreach($dataList as &$v){
                 $accountAdminId = $v['account']['admin_id']??'';
                 $channelAdminId = $v['admin_id']??'';                
@@ -190,14 +190,26 @@ class AccountrequestProposal extends Backend
 
                 $openTime = $v['account']['open_time']??'';
                 $accountSpent2 = 0;
-                if(!empty($openTime)){
-                    $openAccountTime = date('Y-m-d',$openTime);
-                    $consumptionWhere = [
-                        ['account_id','=',$v['account_id']],
-                        ['date_start','>=',$openAccountTime]
-                    ];
-                    $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+                if($v['type']==1){
+                    if(!empty($openTime)){
+                        $openAccountTime = date('Y-m-d',$openTime);
+                        $consumptionWhere = [
+                            ['account_id','=',$v['account_id']],
+                            ['date_start','>=',$openAccountTime]
+                        ];
+                        $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+                    }
+                }elseif($v['type']==2){
+                    if(!empty($openTime)){
+                        $openAccountTime = date('Y-m-d',$openTime);
+                        $consumptionWhere = [
+                            ['account_id','=',$v['account_id']],
+                            ['report_date','>=',$openAccountTime]
+                        ];
+                        $accountSpent2 = DB::table('ba_account_consumption_tk')->where($consumptionWhere)->sum('spend');
+                    }
                 }
+               
                 
                 $v['fb_balance'] = $balance;
                 $v['fb_spand'] = bcadd( (string)$accountSpent2,'0',2);
@@ -314,17 +326,30 @@ class AccountrequestProposal extends Backend
                 $balance = bcsub((string)$spendCap,(string)$amountSpent,'2');
                 
                 $openAccountTime = date('Y-m-d',$v['open_time']);
-                
-                $consumptionWhere = [
-                    ['account_id','=',$v['account_id']],
-                    ['date_start','>=',$openAccountTime]
-                ];
-
-                if(!empty($openTime) && !empty($endTime)){
-                    array_push($consumptionWhere,['date_start','>=',$openTime]);
-                    array_push($consumptionWhere,['date_start','<=',$endTime]);
+                if($v['type']==1){
+                    $consumptionWhere = [
+                        ['account_id','=',$v['account_id']],
+                        ['date_start','>=',$openAccountTime]
+                    ];
+    
+                    if(!empty($openTime) && !empty($endTime)){
+                        array_push($consumptionWhere,['date_start','>=',$openTime]);
+                        array_push($consumptionWhere,['date_start','<=',$endTime]);
+                    }
+                    $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+                }elseif($v['type']==2){
+                    $consumptionWhere = [
+                        ['account_id','=',$v['account_id']],
+                        ['report_date','>=',$openAccountTime]
+                    ];
+    
+                    if(!empty($openTime) && !empty($endTime)){
+                        array_push($consumptionWhere,['date_start','>=',$openTime]);
+                        array_push($consumptionWhere,['date_start','<=',$endTime]);
+                    }
+                    $accountSpent2 = DB::table('ba_account_consumption_tk')->where($consumptionWhere)->sum('spend');
                 }
-                $accountSpent2 = DB::table('ba_account_consumption')->where($consumptionWhere)->sum('spend');
+
                 
                 $v['fb_balance'] = $balance;
                 $v['fb_spand'] = bcadd( (string)$accountSpent2,'0',2);
