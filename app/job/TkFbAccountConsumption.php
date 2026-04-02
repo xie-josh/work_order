@@ -123,7 +123,7 @@ class TkFbAccountConsumption
                 ->whereBetween('report_date', [$first['strat_open_time'], $first['end_open_time']])->sum('spend');
                 DB::table('ba_accountrequest_proposal')->where('account_id', $accountId)->update(
                     [
-                        'amount_spent'=>$spend,
+                        'total_consumption'=>$spend,
                         'pull_spend_time'=>date('Y-m-d H:i:s',time())
                     ]
                 );
