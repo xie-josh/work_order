@@ -344,8 +344,8 @@ class AccountrequestProposal extends Backend
                     ];
     
                     if(!empty($openTime) && !empty($endTime)){
-                        array_push($consumptionWhere,['date_start','>=',$openTime]);
-                        array_push($consumptionWhere,['date_start','<=',$endTime]);
+                        array_push($consumptionWhere,['report_date','>=',$openTime]);
+                        array_push($consumptionWhere,['report_date','<=',$endTime]);
                     }
                     $accountSpent2 = DB::table('ba_account_consumption_tk')->where($consumptionWhere)->sum('spend');
                 }
