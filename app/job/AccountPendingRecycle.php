@@ -72,7 +72,7 @@ class AccountPendingRecycle
             $companyIsopen = DB::table('ba_company')->where('id',$companyId)->value('isopen');
             if($seconds > floor(7 * 86400) && $companyIsopen == 1) {
                 if(empty($recycleStart)) $accountrequestProposalData = ['status'=>94];
-                elseif(!empty($recycleStart) && (time() - strtotime($recycleStart)) > 7 * 86400) $accountrequestProposalData = ['status'=>94];
+                elseif(!empty($recycleStart) && (time() - strtotime($recycleStart)) > 3 * 86400) $accountrequestProposalData = ['status'=>94];
             }else{
                 $where[] = ['status','=',94];
                 $where[] = ['recycle_type','=',3];
