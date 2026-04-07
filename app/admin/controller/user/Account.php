@@ -19,7 +19,7 @@ class Account extends Backend
     protected string|array $preExcludeFields = ['update_time', 'create_time'];
 
     protected string|array $quickSearchField = 'name';
-    protected array $noNeedPermission = ['index','add','edit','addAccountTeam','delAccountTeam','accountCountMoney','getAccountNumber','getExportProgress','export','importTemplate','import','needTotal','batchAdd','getComapnyCard'];
+    protected array $noNeedPermission = ['index','add','edit','addAccountTeam','delAccountTeam','accountCountMoney','getAccountNumber','getExportProgress','export','importTemplate','import','needTotal','batchAdd','getComapnyCard','editIsAnnouncement'];
 
 
     public function initialize(): void
@@ -1150,6 +1150,7 @@ class Account extends Backend
             'recharge_sum'=>0,
             'version'=>env('VERSION')
         ];
+        $data['is_announcement'] = DB::table('ba_admin')->where('id',$this->auth->id)->value('is_announcement');
 
         $where = [];
         
@@ -1214,6 +1215,12 @@ class Account extends Backend
         $data['recharge_sum'] = $rechargeTable->count();
 
         $this->success('',$data);
+    }
+
+    public function editIsAnnouncement()
+    {
+        DB::table('ba_admin')->where('id',$this->auth->id)->update(['is_announcement'=>1]);
+        $this->success('',[]);
     }
 
     // public function recycle()
