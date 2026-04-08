@@ -492,7 +492,7 @@ class AccountRecyclePending extends Backend
             $companyTotal = $query->count();
             if ($companyTotal == 0) continue;
 
-            $excelName = "{$nickname}-闲置超过七天账户-".date('md').".xlsx";
+            $excelName = "{$nickname}-闲置超过四天账户-".date('md').".xlsx";
             $excel = new \Vtiful\Kernel\Excel(['path' => $folders['path']]);
 
             $sheetInit = false;
