@@ -999,6 +999,7 @@ class Consumption extends Backend
         ->leftJoin('ba_account account','account.account_id=account_consumption.account_id')
         ->leftJoin('ba_company company','company.id=account_consumption.company_id')
         ->where($where)
+        ->whereNotNull('accountrequest_proposal.account_id')
         ->order('account_consumption.id','asc');
       
         $statusList = config('basics.ACCOUNT_STATUS');
