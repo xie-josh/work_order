@@ -1083,7 +1083,7 @@ class Account extends Backend
     {
         $accountNumber = DB::table('ba_company')->field('account_number,is_account')->where('id',$this->auth->company_id)->find();
         $time = date('Y-m-d',time());
-        $number = Db::table('ba_account')->where('admin_id',$this->auth->id)->whereDay('create_time',$time)->count();
+        $number = Db::table('ba_account')->where('company_id',$this->auth->company_id)->where('status','<>',2)->whereDay('create_time',$time)->count();
         $accountNumber['residue_account_number'] =  $accountNumber['account_number'] - $number;
         return $this->success('',[$accountNumber]);
     }
